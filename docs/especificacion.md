@@ -774,174 +774,550 @@ classDiagram
 
 ### 6.2 Diagrama de Casos de Uso
 
-Describe las interacciones de los cuatro actores con las funcionalidades del sistema.
+Modela las interacciones de los **cuatro actores** con el sistema, con relaciones `<<include>>` y `<<extend>>` que expresan dependencias y extensiones de comportamiento.
 
 ```mermaid
-flowchart TD
-    subgraph Actores
-        CLI(["👤 Cliente"])
-        ADM(["👤 Administrador"])
-        OPE(["👤 Operador de Ruta"])
-        CHO(["👤 Chofer"])
+flowchart LR
+    %% ── Actores ──────────────────────────────────────────────────────────────
+    CLI(["\n👤\nCliente\n"])
+    ADM(["\n👤\nAdministrador\n"])
+    OPE(["\n👤\nOperador\nde Ruta\n"])
+    CHO(["\n👤\nChofer\n"])
+
+    %% ── Frontera del sistema ────────────────────────────────────────────────
+    subgraph SYS["🖥️  Sistema E-commerce Fritolay Ambato"]
+
+        subgraph EC["📦 E-commerce / Clientes"]
+            UC01(["Ver Catálogo\nde Productos"])
+            UC02(["HU-007 · Gestionar\nCarrito de Compras"])
+            UC03(["HU-001 · Realizar\nCheckout"])
+            UC04(["Adjuntar Comprobante\nde Pago"])
+            UC05(["Ver Historial\nde Pedidos"])
+            UC06(["Rastrear Pedido\nen Mapa"])
+            UC07(["Gestionar Direcciones\nMapa Bidireccional"])
+            UC08(["Generar Factura\nPDF — lado cliente"])
+            UC09(["Autenticarse /\nRegistrarse"])
+            UC10(["Recuperar\nCredenciales"])
+        end
+
+        subgraph GP["🗂️ Gestión de Pedidos"]
+            UC11(["HU-004 · Aprobar Pago\ncon Comprobante"])
+            UC12(["HU-002 · Asignar\nPedidos a Camión"])
+            UC13(["HU-002 · Generar Guía\nRemisión y Ruta"])
+            UC14(["HU-006 · Filtros\nEstilo Datadog"])
+            UC15(["HU-006 · Ver Cards\nInformativos por Estado"])
+            UC16(["Configurar\nDescuentos"])
+            UC17(["HU-005 · Confirmar\nCierre y Encerado"])
+            UC18(["Ver Visor\nde Facturas PDF"])
+            UC19(["Gestionar\nVehículos CRUD"])
+        end
+
+        subgraph EN["🚚 Entregas — Chofer"]
+            UC20(["Ver Guía de\nRuta Asignada"])
+            UC21(["HU-003 · Registrar\nEntrega Total/Parcial"])
+            UC22(["HU-003 · Registrar\nDevolución"])
+            UC23(["Ver Inventario\ndel Camión"])
+            UC24(["HU-003 · Generar\nFactura PDF in situ"])
+            UC25(["Realizar Cierre\nde Caja"])
+            UC26(["Compartir Ubicación\nGPS — Firestore"])
+            UC27(["Navegar Google\nMaps / Waze"])
+        end
+
+        subgraph DB["📊 Dashboard"]
+            UC28(["Ver KPIs\ny Estadísticas"])
+            UC29(["Ver Ventas por\nSector / Camión"])
+            UC30(["Ver Recaudación\npor Método de Pago"])
+            UC31(["Ver Carritos\nAbandonados"])
+            UC32(["Consultar Stock\nde Bodegas"])
+        end
+
+        subgraph ADM_M["⚙️ Administración"]
+            UC33(["Crear / Inactivar\nUsuarios Empleados"])
+            UC34(["Resetear\nContraseñas"])
+        end
+
+        %% ── Relaciones <<include>> y <<extend>> ─────────────────────────
+        UC03 -- "<<include>>" --> UC09
+        UC03 -- "<<include>>" --> UC07
+        UC03 -- "<<extend>>\n[pago Depósito/De Una]" --> UC04
+        UC03 -- "<<include>>" --> UC08
+        UC02 -- "<<include>>" --> UC01
+        UC21 -- "<<extend>>\n[entrega parcial Efectivo]" --> UC22
+        UC21 -- "<<include>>" --> UC24
+        UC21 -- "<<include>>" --> UC26
+        UC20 -- "<<include>>" --> UC27
+        UC12 -- "<<include>>" --> UC13
+        UC12 -- "<<include>>" --> UC11
+        UC05 -- "<<include>>" --> UC09
+        UC06 -- "<<include>>" --> UC09
+        UC09 -- "<<extend>>\n[credenciales olvidadas]" --> UC10
+        UC17 -- "<<include>>" --> UC13
+        UC14 -- "<<include>>" --> UC15
     end
 
-    subgraph EC["📦 Módulo E-commerce"]
-        UC01["Ver Catálogo de Productos"]
-        UC02["Gestionar Carrito de Compras"]
-        UC03["Realizar Checkout"]
-        UC04["Adjuntar Comprobante de Pago"]
-        UC05["Ver Historial de Pedidos"]
-        UC06["Rastrear Pedido en Mapa"]
-        UC07["Gestionar Direcciones (Mapa Bidireccional)"]
-        UC08["Generar Factura PDF (cliente)"]
-    end
+    %% ── Asociaciones Actor ↔ Casos de Uso ───────────────────────────────
+    CLI --- UC01
+    CLI --- UC02
+    CLI --- UC03
+    CLI --- UC05
+    CLI --- UC06
+    CLI --- UC09
 
-    subgraph GP["🗂️ Módulo Gestión de Pedidos"]
-        UC09["Aprobar Pago con Comprobante"]
-        UC10["Asignar Pedidos a Camión"]
-        UC11["Generar Guía de Remisión y Ruta"]
-        UC12["Ver Mapa en Vivo con Filtros Datadog"]
-        UC13["Ver Cards Informativos por Estado"]
-        UC14["Configurar Descuentos"]
-        UC15["Confirmar Cierre de Guía y Encerado"]
-        UC16["Ver Visor de Facturas y Exportar PDF"]
-    end
+    OPE --- UC11
+    OPE --- UC12
+    OPE --- UC14
+    OPE --- UC15
+    OPE --- UC16
+    OPE --- UC17
+    OPE --- UC18
+    OPE --- UC19
 
-    subgraph EN["🚚 Módulo Entregas (Chofer)"]
-        UC17["Ver Guía de Ruta Asignada"]
-        UC18["Navegar con Google Maps / Waze"]
-        UC19["Registrar Entrega Total o Parcial"]
-        UC20["Registrar Devolución"]
-        UC21["Ver Inventario del Camión"]
-        UC22["Realizar Cierre de Caja"]
-        UC23["Compartir Ubicación GPS (Firestore)"]
-    end
+    CHO --- UC20
+    CHO --- UC21
+    CHO --- UC23
+    CHO --- UC25
 
-    subgraph DB["📊 Módulo Dashboard"]
-        UC24["Ver KPIs y Estadísticas"]
-        UC25["Ver Ventas por Sector / Camión"]
-        UC26["Ver Recaudación por Método de Pago"]
-        UC27["Ver Carritos Abandonados"]
-        UC28["Consultar Stock de Bodegas"]
-    end
-
-    subgraph ADM_MOD["⚙️ Módulo Administración"]
-        UC29["Crear / Inactivar Usuarios Empleados"]
-        UC30["Resetear Contraseñas"]
-        UC31["Gestionar Vehículos (CRUD)"]
-    end
-
-    CLI --> UC01
-    CLI --> UC02
-    CLI --> UC03
-    CLI --> UC04
-    CLI --> UC05
-    CLI --> UC06
-    CLI --> UC07
-    CLI --> UC08
-
-    OPE --> UC09
-    OPE --> UC10
-    OPE --> UC11
-    OPE --> UC12
-    OPE --> UC13
-    OPE --> UC14
-    OPE --> UC15
-    OPE --> UC16
-    OPE --> UC31
-
-    CHO --> UC17
-    CHO --> UC18
-    CHO --> UC19
-    CHO --> UC20
-    CHO --> UC21
-    CHO --> UC22
-    CHO --> UC23
-
-    ADM --> UC24
-    ADM --> UC25
-    ADM --> UC26
-    ADM --> UC27
-    ADM --> UC28
-    ADM --> UC29
-    ADM --> UC30
-    ADM --> UC16
-    ADM --> UC12
-    ADM --> UC13
+    ADM --- UC18
+    ADM --- UC28
+    ADM --- UC29
+    ADM --- UC30
+    ADM --- UC31
+    ADM --- UC32
+    ADM --- UC33
+    ADM --- UC34
+    ADM --- UC14
+    ADM --- UC15
 ```
 
 ---
 
-### 6.3 Diagrama de Secuencia
+### 6.3 Diagramas de Secuencia — HU-001 a HU-007
 
-Modela el flujo completo del **Checkout y Liquidación de Pago** (HU-001) entre el cliente y los distintos componentes del sistema.
+Cada diagrama modela el flujo de mensajes entre actores y componentes del sistema para cada Historia de Usuario.
+
+---
+
+#### 6.3.1 HU-001 · Liquidación de Pago y Checkout
 
 ```mermaid
 sequenceDiagram
     actor Cliente
-    participant FE as Frontend (Laravel Blade)
-    participant API as Backend REST API
+    participant FE as Frontend
+    participant API as Backend API
     participant DB as MySQL
-    participant GCS as Google Cloud Storage
-    participant FS as Firestore (GPS)
-    participant Email as Servicio Email
+    participant GCS as Cloud Storage
+    participant Email as Email Service
 
     Cliente->>FE: Accede al carrito de compras
-    FE->>FE: Lee cookie de sesión del carrito
-    FE->>Cliente: Muestra items del carrito y subtotal
+    FE->>FE: Lee cookie segura del carrito
+    FE->>Cliente: Muestra ítems y subtotal
 
-    Cliente->>FE: Inicia checkout
-    FE->>FE: ¿Está autenticado?
+    Cliente->>FE: Inicia Checkout
+    FE->>FE: Verifica token JWT
     alt No autenticado
         FE->>Cliente: Redirige a Login / Registro
         Cliente->>FE: Envía credenciales
         FE->>API: POST /auth/login
-        API->>DB: Verifica hash de contraseña
-        DB-->>API: OK
+        API->>DB: Valida hash de contraseña
+        DB-->>API: Usuario válido
         API-->>FE: JWT Token
     end
 
-    FE->>Cliente: Muestra pantalla de checkout
-    Cliente->>FE: Selecciona dirección de entrega (mapa bidireccional)
-    Cliente->>FE: Selecciona método de pago
+    FE->>Cliente: Muestra pantalla Checkout
+    Cliente->>FE: Selecciona DireccionEntrega (mapa bidireccional)
+    Cliente->>FE: Selecciona MetodoPago
 
-    alt Método de pago = Depósito o De Una
-        Cliente->>FE: Adjunta comprobante de pago
-        FE->>GCS: PUT /upload comprobante
-        GCS-->>FE: URL del archivo
+    alt MetodoPago = Depósito | De Una
+        Cliente->>FE: Adjunta comprobante (imagen/PDF)
+        FE->>GCS: PUT /comprobantes/{filename}
+        GCS-->>FE: URL pública del archivo
     end
 
-    FE->>API: POST /pedidos (items, dirección, método, comprobante)
-    API->>API: Valida campos (anti XSS / SQL Injection)
-    API->>DB: Verifica stock disponible (CantidadFisica - EnPedidos)
+    FE->>API: POST /pedidos {items, dirección, metodoPago, comprobante}
+    API->>API: Sanitiza entrada (anti-XSS, anti-SQLi)
+    API->>DB: SELECT cantidad_fisica - en_pedidos (por producto)
 
     alt Stock insuficiente
-        API-->>FE: 422 Error "Stock no disponible"
-        FE->>Cliente: Muestra alerta de stock
+        API-->>FE: 422 Unprocessable — stock no disponible
+        FE->>Cliente: Alerta visual de stock agotado
     else Stock OK
-        API->>DB: Crea registro Pedido
-        API->>DB: Incrementa EnPedidos del Producto
-        API->>DB: Crea ItemsPedido
-
-        alt Pago = TC / TD / Efectivo
-            API->>DB: Estado pedido = "En espera de asignación de ruta"
-        else Pago = Depósito / De Una
-            API->>DB: Estado pedido = "En espera por aprobación de pago"
-        end
-
-        API->>DB: Registra en bitácora de auditoría
-        API-->>FE: 201 Created (id pedido)
-        FE->>FE: Genera factura proforma PDF (lado cliente)
-        FE->>Cliente: Muestra confirmación del pedido y PDF
-        FE->>Email: Notificación de pedido recibido
+        API->>DB: INSERT pedidos (estado según método de pago)
+        API->>DB: UPDATE productos SET en_pedidos += cantidad
+        API->>DB: INSERT items_pedido
+        API->>DB: INSERT bitacora_auditoria
+        API-->>FE: 201 Created {pedidoId, estado}
+        FE->>FE: Genera PDF proforma (lado cliente — sin servidor)
+        FE->>Cliente: Confirmación + PDF descargable
+        FE->>Email: Envía notificación pedido recibido
     end
 ```
 
 ---
 
-### 6.4 Diagrama de Colaboración
+#### 6.3.2 HU-002 · Asignación de Rutas y Generación de Guías
 
-Representa las interacciones entre los objetos del sistema durante el proceso de **Asignación de Rutas y Generación de Guías** (HU-002).
+```mermaid
+sequenceDiagram
+    actor Operador as Operador de Ruta
+    participant FE as Frontend
+    participant API as Backend API
+    participant DB as MySQL
+
+    Operador->>FE: Abre módulo Gestión de Pedidos
+    FE->>API: GET /pedidos?estado=en_espera_asignacion
+    API->>DB: SELECT pedidos WHERE estado = 'en_espera_asignacion'
+    DB-->>API: Lista de pedidos
+    API-->>FE: Pedidos pendientes
+    FE->>Operador: Muestra lista y mapa con pedidos
+
+    Operador->>FE: Selecciona pedidos del mapa/lista
+    Operador->>FE: Selecciona camión activo
+    FE->>API: GET /camiones?estado=activo
+    API->>DB: SELECT camiones WHERE estado = 'activo'
+    DB-->>API: Lista de camiones
+    API-->>FE: Camiones disponibles
+    FE->>Operador: Muestra card de camión seleccionado
+
+    Operador->>FE: Clic "Cerrar Asignación"
+    FE->>API: POST /asignaciones {pedidoIds[], camionId}
+    API->>DB: Verifica pedidos no asignados
+    alt Pedido ya asignado
+        API-->>FE: 409 Conflict — pedido ya en ruta
+        FE->>Operador: Alerta pedido duplicado
+    else Validación OK
+        API->>DB: INSERT guias_remision
+        API->>DB: INSERT guias_ruta
+        API->>DB: INSERT asignacion_pedido_camion
+        API->>DB: INSERT transacciones_inventario (ingreso bodega camión)
+        API->>DB: UPDATE bodega_camion
+        API->>DB: UPDATE pedidos SET estado = 'listo_para_entregar'
+        API->>DB: INSERT bitacora_auditoria
+        API-->>FE: 201 {guiaRemisionId, guiaRutaId}
+        FE->>FE: Renderiza Guía Remisión PDF (lado cliente)
+        FE->>FE: Renderiza Guía Ruta PDF (lado cliente)
+        FE->>Operador: Muestra guías generadas
+    end
+```
+
+---
+
+#### 6.3.3 HU-003 · Ejecución de Entrega, Devolución y Facturación
+
+```mermaid
+sequenceDiagram
+    actor Chofer
+    participant FE as Frontend (PWA)
+    participant API as Backend API
+    participant DB as MySQL
+    participant FS as Firestore GPS
+    participant ExtMap as Google Maps / Waze
+
+    Chofer->>FE: Abre módulo Entregas
+    FE->>API: GET /guias-ruta?estado=activa&choferId={id}
+    API->>DB: SELECT guias asignadas al chofer
+    DB-->>API: Guías activas
+    API-->>FE: Lista de guías
+    FE->>Chofer: Muestra guías y mapa con pedidos puntuados
+
+    Chofer->>FE: Selecciona guía de ruta
+    FE->>FS: START watch ubicacion_camion/{camionId}
+    Note over FE,FS: GPS se comparte en Firestore cada N segundos (configurable)
+
+    Chofer->>FE: Selecciona pedido del mapa
+    FE->>API: PATCH /pedidos/{id} {estado: listo_a_ser_entregado}
+    API->>DB: UPDATE pedidos
+    API-->>FE: OK
+    FE->>ExtMap: Abre Google Maps / Waze con coordenadas cliente
+
+    Chofer->>FE: Llega y registra entrega
+    FE->>Chofer: Formulario — cantidad entregada / devuelta / estado mercadería
+
+    alt Entrega total
+        FE->>API: POST /entregas {pedidoId, cantidadEntregada: total, estado: entregado}
+        API->>DB: UPDATE pedidos SET estado = 'entregado'
+        API->>DB: UPDATE bodega_camion (egreso físico)
+        API->>DB: UPDATE productos SET en_pedidos -= cantidad
+        API->>DB: INSERT transacciones_inventario (egreso)
+    else Entrega parcial (solo Efectivo)
+        FE->>API: POST /entregas {pedidoId, cantidadEntregada, cantidadDevuelta, motivoDevolucion, estadoMercaderia}
+        API->>DB: UPDATE pedidos SET estado = 'entregado_parcialmente'
+        API->>DB: UPDATE bodega_camion
+        API->>DB: UPDATE productos SET en_pedidos -= cantidadEntregada
+        API->>DB: INSERT transacciones_inventario
+    else Método pago != Efectivo y devolución parcial
+        API-->>FE: 422 Error — devolución parcial no permitida
+        FE->>Chofer: Mensaje — solo devolución total permitida
+    end
+
+    API->>DB: INSERT bitacora_auditoria {ubicacionGPS}
+    API-->>FE: 201 {facturaData}
+    FE->>FE: Genera Factura PDF (lado cliente — navegador)
+    FE->>Chofer: Factura disponible para imprimir/compartir
+```
+
+---
+
+#### 6.3.4 HU-004 · Aprobación Manual de Pagos con Comprobante
+
+```mermaid
+sequenceDiagram
+    actor Operador as Operador de Ruta
+    participant FE as Frontend
+    participant API as Backend API
+    participant DB as MySQL
+    participant GCS as Cloud Storage
+    participant Email as Email Service
+
+    Operador->>FE: Abre lista de pedidos pendientes de aprobación
+    FE->>API: GET /pedidos?estado=en_espera_aprobacion
+    API->>DB: SELECT pedidos WHERE estado = 'en_espera_aprobacion'
+    DB-->>API: Pedidos con método Depósito / De Una
+    API-->>FE: Lista de pedidos
+    FE->>Operador: Muestra pedidos con botón "Revisar"
+
+    Operador->>FE: Selecciona pedido y abre comprobante
+    FE->>API: GET /pedidos/{id}/comprobante
+    API->>GCS: GET URL firmada del archivo
+    GCS-->>API: URL
+    API-->>FE: URL del comprobante
+    FE->>Operador: Muestra imagen/PDF del comprobante
+
+    alt Operador aprueba pago
+        Operador->>FE: Clic "Aprobar Pago"
+        FE->>API: PATCH /pedidos/{id}/aprobar
+        API->>DB: UPDATE pedidos SET estado = 'en_espera_asignacion'
+        API->>DB: INSERT bitacora_auditoria {operadorId, accion: 'pago_aprobado'}
+        API-->>FE: 200 OK
+        FE->>Email: Notifica al cliente — pago aprobado
+        FE->>Operador: Confirmación visual
+    else Operador rechaza pago
+        Operador->>FE: Clic "Rechazar" + motivo
+        FE->>API: PATCH /pedidos/{id}/rechazar {motivo}
+        API->>DB: UPDATE pedidos SET estado = 'rechazado'
+        API->>DB: UPDATE productos SET en_pedidos -= cantidad
+        API->>DB: INSERT bitacora_auditoria
+        API-->>FE: 200 OK
+        FE->>Email: Notifica al cliente — pago rechazado con motivo
+        FE->>Operador: Confirmación visual
+    end
+```
+
+---
+
+#### 6.3.5 HU-005 · Cierre de Guías, Arqueo y Encerado de Bodega
+
+```mermaid
+sequenceDiagram
+    actor Chofer
+    actor Operador as Operador de Ruta
+    participant FE_CHO as Frontend Chofer
+    participant FE_OPE as Frontend Operador
+    participant API as Backend API
+    participant DB as MySQL
+
+    Chofer->>FE_CHO: Abre módulo Cierre de Caja
+    FE_CHO->>API: GET /guias-ruta/{id}/resumen-caja
+    API->>DB: SELECT pedidos entregados + montos por guía
+    DB-->>API: Resumen financiero
+    API-->>FE_CHO: Reporte visual por guía
+    FE_CHO->>Chofer: Muestra dinero esperado por guía
+
+    Chofer->>FE_CHO: Declara efectivo físico en mano
+    FE_CHO->>API: POST /guias-ruta/{id}/arqueo {efectivoDeclarado}
+    API->>DB: UPDATE guias_remision SET estado='confirmacion_cierre', efectivo_declarado
+    API-->>FE_CHO: 200 OK — esperando confirmación del operador
+    FE_CHO->>Chofer: Guía en estado pendiente de cierre
+
+    Note over FE_OPE,Operador: Operador ve card de guías pendientes de cierre
+    Operador->>FE_OPE: Abre guía en estado confirmacion_cierre
+    FE_OPE->>API: GET /guias-remision/{id}/detalle
+    API-->>FE_OPE: Detalle de mercadería a recibir y efectivo declarado
+    FE_OPE->>Operador: Muestra formulario de recepción de mercadería
+
+    Operador->>FE_OPE: Clasifica mercadería devuelta
+    loop Por cada producto devuelto
+        alt Mercadería en buen estado
+            FE_OPE->>API: POST /inventario/ingreso {productoId, cantidad, motivo: 'devolucion_buen_estado'}
+            API->>DB: UPDATE productos SET cantidad_fisica += cantidad
+            API->>DB: INSERT transacciones_inventario (ingreso maestro)
+        else Mercadería en mal estado
+            FE_OPE->>API: POST /mercaderia-mal-estado {guiaRutaId, productoId, cantidad}
+            API->>DB: INSERT mercaderia_mal_estado
+        end
+    end
+
+    Operador->>FE_OPE: Confirma cierre
+    FE_OPE->>API: PATCH /guias-remision/{id}/cerrar {efectivoRecibido}
+    API->>DB: UPDATE guias_remision SET estado = 'cerrada'
+    API->>DB: UPDATE bodega_camion SET cantidad_actual = 0 (encerado)
+    API->>DB: INSERT bitacora_auditoria
+    API-->>FE_OPE: 200 OK — bodega encerada
+    FE_OPE->>Operador: Reporte de arqueo cerrado
+```
+
+---
+
+#### 6.3.6 HU-006 · Filtros Temporales y de Estado Estilo Datadog
+
+```mermaid
+sequenceDiagram
+    actor Usuario as Admin / Operador
+    participant FE as Frontend
+    participant API as Backend API
+    participant DB as MySQL
+
+    Usuario->>FE: Abre Módulo Gestión de Pedidos
+    FE->>FE: Aplica filtro default: hoy + estado en_espera_asignacion
+    FE->>API: GET /pedidos?fechaInicio=hoy&fechaFin=hoy&estado=en_espera_asignacion
+    API->>DB: SELECT pedidos WHERE fecha BETWEEN ? AND ? AND estado = ?
+    DB-->>API: Pedidos
+    API-->>FE: Resultados
+    FE->>Usuario: Muestra mapa + cards informativos por estado
+
+    Usuario->>FE: Escribe atajo en textbox (ej. "1w")
+    FE->>FE: Interpreta atajo → fechaInicio = hoy-7d, fechaFin = ahora
+    FE->>API: GET /pedidos?fechaInicio={hace7d}&fechaFin={ahora}
+    API->>DB: SELECT con rango calculado
+    DB-->>API: Resultados
+    API-->>FE: Pedidos
+    FE->>Usuario: Actualiza vista
+
+    alt Usuario ingresa rango custom > 30 días
+        FE->>FE: Valida diferencia de fechas
+        FE->>Usuario: Error — rango máximo de 30 días
+        Note over FE: Bloquea la petición al API
+    else Rango válido ≤ 30 días
+        FE->>API: GET /pedidos?fechaInicio={fi}&fechaFin={ff}
+        API->>DB: SELECT con rango custom
+        DB-->>API: Pedidos
+        API-->>FE: Resultados
+        FE->>FE: Muestra textbox como "custom"
+        FE->>Usuario: Vista actualizada
+    end
+
+    Usuario->>FE: Clic en Card Informativo de estado (ej. "En Ruta")
+    FE->>FE: Aplica filtro estado = en_ruta
+    FE->>API: GET /pedidos?estado=en_ruta&fechaInicio={fi}&fechaFin={ff}
+    API->>DB: SELECT con estado filtrado
+    DB-->>API: Pedidos en ruta
+    API-->>FE: Resultados
+    FE->>Usuario: Filtra lista y mapa por estado seleccionado
+```
+
+---
+
+#### 6.3.7 HU-007 · Gestión del Carrito de Compras
+
+```mermaid
+sequenceDiagram
+    actor Cliente
+    participant FE as Frontend
+    participant Cookie as Cookie Segura (navegador)
+    participant API as Backend API
+    participant DB as MySQL
+
+    Cliente->>FE: Navega catálogo de productos
+    FE->>API: GET /productos?tipo={filtro}&orden={orden}
+    API->>DB: SELECT productos WHERE cantidad_fisica - en_pedidos > 0
+    DB-->>API: Productos disponibles
+    API-->>FE: Catálogo con stock lógico
+    FE->>Cliente: Muestra catálogo con precio, tipo y alertas de stock bajo
+
+    Cliente->>FE: Selecciona producto — especifica cantidad
+    FE->>FE: Calcula subtotal del ítem
+    FE->>FE: ¿Producto ya existe en carrito?
+
+    alt Producto nuevo en carrito
+        FE->>Cookie: Agrega item {productoId, cantidad, precio}
+        Cookie-->>FE: Carrito actualizado
+    else Producto ya en carrito — merge
+        FE->>Cookie: Actualiza cantidad del item existente (+= nuevaCantidad)
+        Cookie-->>FE: Cantidad fusionada
+    end
+
+    FE->>Cliente: Actualiza vista del carrito con nuevo subtotal
+
+    Cliente->>FE: Modifica cantidad de ítem en carrito
+    FE->>API: GET /productos/{id} — verifica stock actual
+    API->>DB: SELECT cantidad_fisica - en_pedidos
+    DB-->>API: Stock disponible
+    alt Cantidad > stock disponible
+        API-->>FE: Stock insuficiente
+        FE->>Cliente: Alerta — cantidad máxima disponible: {X}
+    else Cantidad válida
+        FE->>Cookie: UPDATE item {nueva cantidad}
+        FE->>Cliente: Subtotal recalculado
+    end
+
+    Cliente->>FE: Elimina producto del carrito
+    FE->>Cookie: DELETE item {productoId}
+    Cookie-->>FE: Item eliminado
+    FE->>Cliente: Carrito actualizado
+
+    Cliente->>FE: Abandona carrito (cierra/cancela)
+    FE->>API: POST /carritos-abandonados {items, valorTotal, motivo}
+    API->>DB: INSERT carritos_abandonados
+    API-->>FE: Registrado
+```
+
+---
+
+### 6.4 Diagramas de Colaboración — HU-001 a HU-007
+
+Cada diagrama muestra los objetos participantes y los **mensajes numerados** que se intercambian para resolver cada historia de usuario.
+
+---
+
+#### 6.4.1 HU-001 · Colaboración — Checkout y Liquidación de Pago
+
+```mermaid
+flowchart LR
+    CLI(["Cliente"])
+
+    subgraph Sistema
+        direction TB
+        FE["PaginaCheckout\n(Frontend)"]
+        AUTH["AuthController"]
+        CTRL["PedidoController"]
+        SRV["PedidoService"]
+        REP_P["PedidoRepository"]
+        REP_PROD["ProductoRepository"]
+        GCS[("Cloud Storage")]
+        DB[("MySQL")]
+        EMAIL["EmailService"]
+    end
+
+    CLI -- "1: abrirCarrito()" --> FE
+    FE -- "2: leerCookieCarrito()" --> FE
+    FE -- "3: mostrarCarrito(items)" --> CLI
+    CLI -- "4: iniciarCheckout()" --> FE
+    FE -- "5: verificarJWT()" --> AUTH
+    AUTH -- "6: validarToken(db)" --> DB
+    DB -- "7: tokenOK" --> AUTH
+    CLI -- "8: subirComprobante()" --> FE
+    FE -- "9: PUT /comprobantes" --> GCS
+    GCS -- "10: urlArchivo" --> FE
+    CLI -- "11: confirmarPedido(datos)" --> FE
+    FE -- "12: POST /pedidos" --> CTRL
+    CTRL -- "13: sanitizarEntrada()" --> CTRL
+    CTRL -- "14: crearPedido(datos)" --> SRV
+    SRV -- "15: verificarStock(ids)" --> REP_PROD
+    REP_PROD -- "16: SELECT disponible" --> DB
+    DB -- "17: stockOK" --> REP_PROD
+    SRV -- "18: insertarPedido()" --> REP_P
+    REP_P -- "19: INSERT pedidos" --> DB
+    SRV -- "20: actualizarEnPedidos()" --> REP_PROD
+    REP_PROD -- "21: UPDATE productos" --> DB
+    SRV -- "22: registrarAuditoria()" --> DB
+    CTRL -- "23: 201 pedidoId" --> FE
+    FE -- "24: generarPDF()" --> FE
+    FE -- "25: mostrarConfirmacion()" --> CLI
+    FE -- "26: enviarEmail()" --> EMAIL
+```
+
+---
+
+#### 6.4.2 HU-002 · Colaboración — Asignación de Rutas y Generación de Guías
 
 ```mermaid
 flowchart LR
@@ -949,38 +1325,282 @@ flowchart LR
 
     subgraph Sistema
         direction TB
-        PantAsig["PantallaAsignacion\n(Frontend)"]
-        APICtrl["PedidoController\n(REST API)"]
-        SrvRuta["RutaService"]
-        RepPedido["PedidoRepository"]
-        RepCamion["CamionRepository"]
-        RepGuia["GuiaRepository"]
-        RepBodega["BodegaRepository"]
-        MySQL[("MySQL")]
+        PANT["PantallaAsignacion\n(Frontend)"]
+        CTRL["PedidoController"]
+        SRV["RutaService"]
+        REP_P["PedidoRepository"]
+        REP_C["CamionRepository"]
+        REP_G["GuiaRepository"]
+        REP_B["BodegaRepository"]
+        DB[("MySQL")]
     end
 
-    OPE -- "1: seleccionarPedidos(ids[])" --> PantAsig
-    OPE -- "2: seleccionarCamion(id)" --> PantAsig
-    PantAsig -- "3: POST /asignaciones" --> APICtrl
-    APICtrl -- "4: validarPedidos(ids[])" --> RepPedido
-    RepPedido -- "5: SELECT pedidos activos" --> MySQL
-    MySQL -- "6: retorna pedidos" --> RepPedido
-    APICtrl -- "7: validarCamion(id)" --> RepCamion
-    RepCamion -- "8: SELECT camion activo" --> MySQL
-    MySQL -- "9: retorna camion" --> RepCamion
-    APICtrl -- "10: crearAsignacion()" --> SrvRuta
-    SrvRuta -- "11: crearGuiaRemision()" --> RepGuia
-    SrvRuta -- "12: crearGuiaRuta(pedidos)" --> RepGuia
-    RepGuia -- "13: INSERT guias" --> MySQL
-    SrvRuta -- "14: crearTransaccionIngreso(productos, camion)" --> RepBodega
-    RepBodega -- "15: INSERT transacciones_inventario" --> MySQL
-    RepBodega -- "16: UPDATE bodega_camion" --> MySQL
-    SrvRuta -- "17: actualizarEstadoPedidos('Listo para entregar')" --> RepPedido
-    RepPedido -- "18: UPDATE pedidos" --> MySQL
-    APICtrl -- "19: registrarAuditoria()" --> MySQL
-    APICtrl -- "20: retorna guias generadas" --> PantAsig
-    PantAsig -- "21: renderizaGuiaRemisionPDF()" --> OPE
-    PantAsig -- "22: renderizaGuiaRutaPDF()" --> OPE
+    OPE -- "1: seleccionarPedidos(ids[])" --> PANT
+    OPE -- "2: seleccionarCamion(id)" --> PANT
+    PANT -- "3: POST /asignaciones" --> CTRL
+    CTRL -- "4: validarPedidos(ids[])" --> REP_P
+    REP_P -- "5: SELECT pendientes" --> DB
+    DB -- "6: pedidosOK" --> REP_P
+    CTRL -- "7: validarCamion(id)" --> REP_C
+    REP_C -- "8: SELECT activo" --> DB
+    DB -- "9: camionOK" --> REP_C
+    CTRL -- "10: crearAsignacion()" --> SRV
+    SRV -- "11: insertGuiaRemision()" --> REP_G
+    SRV -- "12: insertGuiaRuta(pedidos)" --> REP_G
+    REP_G -- "13: INSERT guias" --> DB
+    SRV -- "14: crearTransaccionIngreso()" --> REP_B
+    REP_B -- "15: INSERT transacciones" --> DB
+    REP_B -- "16: UPDATE bodega_camion" --> DB
+    SRV -- "17: updateEstadoPedidos()" --> REP_P
+    REP_P -- "18: UPDATE pedidos" --> DB
+    CTRL -- "19: auditoria()" --> DB
+    CTRL -- "20: retornaGuias" --> PANT
+    PANT -- "21: renderizaPDF(remision)" --> OPE
+    PANT -- "22: renderizaPDF(ruta)" --> OPE
+```
+
+---
+
+#### 6.4.3 HU-003 · Colaboración — Entrega, Devolución y Facturación
+
+```mermaid
+flowchart LR
+    CHO(["Chofer"])
+
+    subgraph Sistema
+        direction TB
+        FE["ModuloEntregas\n(Frontend PWA)"]
+        CTRL["EntregaController"]
+        SRV_E["EntregaService"]
+        SRV_I["InventarioService"]
+        REP_P["PedidoRepository"]
+        REP_B["BodegaRepository"]
+        REP_PROD["ProductoRepository"]
+        FS[("Firestore GPS")]
+        DB[("MySQL")]
+        EXTMAP["Google Maps / Waze"]
+    end
+
+    CHO -- "1: abrirGuiaRuta(id)" --> FE
+    FE -- "2: GET /guias/{id}" --> CTRL
+    CTRL -- "3: consultarGuia()" --> DB
+    DB -- "4: datosGuia" --> CTRL
+    CTRL -- "5: retornaGuia" --> FE
+    FE -- "6: iniciarGPS()" --> FS
+    FS -- "7: ubicacion cada N seg" --> FE
+    CHO -- "8: seleccionarPedido(id)" --> FE
+    FE -- "9: PATCH estado=listo" --> CTRL
+    CTRL -- "10: UPDATE pedidos" --> DB
+    FE -- "11: abrirNavegacion(coords)" --> EXTMAP
+    CHO -- "12: registrarEntrega(datos)" --> FE
+    FE -- "13: POST /entregas" --> CTRL
+    CTRL -- "14: procesarEntrega()" --> SRV_E
+    SRV_E -- "15: validarReglaDevolucion()" --> SRV_E
+    SRV_E -- "16: updateEstadoPedido()" --> REP_P
+    REP_P -- "17: UPDATE pedidos" --> DB
+    SRV_E -- "18: egresoInventario()" --> SRV_I
+    SRV_I -- "19: UPDATE bodega_camion" --> REP_B
+    REP_B -- "20: UPDATE" --> DB
+    SRV_I -- "21: UPDATE en_pedidos" --> REP_PROD
+    REP_PROD -- "22: UPDATE" --> DB
+    SRV_E -- "23: insertTransaccion()" --> DB
+    SRV_E -- "24: insertAuditoria()" --> DB
+    CTRL -- "25: 201 facturaData" --> FE
+    FE -- "26: generarFacturaPDF()" --> FE
+    FE -- "27: mostrarFactura()" --> CHO
+```
+
+---
+
+#### 6.4.4 HU-004 · Colaboración — Aprobación Manual de Pagos
+
+```mermaid
+flowchart LR
+    OPE(["Operador de Ruta"])
+
+    subgraph Sistema
+        direction TB
+        FE["PantallaAprobacion\n(Frontend)"]
+        CTRL["PagoController"]
+        SRV["AprobacionService"]
+        REP_P["PedidoRepository"]
+        GCS[("Cloud Storage")]
+        DB[("MySQL")]
+        EMAIL["EmailService"]
+    end
+
+    OPE -- "1: abrirListaPendientes()" --> FE
+    FE -- "2: GET /pedidos?estado=en_espera_aprobacion" --> CTRL
+    CTRL -- "3: SELECT pendientes" --> DB
+    DB -- "4: listaPedidos" --> CTRL
+    CTRL -- "5: retornaPedidos" --> FE
+    FE -- "6: mostrarLista" --> OPE
+    OPE -- "7: seleccionarPedido(id)" --> FE
+    FE -- "8: GET /pedidos/{id}/comprobante" --> CTRL
+    CTRL -- "9: getUrlFirmada()" --> GCS
+    GCS -- "10: urlFirmada" --> CTRL
+    CTRL -- "11: retornaUrl" --> FE
+    FE -- "12: mostrarComprobante" --> OPE
+    OPE -- "13: aprobarPago()" --> FE
+    FE -- "14: PATCH /pedidos/{id}/aprobar" --> CTRL
+    CTRL -- "15: aprobarPedido()" --> SRV
+    SRV -- "16: updateEstado('en_espera_asignacion')" --> REP_P
+    REP_P -- "17: UPDATE pedidos" --> DB
+    SRV -- "18: insertAuditoria()" --> DB
+    CTRL -- "19: 200 OK" --> FE
+    FE -- "20: notificarCliente()" --> EMAIL
+    FE -- "21: confirmacion" --> OPE
+```
+
+---
+
+#### 6.4.5 HU-005 · Colaboración — Cierre de Guías y Encerado de Bodega
+
+```mermaid
+flowchart LR
+    CHO(["Chofer"])
+    OPE(["Operador de Ruta"])
+
+    subgraph Sistema
+        direction TB
+        FE_C["FrontendChofer"]
+        FE_O["FrontendOperador"]
+        CTRL["CierreController"]
+        SRV["CierreService"]
+        REP_G["GuiaRepository"]
+        REP_B["BodegaRepository"]
+        REP_PROD["ProductoRepository"]
+        REP_MAL["MercaderiaRepository"]
+        DB[("MySQL")]
+    end
+
+    CHO -- "1: abrirCierreCaja()" --> FE_C
+    FE_C -- "2: GET /guias/{id}/resumen" --> CTRL
+    CTRL -- "3: calcularResumen()" --> DB
+    DB -- "4: resumenFinanciero" --> CTRL
+    CTRL -- "5: retornaResumen" --> FE_C
+    FE_C -- "6: mostrarReporte" --> CHO
+    CHO -- "7: declararEfectivo(monto)" --> FE_C
+    FE_C -- "8: POST /guias/{id}/arqueo" --> CTRL
+    CTRL -- "9: updateEstado('confirmacion_cierre')" --> REP_G
+    REP_G -- "10: UPDATE guias_remision" --> DB
+    OPE -- "11: abrirGuiaPendiente(id)" --> FE_O
+    FE_O -- "12: GET /guias/{id}/detalle" --> CTRL
+    CTRL -- "13: retornaDetalle" --> FE_O
+    OPE -- "14: clasificarMercaderia()" --> FE_O
+    FE_O -- "15: POST /inventario/ingreso (buen estado)" --> CTRL
+    CTRL -- "16: ingresoMaestro()" --> SRV
+    SRV -- "17: UPDATE cantidad_fisica" --> REP_PROD
+    REP_PROD -- "18: UPDATE productos" --> DB
+    FE_O -- "19: POST /mercaderia-mal-estado" --> CTRL
+    CTRL -- "20: insertMalEstado()" --> REP_MAL
+    REP_MAL -- "21: INSERT mercaderia_mal_estado" --> DB
+    OPE -- "22: confirmarCierre()" --> FE_O
+    FE_O -- "23: PATCH /guias/{id}/cerrar" --> CTRL
+    CTRL -- "24: enceraBodega()" --> SRV
+    SRV -- "25: UPDATE bodega_camion SET cantidad=0" --> REP_B
+    REP_B -- "26: UPDATE" --> DB
+    CTRL -- "27: updateEstado('cerrada')" --> REP_G
+    REP_G -- "28: UPDATE guias" --> DB
+    CTRL -- "29: insertAuditoria()" --> DB
+    CTRL -- "30: 200 OK" --> FE_O
+    FE_O -- "31: reporteArqueo" --> OPE
+```
+
+---
+
+#### 6.4.6 HU-006 · Colaboración — Filtros Temporales Estilo Datadog
+
+```mermaid
+flowchart LR
+    USR(["Admin / Operador"])
+
+    subgraph Sistema
+        direction TB
+        FE["ModuloGestionPedidos\n(Frontend)"]
+        PARSE["DateFilterParser\n(Frontend JS)"]
+        CTRL["PedidoController"]
+        REP["PedidoRepository"]
+        DB[("MySQL")]
+    end
+
+    USR -- "1: abrirModulo()" --> FE
+    FE -- "2: parsearFiltroDefault('hoy')" --> PARSE
+    PARSE -- "3: {fechaInicio, fechaFin}" --> FE
+    FE -- "4: GET /pedidos?estado=en_espera_asignacion&fi=...&ff=..." --> CTRL
+    CTRL -- "5: consultarPedidos(filtros)" --> REP
+    REP -- "6: SELECT con WHERE" --> DB
+    DB -- "7: resultados" --> REP
+    CTRL -- "8: retornaPedidos" --> FE
+    FE -- "9: renderizaMapa+Cards" --> USR
+    USR -- "10: escribeAtajo('2w')" --> FE
+    FE -- "11: parsearAtajo('2w')" --> PARSE
+    PARSE -- "12: {hoy-14d, ahora}" --> FE
+    FE -- "13: validarRango(fi, ff)" --> FE
+    FE -- "14: GET /pedidos?fi=...&ff=..." --> CTRL
+    CTRL -- "15: consultarPedidos()" --> REP
+    REP -- "16: SELECT" --> DB
+    DB -- "17: resultados" --> REP
+    CTRL -- "18: retorna" --> FE
+    FE -- "19: actualizaVista" --> USR
+    USR -- "20: clickCard(estado)" --> FE
+    FE -- "21: filtrarPorEstado(estado)" --> FE
+    FE -- "22: GET /pedidos?estado={e}&fi=...&ff=..." --> CTRL
+    CTRL -- "23: consultarFiltrado()" --> REP
+    REP -- "24: SELECT filtrado" --> DB
+    DB -- "25: resultados" --> REP
+    CTRL -- "26: retorna" --> FE
+    FE -- "27: vistaPorEstado" --> USR
+```
+
+---
+
+#### 6.4.7 HU-007 · Colaboración — Gestión del Carrito de Compras
+
+```mermaid
+flowchart LR
+    CLI(["Cliente"])
+
+    subgraph Sistema
+        direction TB
+        FE["CatalogoCarrito\n(Frontend)"]
+        COOKIE["CookieManager\n(Navegador)"]
+        CTRL["ProductoController"]
+        REP_PROD["ProductoRepository"]
+        REP_CA["CarritoAbandonadoRepository"]
+        DB[("MySQL")]
+    end
+
+    CLI -- "1: navegarCatalogo()" --> FE
+    FE -- "2: GET /productos?filtros" --> CTRL
+    CTRL -- "3: consultarDisponibles()" --> REP_PROD
+    REP_PROD -- "4: SELECT con stock logico" --> DB
+    DB -- "5: productos" --> REP_PROD
+    CTRL -- "6: retornaCatalogo" --> FE
+    FE -- "7: mostrarCatalogo" --> CLI
+    CLI -- "8: seleccionarProducto(id, cantidad)" --> FE
+    FE -- "9: calcularSubtotal()" --> FE
+    FE -- "10: existeEnCarrito?(id)" --> COOKIE
+    COOKIE -- "11: respuesta boolean" --> FE
+    FE -- "12: agregarOmerge(item)" --> COOKIE
+    COOKIE -- "13: carritoActualizado" --> FE
+    FE -- "14: mostrarSubtotal" --> CLI
+    CLI -- "15: modificarCantidad(id, qty)" --> FE
+    FE -- "16: GET /productos/{id}/stock" --> CTRL
+    CTRL -- "17: verificarStock()" --> REP_PROD
+    REP_PROD -- "18: SELECT disponible" --> DB
+    DB -- "19: stockActual" --> REP_PROD
+    CTRL -- "20: retornaStock" --> FE
+    FE -- "21: updateItem(qty)" --> COOKIE
+    FE -- "22: mostrarNuevoSubtotal" --> CLI
+    CLI -- "23: eliminarItem(id)" --> FE
+    FE -- "24: removeItem(id)" --> COOKIE
+    COOKIE -- "25: carritoActualizado" --> FE
+    FE -- "26: mostrarCarritoActualizado" --> CLI
+    CLI -- "27: abandonarCarrito(motivo)" --> FE
+    FE -- "28: POST /carritos-abandonados" --> CTRL
+    CTRL -- "29: insertAbandonado()" --> REP_CA
+    REP_CA -- "30: INSERT carritos_abandonados" --> DB
 ```
 
 ---
