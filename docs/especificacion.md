@@ -1907,3 +1907,294 @@ erDiagram
     DESCUENTOS }o--|| PEDIDOS : "aplicado en"
 ```
 
+---
+
+### 6.8 Diagrama de Flujo de Datos — Infraestructura GCP
+
+Representa el flujo completo de datos entre los usuarios, los contenedores desplegados en GCP y todos los servicios cloud que consume el sistema.
+
+#### Nivel 0 — Contexto General
+
+Vista de alto nivel de los flujos de datos entre actores externos y el sistema en GCP.
+
+```mermaid
+flowchart TD
+    %% ── Actores externos ──────────────────────────────────────────────────
+    CLI(["👤 Cliente\n(Navegador / PWA"])
+    OPE(["👤 Operador\nde Ruta"])
+    ADM(["👤 Administrador"])
+    CHO(["👤 Chofer\n(Móvil / PWA)"])
+    EXT_MAP(["🗺️ Google Maps\n/ Waze"])
+
+    %% ── Sistema GCP ───────────────────────────────────────────────────────
+    subgraph GCP["☁️  Google Cloud Platform — Fritolay Ambato"]
+        SISTEMA["⬛ Sistema E-commerce\nFritolay Ambato"]
+    end
+
+    %% ── Flujos de datos ────────────────────────────────────────────────────
+    CLI  -->|"HTTPS: búsqueda, carrito,\ncheckout, comprobante"| SISTEMA
+    SISTEMA -->|"Catálogo, estado pedido,\nubicación camión, factura PDF"| CLI
+
+    OPE  -->|"HTTPS + JWT: aprobar pagos,\nasignar rutas, cerrar guías"| SISTEMA
+    SISTEMA -->|"Pedidos, guías, reportes,\nKPIs, mapa en vivo"| OPE
+
+    CHO  -->|"HTTPS + JWT: entrega,\ndevolución, arqueo, GPS"| SISTEMA
+    SISTEMA -->|"Guía de ruta, inventario\ncamión, facturas PDF"| CHO
+
+    ADM  -->|"HTTPS + JWT: gestión\nusuarios, dashboard"| SISTEMA
+    SISTEMA -->|"KPIs, estadísticas,\nvisor facturas"| ADM
+
+    SISTEMA -->|"Coordenadas destino\n(deeplink)"| EXT_MAP
+```
+
+---
+
+#### Nivel 1 — Flujo Detallado por Servicios GCP
+
+Muestra cómo fluyen los datos entre los contenedores, la base de datos, el almacenamiento y los demás servicios gestionados de GCP.
+
+```mermaid
+flowchart TD
+    %% ═══════════════════════════════════════════════════════════════════
+    %% USUARIOS EXTERNOS
+    %% ═══════════════════════════════════════════════════════════════════
+    CLI(["👤 Cliente\nNavegador/PWA"])
+    OPE(["👤 Operador\nde Ruta"])
+    CHO(["👤 Chofer"])
+    ADM(["👤 Administrador"])
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% CAPA DE RED Y SEGURIDAD
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph NET["🔒 Capa de Red y Acceso"]
+        LB["⚖️ Cloud Load Balancer\n(HTTPS global)"]
+        IAP["🛡️ Cloud Armor / IAP\n(WAF · DDoS · IP allowlist)"]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% CONTENEDORES — CLOUD RUN
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph CR["🐳 Cloud Run — Contenedores"]
+        direction TB
+        FE_SVC["📄 frontend-service\nLaravel Blade + JS\n(PWA · Service Worker)"]
+        BE_SVC["⚙️ backend-api-service\nLaravel REST API\n(JWT · Validación · SOLID)"]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% DATOS TRANSACCIONALES
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph DB_LAYER["💾 Capa de Datos"]
+        direction LR
+        subgraph MYSQL_INST["🐬 Cloud SQL — MySQL"]
+            DB_TX[("Datos Transaccionales\npedidos · productos\nbodegas · guías\nauditoria")]
+        end
+        subgraph FS_INST["🔥 Firestore (NoSQL)"]
+            FS_GPS[("Geolocalización\nubicaciones_camion\nlat · lng · timestamp")]
+        end
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% ALMACENAMIENTO DE OBJETOS
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph STORAGE["🗄️ Cloud Storage (GCS)"]
+        direction LR
+        GCS_IMG[("📦 Bucket: Imágenes\nimágenes de productos\n(CDN · caché 4h cliente)")]
+        GCS_DOC[("📎 Bucket: Documentos\ncomprobantes de pago\n(URL firmadas · privado)")]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% SECRETOS Y CONFIGURACIÓN
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph SECRETS["🔑 Gestión de Secretos"]
+        SM["🔒 Secret Manager\nJWT_SECRET\nDB_PASSWORD\nFIREBASE_KEY\nGCS_CREDENTIALS\nMAIL_CONFIG"]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% CI/CD Y ARTEFACTOS
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph CICD["🔄 CI/CD Pipeline"]
+        direction LR
+        GIT["📁 GitHub\nRepositorio"]
+        CB["🏗️ Cloud Build\nBuild · Test · Push"]
+        GCR_REG["📦 Artifact Registry\nImágenes Docker"]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% OBSERVABILIDAD
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph OBS["📊 Observabilidad"]
+        direction LR
+        LOGS["📋 Cloud Logging\nLogs de app y acceso"]
+        MON["📈 Cloud Monitoring\nMétricas · Alertas"]
+        TRACE["🔍 Cloud Trace\nLatencia de requests"]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% MENSAJERÍA Y NOTIFICACIONES
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph MSG["📧 Mensajería"]
+        SMTP["✉️ SMTP / SendGrid\nEmail transaccional\n(configurable en .env)"]
+        FCM["🔔 FCM\nPush Notifications\n(PWA / Web Push)"]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% FLUJOS DE DATOS — RED Y ACCESO
+    %% ═══════════════════════════════════════════════════════════════════
+    CLI -->|"HTTPS requests"| LB
+    OPE -->|"HTTPS + JWT"| LB
+    CHO -->|"HTTPS + JWT\n(GPS data)"| LB
+    ADM -->|"HTTPS + JWT"| LB
+    LB  -->|"Tráfico filtrado"| IAP
+    IAP -->|"Requests validados"| FE_SVC
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% FLUJOS — FRONTEND ↔ BACKEND
+    %% ═══════════════════════════════════════════════════════════════════
+    FE_SVC -->|"REST API calls\nPOST/GET/PATCH\n(JSON + JWT)"| BE_SVC
+    BE_SVC -->|"JSON responses\n(datos, tokens, URLs)"| FE_SVC
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% FLUJOS — BACKEND ↔ DATOS
+    %% ═══════════════════════════════════════════════════════════════════
+    BE_SVC -->|"SQL queries\n(Eloquent ORM)"| DB_TX
+    DB_TX  -->|"Result sets"| BE_SVC
+    BE_SVC -->|"SDK Firebase\nwrite GPS location"| FS_GPS
+    FS_GPS -->|"Realtime listener\n(ubicación camión)"| FE_SVC
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% FLUJOS — ALMACENAMIENTO
+    %% ═══════════════════════════════════════════════════════════════════
+    BE_SVC   -->|"PUT comprobante\n(multipart upload)"| GCS_DOC
+    GCS_DOC  -->|"URL firmada (GET)\n(solo operadores)"| BE_SVC
+    BE_SVC   -->|"GET metadata\nURL pública imagen"| GCS_IMG
+    GCS_IMG  -->|"Imagen cacheada\n(Cache-Control: 4h)"| FE_SVC
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% FLUJOS — SECRETOS
+    %% ═══════════════════════════════════════════════════════════════════
+    SM -->|"Secretos inyectados\nen arranque (env vars)"| BE_SVC
+    SM -->|"Secretos inyectados\nen arranque"| FE_SVC
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% FLUJOS — CI/CD
+    %% ═══════════════════════════════════════════════════════════════════
+    GIT -->|"push main branch\n(webhook trigger)"| CB
+    CB  -->|"docker build + test\ndocker push"| GCR_REG
+    GCR_REG -->|"deploy imagen\n(Cloud Run revision)"| FE_SVC
+    GCR_REG -->|"deploy imagen\n(Cloud Run revision)"| BE_SVC
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% FLUJOS — OBSERVABILIDAD
+    %% ═══════════════════════════════════════════════════════════════════
+    FE_SVC  -->|"stdout/stderr logs"| LOGS
+    BE_SVC  -->|"stdout/stderr logs\naudit trail"| LOGS
+    BE_SVC  -->|"request traces"| TRACE
+    FE_SVC  -->|"métricas de uso"| MON
+    BE_SVC  -->|"métricas latencia\nerror rates"| MON
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% FLUJOS — MENSAJERÍA
+    %% ═══════════════════════════════════════════════════════════════════
+    BE_SVC -->|"Envío email\n(pedido, aprobación)"| SMTP
+    SMTP   -->|"Email entregado"| CLI
+    BE_SVC -->|"Push notification\n(estado pedido)"| FCM
+    FCM    -->|"Notificación web\n(Service Worker)"| CLI
+```
+
+---
+
+#### Nivel 2 — Flujo de Datos por Proceso de Negocio
+
+Muestra el recorrido de los datos para cada proceso crítico del sistema a través de los servicios GCP.
+
+```mermaid
+flowchart LR
+    subgraph P1["🛒 Proceso: Checkout"]
+        direction TB
+        P1A["1. Cliente envía\npedido + comprobante"]
+        P1B["2. Backend valida\nJWT · XSS · SQLi"]
+        P1C["3. Comprobante → GCS\n(Bucket docs privado)"]
+        P1D["4. Pedido → Cloud SQL\n(INSERT pedidos)"]
+        P1E["5. Stock → Cloud SQL\n(UPDATE en_pedidos)"]
+        P1F["6. Auditoría → Cloud SQL\n(INSERT bitacora)"]
+        P1G["7. Email → SMTP\n(confirmación)"]
+        P1A --> P1B --> P1C --> P1D --> P1E --> P1F --> P1G
+    end
+
+    subgraph P2["🚚 Proceso: Tracking GPS"]
+        direction TB
+        P2A["1. Chofer abre\nguía de ruta"]
+        P2B["2. PWA activa\nGeolocation API"]
+        P2C["3. Coords → Firestore\n(cada N seg · env config)"]
+        P2D["4. Firestore realtime\nlistener activo"]
+        P2E["5. Cliente ve\nubicación en mapa"]
+        P2F["6. Push → FCM\n('pedido listo')"]
+        P2A --> P2B --> P2C --> P2D --> P2E --> P2F
+    end
+
+    subgraph P3["📦 Proceso: Imágenes Producto"]
+        direction TB
+        P3A["1. Admin sube\nimagen producto"]
+        P3B["2. Backend → PUT GCS\n(Bucket imágenes)"]
+        P3C["3. URL pública\nguardada en MySQL"]
+        P3D["4. Cliente solicita\nimagen catálogo"]
+        P3E["5. Service Worker\n¿En caché local?"]
+        P3F["6. Cache HIT →\nServir desde caché\n(0 costo GCS)"]
+        P3G["6. Cache MISS →\nGCS → Cache 4h\n(Cache-Control header)"]
+        P3A --> P3B --> P3C --> P3D --> P3E
+        P3E -->|"HIT"| P3F
+        P3E -->|"MISS"| P3G
+    end
+
+    subgraph P4["🔐 Proceso: Autenticación y Secretos"]
+        direction TB
+        P4A["1. Contenedor arranca\nen Cloud Run"]
+        P4B["2. Secret Manager\ninyecta variables de entorno"]
+        P4C["3. JWT_SECRET, DB_PASS\nGCS_KEY, MAIL_CONFIG"]
+        P4D["4. Usuario hace login"]
+        P4E["5. Backend verifica\nhash bcrypt en MySQL"]
+        P4F["6. Genera JWT firmado\ncon JWT_SECRET"]
+        P4G["7. JWT → Cookie\nhttpOnly · Secure · SameSite"]
+        P4A --> P4B --> P4C
+        P4D --> P4E --> P4F --> P4G
+        P4B -.->|"provee secreto"| P4F
+    end
+
+    subgraph P5["🔄 Proceso: CI/CD Deploy"]
+        direction TB
+        P5A["1. git push main\n(GitHub)"]
+        P5B["2. Cloud Build\ntriggered (webhook)"]
+        P5C["3. docker build\nLaravel app"]
+        P5D["4. php artisan test\n(unit + feature)"]
+        P5E["5. docker push\nArtifact Registry"]
+        P5F["6. Cloud Run\ndeploy nueva revision"]
+        P5G["7. Traffic split\n0% → 100% gradual"]
+        P5H["8. Cloud Monitoring\nalerta si error rate > 1%"]
+        P5A --> P5B --> P5C --> P5D --> P5E --> P5F --> P5G --> P5H
+    end
+```
+
+---
+
+#### Nivel 3 — Matriz de Flujos de Datos y Clasificación
+
+Resumen de todos los flujos de datos del sistema con su clasificación de seguridad y dirección.
+
+| Origen | Destino | Dato | Protocolo | Seguridad |
+|---|---|---|---|---|
+| Cliente/Operador/Chofer | Cloud Load Balancer | Requests HTTP | HTTPS TLS 1.3 | Cloud Armor WAF |
+| Load Balancer | frontend-service | Tráfico filtrado | HTTP interno | IAP · VPC |
+| frontend-service | backend-api-service | REST API calls | HTTP/2 interno | JWT Bearer Token |
+| backend-api-service | Cloud SQL MySQL | Queries SQL | TCP privado | VPC · SSL · IAM |
+| backend-api-service | Firestore | GPS coordinates | gRPC | Service Account · IAM |
+| backend-api-service | GCS Docs Bucket | Comprobantes (PUT) | HTTPS | Service Account · ACL privado |
+| backend-api-service | GCS Imgs Bucket | Metadata URLs | HTTPS | Service Account · ACL público |
+| GCS Imgs Bucket | frontend-service | Imágenes | HTTPS CDN | Cache-Control · CORS |
+| Firestore | frontend-service | Ubicación realtime | WebSocket | API Key · Rules |
+| Secret Manager | Cloud Run | Secretos (env vars) | gRPC interno | Service Account · IAM binding |
+| GitHub | Cloud Build | Código fuente | HTTPS webhook | OAuth2 · Secret trigger |
+| Cloud Build | Artifact Registry | Docker images | HTTPS | Service Account · IAM |
+| Artifact Registry | Cloud Run | Imagen contenedor | HTTPS | Service Account · IAM |
+| backend-api-service | Cloud Logging | Logs app/auditoría | stdout | Auto-recolectado |
+| backend-api-service | SMTP/SendGrid | Emails | SMTP TLS | API Key (Secret Manager) |
+| backend-api-service | FCM | Push notifications | HTTPS | Firebase Admin SDK |
