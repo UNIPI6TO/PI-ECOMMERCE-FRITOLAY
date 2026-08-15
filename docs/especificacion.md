@@ -543,3 +543,747 @@ Escenario: Prevención de duplicados mediante merge de productos Dado que el cli
 ## Evidencias esperadas
 
 - Registro temporal generado en la cookie segura del cliente.
+
+---
+
+## 6. Diagramas UML
+
+A continuación se presentan los diagramas UML del sistema **Fritolay Ambato**, modelando su arquitectura, comportamiento y base de datos.
+
+---
+
+### 6.1 Diagrama de Clases
+
+Representa la estructura orientada a objetos del sistema, con sus entidades principales, atributos y relaciones.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Usuario {
+        +int id
+        +string nombre
+        +string email
+        +string passwordHash
+        +string rol
+        +bool activo
+        +datetime creadoEn
+        +login()
+        +recuperarCredenciales()
+        +cambiarPassword()
+    }
+
+    class Cliente {
+        +int id
+        +int usuarioId
+        +string ruc_cedula
+        +string razonSocial
+        +string telefono
+        +verHistorialPedidos()
+        +obtenerDireccionDefecto()
+    }
+
+    class DireccionCliente {
+        +int id
+        +int clienteId
+        +string descripcion
+        +float latitud
+        +float longitud
+        +bool esPorDefecto
+    }
+
+    class Producto {
+        +int id
+        +string nombre
+        +string tipo
+        +string descripcion
+        +float precio
+        +string imagenGCS
+        +float cantidadFisica
+        +float enPedidos
+        +calcularDisponible()
+        +estaAgotado()
+    }
+
+    class Carrito {
+        +string cookieId
+        +int clienteId
+        +datetime expiresAt
+        +agregarItem(productoId, cantidad)
+        +eliminarItem(productoId)
+        +mergItem(productoId, cantidad)
+        +calcularSubtotal()
+        +vaciar()
+    }
+
+    class ItemCarrito {
+        +int id
+        +string carritoId
+        +int productoId
+        +int cantidad
+        +float precioUnitario
+        +calcularSubtotal()
+    }
+
+    class Pedido {
+        +int id
+        +int clienteId
+        +int direccionId
+        +string estado
+        +string metodoPago
+        +string comprobantePath
+        +float subtotal
+        +float descuento
+        +float iva
+        +float total
+        +datetime creadoEn
+        +calcularTotal()
+        +aprobar()
+        +cancelar()
+        +asignarRuta()
+    }
+
+    class ItemPedido {
+        +int id
+        +int pedidoId
+        +int productoId
+        +int cantidadSolicitada
+        +int cantidadEntregada
+        +float precioUnitario
+        +float descuento
+    }
+
+    class Camion {
+        +int id
+        +string placa
+        +string descripcion
+        +string estado
+        +int choferId
+        +cambiarEstado(nuevoEstado)
+        +asignarChofer(userId)
+    }
+
+    class GuiaRemision {
+        +int id
+        +int camionId
+        +int operadorId
+        +datetime fechaGeneracion
+        +string estado
+        +cerrar()
+        +generarPDF()
+    }
+
+    class GuiaRuta {
+        +int id
+        +int guiaRemisionId
+        +datetime fechaCreacion
+        +string estado
+        +obtenerPedidos()
+        +cerrarRuta()
+    }
+
+    class AsignacionPedidoCamion {
+        +int id
+        +int pedidoId
+        +int guiaRutaId
+        +int orden
+        +string estado
+    }
+
+    class Factura {
+        +int id
+        +int pedidoId
+        +string numero
+        +datetime fechaEmision
+        +float subtotal
+        +float iva
+        +float total
+        +generarPDF()
+    }
+
+    class TransaccionInventario {
+        +int id
+        +int productoId
+        +int camionId
+        +string tipo
+        +float cantidad
+        +string motivo
+        +datetime fechaTransaccion
+    }
+
+    class BodegaCamion {
+        +int id
+        +int camionId
+        +int productoId
+        +float cantidadActual
+        +actualizarStock(delta)
+        +encerar()
+    }
+
+    class Descuento {
+        +int id
+        +string tipo
+        +float porcentaje
+        +string metodoPagoAplicable
+        +int clienteId
+        +datetime fechaCaducidad
+        +bool estaVigente()
+    }
+
+    class MercaderiamalEstado {
+        +int id
+        +int guiaRutaId
+        +int productoId
+        +float cantidad
+        +string motivo
+        +datetime registradoEn
+    }
+
+    class UbicacionGPS {
+        +string camionId
+        +float latitud
+        +float longitud
+        +datetime timestamp
+    }
+
+    Usuario <|-- Cliente : es un
+    Cliente "1" --> "0..*" DireccionCliente : tiene
+    Cliente "1" --> "0..*" Pedido : realiza
+    Cliente "1" --> "0..1" Carrito : posee
+    Carrito "1" --> "1..*" ItemCarrito : contiene
+    ItemCarrito --> Producto : referencia
+    Pedido "1" --> "1..*" ItemPedido : contiene
+    ItemPedido --> Producto : referencia
+    Pedido --> DireccionCliente : entrega en
+    Pedido --> Factura : genera
+    Pedido --> Descuento : aplica
+    GuiaRemision "1" --> "1" Camion : asignada a
+    GuiaRemision "1" --> "1..*" GuiaRuta : tiene
+    GuiaRuta "1" --> "1..*" AsignacionPedidoCamion : incluye
+    AsignacionPedidoCamion --> Pedido : asigna
+    Camion "1" --> "1..*" BodegaCamion : administra
+    BodegaCamion --> Producto : almacena
+    TransaccionInventario --> Producto : afecta
+    TransaccionInventario --> Camion : relacionada a
+    GuiaRuta --> MercaderiamalEstado : registra
+    Camion --> UbicacionGPS : transmite
+    Usuario --> Camion : conduce
+```
+
+---
+
+### 6.2 Diagrama de Casos de Uso
+
+Describe las interacciones de los cuatro actores con las funcionalidades del sistema.
+
+```mermaid
+flowchart TD
+    subgraph Actores
+        CLI(["👤 Cliente"])
+        ADM(["👤 Administrador"])
+        OPE(["👤 Operador de Ruta"])
+        CHO(["👤 Chofer"])
+    end
+
+    subgraph EC["📦 Módulo E-commerce"]
+        UC01["Ver Catálogo de Productos"]
+        UC02["Gestionar Carrito de Compras"]
+        UC03["Realizar Checkout"]
+        UC04["Adjuntar Comprobante de Pago"]
+        UC05["Ver Historial de Pedidos"]
+        UC06["Rastrear Pedido en Mapa"]
+        UC07["Gestionar Direcciones (Mapa Bidireccional)"]
+        UC08["Generar Factura PDF (cliente)"]
+    end
+
+    subgraph GP["🗂️ Módulo Gestión de Pedidos"]
+        UC09["Aprobar Pago con Comprobante"]
+        UC10["Asignar Pedidos a Camión"]
+        UC11["Generar Guía de Remisión y Ruta"]
+        UC12["Ver Mapa en Vivo con Filtros Datadog"]
+        UC13["Ver Cards Informativos por Estado"]
+        UC14["Configurar Descuentos"]
+        UC15["Confirmar Cierre de Guía y Encerado"]
+        UC16["Ver Visor de Facturas y Exportar PDF"]
+    end
+
+    subgraph EN["🚚 Módulo Entregas (Chofer)"]
+        UC17["Ver Guía de Ruta Asignada"]
+        UC18["Navegar con Google Maps / Waze"]
+        UC19["Registrar Entrega Total o Parcial"]
+        UC20["Registrar Devolución"]
+        UC21["Ver Inventario del Camión"]
+        UC22["Realizar Cierre de Caja"]
+        UC23["Compartir Ubicación GPS (Firestore)"]
+    end
+
+    subgraph DB["📊 Módulo Dashboard"]
+        UC24["Ver KPIs y Estadísticas"]
+        UC25["Ver Ventas por Sector / Camión"]
+        UC26["Ver Recaudación por Método de Pago"]
+        UC27["Ver Carritos Abandonados"]
+        UC28["Consultar Stock de Bodegas"]
+    end
+
+    subgraph ADM_MOD["⚙️ Módulo Administración"]
+        UC29["Crear / Inactivar Usuarios Empleados"]
+        UC30["Resetear Contraseñas"]
+        UC31["Gestionar Vehículos (CRUD)"]
+    end
+
+    CLI --> UC01
+    CLI --> UC02
+    CLI --> UC03
+    CLI --> UC04
+    CLI --> UC05
+    CLI --> UC06
+    CLI --> UC07
+    CLI --> UC08
+
+    OPE --> UC09
+    OPE --> UC10
+    OPE --> UC11
+    OPE --> UC12
+    OPE --> UC13
+    OPE --> UC14
+    OPE --> UC15
+    OPE --> UC16
+    OPE --> UC31
+
+    CHO --> UC17
+    CHO --> UC18
+    CHO --> UC19
+    CHO --> UC20
+    CHO --> UC21
+    CHO --> UC22
+    CHO --> UC23
+
+    ADM --> UC24
+    ADM --> UC25
+    ADM --> UC26
+    ADM --> UC27
+    ADM --> UC28
+    ADM --> UC29
+    ADM --> UC30
+    ADM --> UC16
+    ADM --> UC12
+    ADM --> UC13
+```
+
+---
+
+### 6.3 Diagrama de Secuencia
+
+Modela el flujo completo del **Checkout y Liquidación de Pago** (HU-001) entre el cliente y los distintos componentes del sistema.
+
+```mermaid
+sequenceDiagram
+    actor Cliente
+    participant FE as Frontend (Laravel Blade)
+    participant API as Backend REST API
+    participant DB as MySQL
+    participant GCS as Google Cloud Storage
+    participant FS as Firestore (GPS)
+    participant Email as Servicio Email
+
+    Cliente->>FE: Accede al carrito de compras
+    FE->>FE: Lee cookie de sesión del carrito
+    FE->>Cliente: Muestra items del carrito y subtotal
+
+    Cliente->>FE: Inicia checkout
+    FE->>FE: ¿Está autenticado?
+    alt No autenticado
+        FE->>Cliente: Redirige a Login / Registro
+        Cliente->>FE: Envía credenciales
+        FE->>API: POST /auth/login
+        API->>DB: Verifica hash de contraseña
+        DB-->>API: OK
+        API-->>FE: JWT Token
+    end
+
+    FE->>Cliente: Muestra pantalla de checkout
+    Cliente->>FE: Selecciona dirección de entrega (mapa bidireccional)
+    Cliente->>FE: Selecciona método de pago
+
+    alt Método de pago = Depósito o De Una
+        Cliente->>FE: Adjunta comprobante de pago
+        FE->>GCS: PUT /upload comprobante
+        GCS-->>FE: URL del archivo
+    end
+
+    FE->>API: POST /pedidos (items, dirección, método, comprobante)
+    API->>API: Valida campos (anti XSS / SQL Injection)
+    API->>DB: Verifica stock disponible (CantidadFisica - EnPedidos)
+
+    alt Stock insuficiente
+        API-->>FE: 422 Error "Stock no disponible"
+        FE->>Cliente: Muestra alerta de stock
+    else Stock OK
+        API->>DB: Crea registro Pedido
+        API->>DB: Incrementa EnPedidos del Producto
+        API->>DB: Crea ItemsPedido
+
+        alt Pago = TC / TD / Efectivo
+            API->>DB: Estado pedido = "En espera de asignación de ruta"
+        else Pago = Depósito / De Una
+            API->>DB: Estado pedido = "En espera por aprobación de pago"
+        end
+
+        API->>DB: Registra en bitácora de auditoría
+        API-->>FE: 201 Created (id pedido)
+        FE->>FE: Genera factura proforma PDF (lado cliente)
+        FE->>Cliente: Muestra confirmación del pedido y PDF
+        FE->>Email: Notificación de pedido recibido
+    end
+```
+
+---
+
+### 6.4 Diagrama de Colaboración
+
+Representa las interacciones entre los objetos del sistema durante el proceso de **Asignación de Rutas y Generación de Guías** (HU-002).
+
+```mermaid
+flowchart LR
+    OPE(["Operador de Ruta"])
+
+    subgraph Sistema
+        direction TB
+        PantAsig["PantallaAsignacion\n(Frontend)"]
+        APICtrl["PedidoController\n(REST API)"]
+        SrvRuta["RutaService"]
+        RepPedido["PedidoRepository"]
+        RepCamion["CamionRepository"]
+        RepGuia["GuiaRepository"]
+        RepBodega["BodegaRepository"]
+        MySQL[("MySQL")]
+    end
+
+    OPE -- "1: seleccionarPedidos(ids[])" --> PantAsig
+    OPE -- "2: seleccionarCamion(id)" --> PantAsig
+    PantAsig -- "3: POST /asignaciones" --> APICtrl
+    APICtrl -- "4: validarPedidos(ids[])" --> RepPedido
+    RepPedido -- "5: SELECT pedidos activos" --> MySQL
+    MySQL -- "6: retorna pedidos" --> RepPedido
+    APICtrl -- "7: validarCamion(id)" --> RepCamion
+    RepCamion -- "8: SELECT camion activo" --> MySQL
+    MySQL -- "9: retorna camion" --> RepCamion
+    APICtrl -- "10: crearAsignacion()" --> SrvRuta
+    SrvRuta -- "11: crearGuiaRemision()" --> RepGuia
+    SrvRuta -- "12: crearGuiaRuta(pedidos)" --> RepGuia
+    RepGuia -- "13: INSERT guias" --> MySQL
+    SrvRuta -- "14: crearTransaccionIngreso(productos, camion)" --> RepBodega
+    RepBodega -- "15: INSERT transacciones_inventario" --> MySQL
+    RepBodega -- "16: UPDATE bodega_camion" --> MySQL
+    SrvRuta -- "17: actualizarEstadoPedidos('Listo para entregar')" --> RepPedido
+    RepPedido -- "18: UPDATE pedidos" --> MySQL
+    APICtrl -- "19: registrarAuditoria()" --> MySQL
+    APICtrl -- "20: retorna guias generadas" --> PantAsig
+    PantAsig -- "21: renderizaGuiaRemisionPDF()" --> OPE
+    PantAsig -- "22: renderizaGuiaRutaPDF()" --> OPE
+```
+
+---
+
+### 6.5 Diagrama de Estado
+
+Modela el **ciclo de vida completo de un Pedido**, desde su creación hasta su cierre.
+
+```mermaid
+stateDiagram-v2
+    [*] --> CarritoActivo : Cliente agrega productos
+
+    CarritoActivo --> CheckoutIniciado : Cliente inicia checkout
+    CheckoutIniciado --> CarritoAbandonado : Cliente cancela
+    CarritoAbandonado --> [*] : Registrado con motivo de cancelación
+
+    CheckoutIniciado --> EsperaAprobacion : Pago = Depósito / De Una\n(comprobante adjunto)
+    CheckoutIniciado --> EsperaAsignacion : Pago = TC / TD / Efectivo\n(aprobación automática)
+
+    EsperaAprobacion --> EsperaAsignacion : Operador aprueba comprobante
+    EsperaAprobacion --> Rechazado : Operador rechaza comprobante
+    Rechazado --> [*]
+
+    EsperaAsignacion --> ListoParaEntregar : Operador asigna pedido\na camión activo
+
+    ListoParaEntregar --> EnRuta : Chofer selecciona pedido\nen mapa (GPS activo)
+
+    EnRuta --> EntregadoTotalmente : Chofer registra entrega\ncompleta del pedido
+    EnRuta --> EntregadoParcialmente : Chofer registra entrega\nparcial (solo Efectivo)
+    EnRuta --> NoEntregado : Chofer no pudo entregar
+
+    EntregadoTotalmente --> CierrePendiente : Factura PDF generada\nen navegador
+    EntregadoParcialmente --> CierrePendiente : Factura recalculada\ngenerada en navegador
+    NoEntregado --> CierrePendiente : Registrado como no entregado
+
+    CierrePendiente --> CierreCaja : Operador confirma\nrecepción dinero y mercadería
+
+    CierreCaja --> [*] : Bodega del camión\nencerada (stock = 0)
+```
+
+---
+
+### 6.6 Diagrama de Paquetes
+
+Muestra la **arquitectura modular** del sistema con sus dependencias entre capas y componentes.
+
+```mermaid
+flowchart TB
+    subgraph Cliente_Browser["🌐 Navegador / PWA (Cliente)"]
+        direction LR
+        PKG_EC["📦 Módulo E-commerce\n(Catálogo, Carrito, Checkout,\nHistorial, Rastreo)"]
+        PKG_PDF["📄 Generación PDF\n(Factura, lado cliente)"]
+        PKG_MAP_CLI["🗺️ Mapas Cliente\n(Leaflet / Google Maps)"]
+        PKG_CACHE["⚡ Caché de Imágenes\n(Service Worker / Cache API)"]
+    end
+
+    subgraph Frontend["🖥️ Frontend Laravel (Blade + JS)"]
+        direction LR
+        PKG_AUTH_FE["🔐 Módulo Autenticación\n(Login, Registro, Recuperación)"]
+        PKG_DASH["📊 Módulo Dashboard\n(KPIs, Ventas, Stock)"]
+        PKG_GP_FE["🗂️ Módulo Gestión Pedidos\n(Asignación, Aprobación,\nFiltros Datadog)"]
+        PKG_ENT_FE["🚚 Módulo Entregas\n(Mapa Ruta, Entrega, Cierre)"]
+        PKG_ADM_FE["⚙️ Módulo Administración\n(Usuarios, Vehículos)"]
+    end
+
+    subgraph Backend["⚙️ Backend Laravel REST API"]
+        direction TB
+        PKG_AUTH_BE["🔑 AuthService\n(JWT, Hash, Secret Manager)"]
+        PKG_PEDIDOS["📋 PedidoService\n(CRUD, Estados, Auditoría)"]
+        PKG_INV["📦 InventarioService\n(Stock, Transacciones, Bodega)"]
+        PKG_RUTA["🗺️ RutaService\n(Guías, Asignación, GPS)"]
+        PKG_NOTIFY["📧 NotificacionService\n(Email, Push PWA)"]
+        PKG_VALID["🛡️ ValidationLayer\n(Anti-XSS, Anti-SQLi)"]
+    end
+
+    subgraph Datos["💾 Capa de Datos"]
+        subgraph MySQL_DB["🐬 MySQL (Datos Transaccionales)"]
+            T_USERS["usuarios / clientes"]
+            T_PROD["productos / inventario"]
+            T_PEDIDOS["pedidos / items_pedido"]
+            T_GUIAS["guias_remision / guias_ruta"]
+            T_BODEGA["bodega_camion / transacciones"]
+            T_AUDIT["bitacora_auditoria"]
+        end
+        subgraph Firestore_DB["🔥 Firestore (Geolocalización)"]
+            FS_GPS["ubicaciones_camion\n(lat, lng, timestamp)"]
+        end
+    end
+
+    subgraph GCP["☁️ Google Cloud Platform"]
+        GCS["🗄️ Google Cloud Storage\n(Imágenes productos,\ncomprobantes pago)"]
+        GSM["🔒 Secret Manager\n(JWT Secret, DB Credentials)"]
+        GCR["🐳 Container Registry\n(Docker Images)"]
+    end
+
+    subgraph Infra["🐳 Infraestructura Docker"]
+        D_FE["Contenedor: Frontend"]
+        D_BE["Contenedor: Backend API"]
+        D_DB["Contenedor: MySQL"]
+    end
+
+    Cliente_Browser -->|"HTTPS / JWT"| Frontend
+    Frontend -->|"REST API calls"| Backend
+    Backend -->|"Queries ORM"| MySQL_DB
+    Backend -->|"SDK Firebase"| Firestore_DB
+    Backend -->|"SDK GCS"| GCS
+    Backend -->|"SDK Secret Manager"| GSM
+    PKG_MAP_CLI -->|"Firestore realtime"| Firestore_DB
+    D_FE --> Frontend
+    D_BE --> Backend
+    D_DB --> MySQL_DB
+    GCR --> D_FE
+    GCR --> D_BE
+```
+
+---
+
+### 6.7 Diagrama de Entidad-Relación
+
+Esquema completo de la **base de datos MySQL** con todas las tablas, campos clave y relaciones del sistema.
+
+```mermaid
+erDiagram
+    USUARIOS {
+        int id PK
+        string nombre
+        string email UK
+        string password_hash
+        enum rol "administrador|operador|chofer|cliente"
+        boolean activo
+        datetime creado_en
+    }
+
+    CLIENTES {
+        int id PK
+        int usuario_id FK
+        string ruc_cedula UK
+        string razon_social
+        string telefono
+    }
+
+    DIRECCIONES_CLIENTE {
+        int id PK
+        int cliente_id FK
+        string descripcion
+        decimal latitud
+        decimal longitud
+        boolean es_por_defecto
+    }
+
+    PRODUCTOS {
+        int id PK
+        string nombre
+        string tipo
+        string descripcion
+        decimal precio
+        string imagen_gcs_path
+        decimal cantidad_fisica
+        decimal en_pedidos
+    }
+
+    DESCUENTOS {
+        int id PK
+        int cliente_id FK
+        enum tipo "individual|global"
+        decimal porcentaje
+        enum metodo_pago "efectivo|deposito|de_una|tc|td|todos"
+        datetime fecha_caducidad
+    }
+
+    PEDIDOS {
+        int id PK
+        int cliente_id FK
+        int direccion_id FK
+        enum estado "en_espera_aprobacion|en_espera_asignacion|listo_para_entregar|en_ruta|entregado|parcial|no_entregado|cancelado"
+        enum metodo_pago "efectivo|deposito|de_una|tc|td"
+        string comprobante_path
+        decimal subtotal
+        decimal descuento
+        decimal iva
+        decimal total
+        string motivo_cancelacion
+        datetime creado_en
+    }
+
+    ITEMS_PEDIDO {
+        int id PK
+        int pedido_id FK
+        int producto_id FK
+        int cantidad_solicitada
+        int cantidad_entregada
+        decimal precio_unitario
+        decimal descuento_aplicado
+    }
+
+    CAMIONES {
+        int id PK
+        string placa UK
+        string descripcion
+        enum estado "activo|mantenimiento|averia|inactivo"
+        int chofer_id FK
+    }
+
+    GUIAS_REMISION {
+        int id PK
+        int camion_id FK
+        int operador_id FK
+        datetime fecha_generacion
+        enum estado "abierta|confirmacion_cierre|cerrada"
+        decimal efectivo_declarado
+    }
+
+    GUIAS_RUTA {
+        int id PK
+        int guia_remision_id FK
+        datetime fecha_creacion
+        enum estado "activa|cerrada"
+    }
+
+    ASIGNACION_PEDIDO_CAMION {
+        int id PK
+        int pedido_id FK
+        int guia_ruta_id FK
+        int orden
+        enum estado "asignado|en_ruta|entregado|no_entregado"
+    }
+
+    BODEGA_CAMION {
+        int id PK
+        int camion_id FK
+        int producto_id FK
+        decimal cantidad_actual
+    }
+
+    TRANSACCIONES_INVENTARIO {
+        int id PK
+        int producto_id FK
+        int camion_id FK
+        enum tipo "ingreso|egreso"
+        decimal cantidad
+        string motivo
+        datetime fecha_transaccion
+    }
+
+    FACTURAS {
+        int id PK
+        int pedido_id FK
+        string numero_factura UK
+        datetime fecha_emision
+        decimal subtotal
+        decimal iva
+        decimal total
+    }
+
+    MERCADERIA_MAL_ESTADO {
+        int id PK
+        int guia_ruta_id FK
+        int producto_id FK
+        decimal cantidad
+        string motivo
+        datetime registrado_en
+    }
+
+    BITACORA_AUDITORIA {
+        int id PK
+        int usuario_id FK
+        string accion
+        string tabla_afectada
+        int registro_id
+        json datos_anteriores
+        json datos_nuevos
+        datetime fecha_accion
+    }
+
+    CARRITOS_ABANDONADOS {
+        int id PK
+        int cliente_id FK
+        string motivo_cancelacion
+        decimal valor_total
+        datetime fecha_abandono
+    }
+
+    USUARIOS ||--o| CLIENTES : "tiene perfil"
+    USUARIOS ||--o| CAMIONES : "conduce"
+    CLIENTES ||--o{ DIRECCIONES_CLIENTE : "tiene"
+    CLIENTES ||--o{ PEDIDOS : "realiza"
+    CLIENTES ||--o{ DESCUENTOS : "tiene descuento individual"
+    CLIENTES ||--o{ CARRITOS_ABANDONADOS : "genera"
+    PEDIDOS ||--o{ ITEMS_PEDIDO : "contiene"
+    PEDIDOS ||--o{ FACTURAS : "genera"
+    PEDIDOS }o--|| DIRECCIONES_CLIENTE : "entrega en"
+    ITEMS_PEDIDO }o--|| PRODUCTOS : "referencia"
+    PRODUCTOS ||--o{ TRANSACCIONES_INVENTARIO : "afectado en"
+    PRODUCTOS ||--o{ BODEGA_CAMION : "almacenado en"
+    CAMIONES ||--o{ GUIAS_REMISION : "asignado a"
+    CAMIONES ||--o{ BODEGA_CAMION : "administra"
+    CAMIONES ||--o{ TRANSACCIONES_INVENTARIO : "relacionada a"
+    GUIAS_REMISION ||--o{ GUIAS_RUTA : "contiene"
+    GUIAS_RUTA ||--o{ ASIGNACION_PEDIDO_CAMION : "incluye"
+    ASIGNACION_PEDIDO_CAMION }o--|| PEDIDOS : "asigna"
+    GUIAS_RUTA ||--o{ MERCADERIA_MAL_ESTADO : "registra"
+    MERCADERIA_MAL_ESTADO }o--|| PRODUCTOS : "producto"
+    USUARIOS ||--o{ BITACORA_AUDITORIA : "genera"
+    DESCUENTOS }o--|| PEDIDOS : "aplicado en"
+```
+
