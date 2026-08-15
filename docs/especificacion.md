@@ -2135,3 +2135,208 @@ flowchart LR
     CORS -->|"Solo si JWT valido y rol autorizado"| DB2
     SM2 -->|"Secretos en env vars al arrancar"| JWT_V
 ```
+
+---
+
+### 6.9 Diccionario de Datos
+
+Este diccionario de datos describe las estructuras de almacenamiento utilizadas en el sistema, divididas en bases de datos relacionales (MySQL) y NoSQL (Firestore).
+
+#### 6.9.1 Base de Datos Relacional (MySQL - Transaccional)
+
+A continuación, se describen las tablas principales de la base de datos MySQL, indicando el tipo de dato y descripción de cada campo.
+
+**Tabla: `USUARIOS`**
+Almacena la información de autenticación y autorización de todos los usuarios del sistema.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador único del usuario. |
+| `nombre` | VARCHAR(255) | NOT NULL | Nombre completo del usuario. |
+| `email` | VARCHAR(255) | UNIQUE, NOT NULL | Correo electrónico usado para autenticación. |
+| `password_hash` | VARCHAR(255) | NOT NULL | Contraseña encriptada (Bcrypt). |
+| `rol` | ENUM | NOT NULL | Rol del usuario (`administrador`, `operador`, `chofer`, `cliente`). |
+| `activo` | BOOLEAN | DEFAULT TRUE | Indica si el usuario puede acceder al sistema. |
+| `creado_en` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha de registro del usuario. |
+
+**Tabla: `CLIENTES`**
+Almacena los datos del perfil comercial de los usuarios con rol de cliente.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador único del perfil del cliente. |
+| `usuario_id` | INT | FK (USUARIOS.id) | Referencia a la cuenta de usuario. |
+| `ruc_cedula` | VARCHAR(20) | UNIQUE, NOT NULL | Identificación comercial o personal. |
+| `razon_social` | VARCHAR(255) | NOT NULL | Nombre del negocio o persona. |
+| `telefono` | VARCHAR(20) | NOT NULL | Número de contacto. |
+
+**Tabla: `DIRECCIONES_CLIENTE`**
+Almacena los puntos de entrega asociados a cada cliente.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador de la dirección. |
+| `cliente_id` | INT | FK (CLIENTES.id) | Cliente propietario de la dirección. |
+| `descripcion` | TEXT | NOT NULL | Detalle de la dirección. |
+| `latitud` | DECIMAL(10,8) | NOT NULL | Coordenada GPS latitud. |
+| `longitud` | DECIMAL(11,8) | NOT NULL | Coordenada GPS longitud. |
+| `es_por_defecto`| BOOLEAN | DEFAULT FALSE | Dirección principal de entrega. |
+
+**Tabla: `PRODUCTOS`**
+Catálogo de productos disponibles para la venta.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador del producto. |
+| `nombre` | VARCHAR(255) | NOT NULL | Nombre del producto. |
+| `tipo` | VARCHAR(100) | NOT NULL | Categoría o tipo de producto. |
+| `descripcion` | TEXT | NULL | Detalle del producto. |
+| `precio` | DECIMAL(10,2) | NOT NULL | Precio unitario base. |
+| `imagen_gcs_path`| VARCHAR(255) | NULL | URL de la imagen en Google Cloud Storage. |
+| `cantidad_fisica`| DECIMAL(10,2) | DEFAULT 0 | Inventario físico total en bodega central. |
+| `en_pedidos` | DECIMAL(10,2) | DEFAULT 0 | Cantidad comprometida en pedidos en curso. |
+
+**Tabla: `PEDIDOS`**
+Registro de los pedidos de compra realizados por los clientes.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Número único de pedido. |
+| `cliente_id` | INT | FK (CLIENTES.id) | Cliente que realizó la compra. |
+| `direccion_id` | INT | FK (DIRECCIONES_CLIENTE.id) | Dirección de entrega seleccionada. |
+| `estado` | ENUM | NOT NULL | Estado actual (`en_espera_aprobacion`, `en_espera_asignacion`, `listo_para_entregar`, `en_ruta`, `entregado`, `parcial`, `no_entregado`, `cancelado`). |
+| `metodo_pago` | ENUM | NOT NULL | Vía de pago (`efectivo`, `deposito`, `de_una`, `tc`, `td`). |
+| `comprobante_path`| VARCHAR(255)| NULL | URL del comprobante de pago subido a GCS (si aplica). |
+| `subtotal` | DECIMAL(10,2) | NOT NULL | Suma de items antes de IVA y descuentos. |
+| `descuento` | DECIMAL(10,2) | DEFAULT 0 | Valor descontado. |
+| `iva` | DECIMAL(10,2) | NOT NULL | Valor del impuesto. |
+| `total` | DECIMAL(10,2) | NOT NULL | Valor final a pagar. |
+| `creado_en` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha y hora del pedido. |
+
+**Tabla: `ITEMS_PEDIDO`**
+Detalle de los productos incluidos en cada pedido.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador del ítem. |
+| `pedido_id` | INT | FK (PEDIDOS.id) | Pedido al que pertenece. |
+| `producto_id` | INT | FK (PRODUCTOS.id) | Producto solicitado. |
+| `cantidad_solicitada`| INT | NOT NULL | Unidades pedidas por el cliente. |
+| `cantidad_entregada`| INT | DEFAULT 0 | Unidades realmente entregadas (para entregas parciales). |
+| `precio_unitario`| DECIMAL(10,2) | NOT NULL | Precio al momento de la compra. |
+| `descuento_aplicado`| DECIMAL(10,2)| DEFAULT 0 | Descuento específico de la línea. |
+
+**Tabla: `CAMIONES`**
+Flota de vehículos y asignación de conductores.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador interno del vehículo. |
+| `placa` | VARCHAR(20) | UNIQUE, NOT NULL | Placa del vehículo. |
+| `descripcion` | VARCHAR(255) | NULL | Marca, modelo o alias. |
+| `estado` | ENUM | DEFAULT 'activo' | `activo`, `mantenimiento`, `averia`, `inactivo`. |
+| `chofer_id` | INT | FK (USUARIOS.id) | Conductor asignado actualmente. |
+
+**Tabla: `GUIAS_REMISION`**
+Documento que ampara el traslado de mercadería general del camión.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Número de guía. |
+| `camion_id` | INT | FK (CAMIONES.id) | Vehículo asignado. |
+| `operador_id` | INT | FK (USUARIOS.id) | Operador que generó la guía. |
+| `fecha_generacion`| DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha de inicio. |
+| `estado` | ENUM | DEFAULT 'abierta' | `abierta`, `confirmacion_cierre`, `cerrada`. |
+| `efectivo_declarado`| DECIMAL(10,2)| DEFAULT 0 | Efectivo reportado por el chofer al cierre. |
+
+**Tabla: `GUIAS_RUTA`**
+Control de la ruta diaria para entrega de pedidos.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador de la ruta. |
+| `guia_remision_id`| INT | FK (GUIAS_REMISION.id)| Guía matriz. |
+| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Inicio de ruta. |
+| `estado` | ENUM | DEFAULT 'activa' | `activa`, `cerrada`. |
+
+**Tabla: `ASIGNACION_PEDIDO_CAMION`**
+Relación entre pedidos y la ruta del camión que los entrega.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador. |
+| `pedido_id` | INT | FK (PEDIDOS.id) | Pedido a entregar. |
+| `guia_ruta_id`| INT | FK (GUIAS_RUTA.id)| Ruta a la que pertenece. |
+| `orden` | INT | NOT NULL | Orden de visita sugerido. |
+| `estado` | ENUM | DEFAULT 'asignado' | `asignado`, `en_ruta`, `entregado`, `no_entregado`. |
+
+**Tabla: `BODEGA_CAMION`**
+Inventario actual físico a bordo de cada camión.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador. |
+| `camion_id` | INT | FK (CAMIONES.id) | Vehículo. |
+| `producto_id` | INT | FK (PRODUCTOS.id) | Producto en carga. |
+| `cantidad_actual`| DECIMAL(10,2) | NOT NULL | Cantidad a bordo (se actualiza con entregas). |
+
+**Tabla: `FACTURAS`**
+Comprobantes legales de venta generados por pedido completado.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador interno. |
+| `pedido_id` | INT | FK (PEDIDOS.id) | Pedido facturado. |
+| `numero_factura` | VARCHAR(50) | UNIQUE, NOT NULL | Número de comprobante legal (SRI). |
+| `fecha_emision` | DATETIME | NOT NULL | Fecha de generación. |
+| `subtotal` | DECIMAL(10,2) | NOT NULL | Valor base. |
+| `iva` | DECIMAL(10,2) | NOT NULL | Impuestos. |
+| `total` | DECIMAL(10,2) | NOT NULL | Total facturado. |
+
+**Tabla: `MERCADERIA_MAL_ESTADO`**
+Registro de devoluciones o daños reportados durante la ruta.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador del reporte. |
+| `guia_ruta_id`| INT | FK (GUIAS_RUTA.id)| Ruta en la que ocurrió. |
+| `producto_id` | INT | FK (PRODUCTOS.id) | Producto dañado. |
+| `cantidad` | DECIMAL(10,2) | NOT NULL | Unidades afectadas. |
+| `motivo` | TEXT | NOT NULL | Razón del daño o devolución. |
+| `registrado_en` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha del suceso. |
+
+**Tabla: `BITACORA_AUDITORIA`**
+Registro histórico de acciones críticas de los usuarios para trazabilidad.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador de log. |
+| `usuario_id` | INT | FK (USUARIOS.id) | Quien ejecutó la acción. |
+| `accion` | VARCHAR(100) | NOT NULL | CREATE, UPDATE, DELETE, APROBACION. |
+| `tabla_afectada` | VARCHAR(100) | NOT NULL | Entidad alterada. |
+| `registro_id` | INT | NOT NULL | ID del registro alterado. |
+| `datos_anteriores`| JSON | NULL | Estado previo. |
+| `datos_nuevos` | JSON | NULL | Nuevo estado. |
+| `fecha_accion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Timestamp de auditoría. |
+
+---
+
+#### 6.9.2 Base de Datos NoSQL (Firestore - Tiempo Real)
+
+Firestore se utiliza específicamente para el rastreo de alta frecuencia y baja latencia, donde MySQL generaría demasiados bloqueos transaccionales.
+
+**Colección: `ubicaciones_camion`**
+
+Esta colección almacena el punto geográfico más reciente emitido por la aplicación (PWA) del Chofer. El cliente de Firestore en el frontend (mapa) se suscribe a los cambios de este documento para ver el movimiento en vivo.
+
+| Campo | Tipo de Dato (Firestore) | Descripción |
+|---|---|---|
+| `document_id` | `String` | El ID del documento corresponde al `camion_id` de MySQL (ej. "camion_15"). |
+| `chofer_id` | `Number` | ID del chofer que está emitiendo la ubicación. |
+| `guia_ruta_id` | `Number` | Ruta activa bajo la cual se está moviendo. |
+| `latitud` | `Number` (Double) | Coordenada GPS de latitud. |
+| `longitud` | `Number` (Double) | Coordenada GPS de longitud. |
+| `ultima_actualizacion` | `Timestamp` | Hora exacta del reporte GPS. |
+| `estado_ruta` | `String` | Ej: "en_movimiento", "detenido", "entregando". |
+
+**Nota técnica:** Para historial o trazabilidad (si se requiriera), Firestore permite crear una subcolección `historial` dentro de `ubicaciones_camion/{camion_id}`, guardando puntos de manera inmutable. Actualmente se usa escritura/actualización sobre el mismo documento para abaratar costos de lectura.
