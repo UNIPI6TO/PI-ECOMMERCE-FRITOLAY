@@ -76,3 +76,13 @@ resource "google_project_iam_member" "admin_sql_admin" {
   role    = "roles/cloudsql.admin"
   member  = "user:octavosemetreuniandes2026@gmail.com"
 }
+
+import {
+  to = google_sql_database_instance.mysql_instance
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/instances/fritolay-mysql"
+}
+
+import {
+  to = google_sql_database.database
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/instances/fritolay-mysql/databases/fritolay_db"
+}

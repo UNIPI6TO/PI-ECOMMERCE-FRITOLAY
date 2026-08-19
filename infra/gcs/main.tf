@@ -29,3 +29,8 @@ resource "google_storage_bucket" "images_bucket" {
     default_kms_key_name = data.google_kms_crypto_key.gcs_key.id
   }
 }
+
+import {
+  to = google_storage_bucket.images_bucket
+  id = "fritolay-images-project-3e1faa58-1e7d-4e8d-933"
+}
