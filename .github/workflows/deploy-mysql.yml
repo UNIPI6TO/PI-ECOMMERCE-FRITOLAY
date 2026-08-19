@@ -1,0 +1,46 @@
+name: Deploy Cloud SQL (MySQL)
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: "project-3e1faa58-1e7d-4e8d-933"
+  REGION: "us-central1"
+  KEYRING_NAME: "fritolay-keyring"
+  KEY_NAME: "mysql-key"
+  INSTANCE_NAME: "fritolay-mysql"
+
+jobs:
+  deploy-mysql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Create Cloud SQL Instance (CMEK Encrypted)
+        run: |
+          KMS_KEY="projects/${{ env.PROJECT_ID }}/locations/${{ env.REGION }}/keyRings/${{ env.KEYRING_NAME }}/cryptoKeys/${{ env.KEY_NAME }}"
+          
+          gcloud sql instances describe ${{ env.INSTANCE_NAME }} || \
+          gcloud sql instances create ${{ env.INSTANCE_NAME }} \
+            --database-version=MYSQL_8_0 \
+            --tier=db-f1-micro \
+            --region=${{ env.REGION }} \
+            --storage-type=HDD \
+            --storage-size=10GB \
+            --disk-encryption-key=$KMS_KEY
+
+      - name: Create Principal Database
+        run: |
+          gcloud sql databases describe fritolay_db --instance=${{ env.INSTANCE_NAME }} || \
+          gcloud sql databases create fritolay_db --instance=${{ env.INSTANCE_NAME }}
