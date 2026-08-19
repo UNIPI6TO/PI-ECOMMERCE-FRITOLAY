@@ -15,7 +15,8 @@ provider "google" {
 data "google_project" "project" {}
 
 data "google_kms_crypto_key" "firestore_key" {
-  name = "projects/${data.google_project.project.project_id}/locations/us-central1/keyRings/fritolay-keyring/cryptoKeys/firestore-key"
+  name     = "firestore-key"
+  key_ring = "projects/${data.google_project.project.project_id}/locations/us-central1/keyRings/fritolay-keyring"
 }
 
 resource "google_firestore_database" "database" {

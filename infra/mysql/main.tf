@@ -15,7 +15,8 @@ provider "google" {
 data "google_project" "project" {}
 
 data "google_kms_crypto_key" "mysql_key" {
-  name = "projects/${data.google_project.project.project_id}/locations/us-central1/keyRings/fritolay-keyring/cryptoKeys/mysql-key"
+  name     = "mysql-key"
+  key_ring = "projects/${data.google_project.project.project_id}/locations/us-central1/keyRings/fritolay-keyring"
 }
 
 resource "google_sql_database_instance" "mysql_instance" {
