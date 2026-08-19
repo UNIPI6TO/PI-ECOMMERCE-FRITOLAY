@@ -27,6 +27,7 @@ jobs:
       - name: Enable Required APIs
         run: |
           gcloud services enable \
+            cloudresourcemanager.googleapis.com \
             iam.googleapis.com \
             sqladmin.googleapis.com \
             storage-component.googleapis.com \
