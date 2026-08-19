@@ -15,7 +15,8 @@ provider "google" {
 data "google_project" "project" {}
 
 data "google_kms_crypto_key" "gcs_key" {
-  name = "projects/${data.google_project.project.project_id}/locations/us-central1/keyRings/fritolay-keyring/cryptoKeys/gcs-key"
+  name     = "gcs-key"
+  key_ring = "projects/${data.google_project.project.project_id}/locations/us-central1/keyRings/fritolay-keyring"
 }
 
 resource "google_storage_bucket" "images_bucket" {
