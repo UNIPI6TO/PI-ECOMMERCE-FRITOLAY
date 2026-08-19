@@ -74,3 +74,13 @@ resource "google_project_iam_member" "kms_firestore" {
   role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member  = "serviceAccount:${google_project_service_identity.firestore_sa.email}"
 }
+
+import {
+  to = google_service_account.backend_sa
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/serviceAccounts/sa-backend@project-3e1faa58-1e7d-4e8d-933.iam.gserviceaccount.com"
+}
+
+import {
+  to = google_service_account.frontend_sa
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/serviceAccounts/sa-frontend@project-3e1faa58-1e7d-4e8d-933.iam.gserviceaccount.com"
+}
