@@ -60,6 +60,11 @@ jobs:
         run: |
           PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
           
+          # Forzar la creación de los Service Agents de Google
+          gcloud beta services identity create --service=sqladmin.googleapis.com --project=${{ env.PROJECT_ID }} || true
+          gcloud storage service-agent --project=${{ env.PROJECT_ID }} || true
+          gcloud beta services identity create --service=firestore.googleapis.com --project=${{ env.PROJECT_ID }} || true
+
           # Cloud SQL Service Agent
           gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
             --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-cloud-sql.iam.gserviceaccount.com" \
