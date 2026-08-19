@@ -48,7 +48,7 @@ resource "google_sql_database" "database" {
 }
 
 resource "google_sql_user" "backend_sa_user" {
-  name     = "sa-backend@project-3e1faa58-1e7d-4e8d-933.iam"
+  name     = "sa-backend@project-3e1faa58-1e7d-4e8d-933.iam.gserviceaccount.com"
   instance = google_sql_database_instance.mysql_instance.name
   type     = "CLOUD_IAM_SERVICE_ACCOUNT"
 }
