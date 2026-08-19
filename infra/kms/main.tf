@@ -31,3 +31,23 @@ resource "google_kms_crypto_key" "firestore_key" {
   key_ring = google_kms_key_ring.keyring.id
   purpose  = "ENCRYPT_DECRYPT"
 }
+
+import {
+  to = google_kms_key_ring.keyring
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/locations/us-central1/keyRings/fritolay-keyring"
+}
+
+import {
+  to = google_kms_crypto_key.mysql_key
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/locations/us-central1/keyRings/fritolay-keyring/cryptoKeys/mysql-key"
+}
+
+import {
+  to = google_kms_crypto_key.gcs_key
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/locations/us-central1/keyRings/fritolay-keyring/cryptoKeys/gcs-key"
+}
+
+import {
+  to = google_kms_crypto_key.firestore_key
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/locations/us-central1/keyRings/fritolay-keyring/cryptoKeys/firestore-key"
+}
