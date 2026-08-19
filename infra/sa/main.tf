@@ -31,6 +31,7 @@ resource "google_service_account" "frontend_sa" {
 resource "google_project_iam_member" "backend_roles" {
   for_each = toset([
     "roles/cloudsql.client",
+    "roles/cloudsql.instanceUser",
     "roles/storage.objectAdmin",
     "roles/datastore.user",
     "roles/secretmanager.secretAccessor"
