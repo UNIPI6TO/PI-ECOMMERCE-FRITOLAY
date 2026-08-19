@@ -1,0 +1,41 @@
+name: Deploy KMS Infrastructure
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: "project-3e1faa58-1e7d-4e8d-933"
+  REGION: "us-central1"
+  KEYRING_NAME: "fritolay-keyring"
+
+jobs:
+  deploy-kms:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Enable KMS API
+        run: gcloud services enable cloudkms.googleapis.com
+
+      - name: Create KeyRing
+        run: |
+          gcloud kms keyrings describe ${{ env.KEYRING_NAME }} --location ${{ env.REGION }} || \
+          gcloud kms keyrings create ${{ env.KEYRING_NAME }} --location ${{ env.REGION }}
+
+      - name: Create CryptoKeys (Software Protection)
+        run: |
+          for key in mysql-key gcs-key firestore-key; do
+            gcloud kms keys describe $key --keyring ${{ env.KEYRING_NAME }} --location ${{ env.REGION }} || \
+            gcloud kms keys create $key --keyring ${{ env.KEYRING_NAME }} --location ${{ env.REGION }} --purpose encryption
+          done

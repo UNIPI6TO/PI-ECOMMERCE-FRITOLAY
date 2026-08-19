@@ -1,0 +1,37 @@
+name: Deploy Firestore
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: "project-3e1faa58-1e7d-4e8d-933"
+  REGION: "us-central1"
+  KEYRING_NAME: "fritolay-keyring"
+  KEY_NAME: "firestore-key"
+
+jobs:
+  deploy-firestore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Create Firestore Native Database (CMEK Encrypted)
+        run: |
+          KMS_KEY="projects/${{ env.PROJECT_ID }}/locations/${{ env.REGION }}/keyRings/${{ env.KEYRING_NAME }}/cryptoKeys/${{ env.KEY_NAME }}"
+          
+          gcloud firestore databases describe --database="(default)" || \
+          gcloud firestore databases create \
+            --location=${{ env.REGION }} \
+            --type=firestore-native \
+            --cmek-key-name=$KMS_KEY
