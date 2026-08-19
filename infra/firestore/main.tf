@@ -28,3 +28,8 @@ resource "google_firestore_database" "database" {
     kms_key_name = data.google_kms_crypto_key.firestore_key.id
   }
 }
+
+import {
+  to = google_firestore_database.database
+  id = "projects/project-3e1faa58-1e7d-4e8d-933/databases/(default)"
+}
