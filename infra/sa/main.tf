@@ -50,9 +50,8 @@ resource "google_project_service_identity" "sql_sa" {
   provider = google-beta
   service  = "sqladmin.googleapis.com"
 }
-resource "google_project_service_identity" "storage_sa" {
-  provider = google-beta
-  service  = "storage.googleapis.com"
+data "google_storage_project_service_account" "gcs_account" {
+  project = data.google_project.project.project_id
 }
 resource "google_project_service_identity" "firestore_sa" {
   provider = google-beta
@@ -67,7 +66,7 @@ resource "google_project_iam_member" "kms_sql" {
 resource "google_project_iam_member" "kms_storage" {
   project = data.google_project.project.project_id
   role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member  = "serviceAccount:${google_project_service_identity.storage_sa.email}"
+  member  = "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
 }
 resource "google_project_iam_member" "kms_firestore" {
   project = data.google_project.project.project_id
