@@ -8,8 +8,14 @@ terraform {
     google-beta = { source = "hashicorp/google-beta", version = "~> 5.0" }
   }
 }
-provider "google" { project = "project-3e1faa58-1e7d-4e8d-933", region = "us-central1" }
-provider "google-beta" { project = "project-3e1faa58-1e7d-4e8d-933", region = "us-central1" }
+provider "google" {
+  project = "project-3e1faa58-1e7d-4e8d-933"
+  region  = "us-central1"
+}
+provider "google-beta" {
+  project = "project-3e1faa58-1e7d-4e8d-933"
+  region  = "us-central1"
+}
 
 data "google_project" "project" {}
 
