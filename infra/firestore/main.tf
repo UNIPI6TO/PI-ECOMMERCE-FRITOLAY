@@ -29,7 +29,4 @@ resource "google_firestore_database" "database" {
   }
 }
 
-import {
-  to = google_firestore_database.database
-  id = "projects/project-3e1faa58-1e7d-4e8d-933/databases/(default)"
-}
+
