@@ -82,7 +82,4 @@ import {
   id = "projects/project-3e1faa58-1e7d-4e8d-933/instances/fritolay-mysql"
 }
 
-import {
-  to = google_sql_database.database
-  id = "projects/project-3e1faa58-1e7d-4e8d-933/instances/fritolay-mysql/databases/fritolay_db"
-}
+
