@@ -1,16 +1,9 @@
-name: Deploy GCS Bucket
+name: Deploy GCS Infrastructure (Terraform)
 
-on:
-  workflow_dispatch:
-
-env:
-  PROJECT_ID: "project-3e1faa58-1e7d-4e8d-933"
-  REGION: "us-central1"
-  KEYRING_NAME: "fritolay-keyring"
-  KEY_NAME: "gcs-key"
+on: workflow_dispatch
 
 jobs:
-  deploy-gcs:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -21,25 +14,13 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-      - name: Create Encrypted GCS Bucket
-        run: |
-          BUCKET_NAME="gs://fritolay-images-${{ env.PROJECT_ID }}"
-          KMS_KEY="projects/${{ env.PROJECT_ID }}/locations/${{ env.REGION }}/keyRings/${{ env.KEYRING_NAME }}/cryptoKeys/${{ env.KEY_NAME }}"
-          
-          gcloud storage buckets describe $BUCKET_NAME || \
-          gcloud storage buckets create $BUCKET_NAME \
-            --location=${{ env.REGION }} \
-            --default-encryption-key=$KMS_KEY \
-            --uniform-bucket-level-access
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra/gcs
 
-      - name: Make Bucket Public (Optional for Frontend Cache)
-        run: |
-          BUCKET_NAME="gs://fritolay-images-${{ env.PROJECT_ID }}"
-          gcloud storage buckets add-iam-policy-binding $BUCKET_NAME \
-            --member="allUsers" \
-            --role="roles/storage.objectViewer"
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: infra/gcs

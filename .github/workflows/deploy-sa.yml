@@ -1,14 +1,9 @@
-name: Deploy IAM and Service Accounts
+name: Deploy SA Infrastructure (Terraform)
 
-on:
-  workflow_dispatch:
-
-env:
-  PROJECT_ID: "project-3e1faa58-1e7d-4e8d-933"
-  REGION: "us-central1"
+on: workflow_dispatch
 
 jobs:
-  deploy-sa:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -19,63 +14,13 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-      - name: Enable Required APIs
-        run: |
-          gcloud services enable \
-            cloudresourcemanager.googleapis.com \
-            iam.googleapis.com \
-            sqladmin.googleapis.com \
-            storage-component.googleapis.com \
-            firestore.googleapis.com \
-            secretmanager.googleapis.com
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra/sa
 
-      - name: Create Service Accounts
-        run: |
-          gcloud iam service-accounts describe sa-backend@${{ env.PROJECT_ID }}.iam.gserviceaccount.com || \
-          gcloud iam service-accounts create sa-backend --display-name="Backend SA"
-
-          gcloud iam service-accounts describe sa-frontend@${{ env.PROJECT_ID }}.iam.gserviceaccount.com || \
-          gcloud iam service-accounts create sa-frontend --display-name="Frontend SA"
-
-      - name: Assign IAM Roles to sa-backend
-        run: |
-          for role in roles/cloudsql.client roles/storage.objectAdmin roles/datastore.user roles/secretmanager.secretAccessor; do
-            gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-              --member="serviceAccount:sa-backend@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-              --role="$role"
-          done
-
-      - name: Assign IAM Roles to sa-frontend
-        run: |
-          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-            --member="serviceAccount:sa-frontend@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-            --role="roles/storage.objectViewer"
-
-      - name: Grant KMS Decrypter role to Google Service Agents
-        run: |
-          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
-          
-          # Forzar la creación de los Service Agents de Google
-          gcloud beta services identity create --service=sqladmin.googleapis.com --project=${{ env.PROJECT_ID }} || true
-          gcloud storage service-agent --project=${{ env.PROJECT_ID }} || true
-          gcloud beta services identity create --service=firestore.googleapis.com --project=${{ env.PROJECT_ID }} || true
-
-          # Cloud SQL Service Agent
-          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-            --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-cloud-sql.iam.gserviceaccount.com" \
-            --role="roles/cloudkms.cryptoKeyEncrypterDecrypter"
-
-          # GCS Service Agent
-          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-            --member="serviceAccount:service-$PROJECT_NUMBER@gs-project-accounts.iam.gserviceaccount.com" \
-            --role="roles/cloudkms.cryptoKeyEncrypterDecrypter"
-
-          # Firestore Service Agent
-          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-            --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-firestore.iam.gserviceaccount.com" \
-            --role="roles/cloudkms.cryptoKeyEncrypterDecrypter"
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: infra/sa
