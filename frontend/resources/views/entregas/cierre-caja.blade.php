@@ -1,0 +1,79 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="max-w-3xl mx-auto py-8 px-4" x-data="cierreCaja()">
+    <h1 class="text-2xl font-bold mb-6 text-center">Arqueo y Cierre de Caja</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white p-6 rounded shadow border-t-4 border-blue-500">
+            <h2 class="font-bold mb-4 text-gray-700">Resumen de Guía</h2>
+            <ul class="space-y-2 text-sm">
+                <li class="flex justify-between"><span>Pedidos Totales:</span> <span class="font-bold">25</span></li>
+                <li class="flex justify-between text-green-600"><span>Entregados:</span> <span class="font-bold">22</span></li>
+                <li class="flex justify-between text-yellow-600"><span>Entregas Parciales:</span> <span class="font-bold">2</span></li>
+                <li class="flex justify-between text-red-600"><span>No Entregados:</span> <span class="font-bold">1</span></li>
+            </ul>
+        </div>
+
+        <div class="bg-white p-6 rounded shadow border-t-4 border-green-500">
+            <h2 class="font-bold mb-4 text-gray-700">Recaudación por Sistema</h2>
+            <ul class="space-y-2 text-sm">
+                <li class="flex justify-between"><span>Efectivo:</span> <span class="font-bold">$<span x-text="sistema.efectivo"></span></span></li>
+                <li class="flex justify-between"><span>Depósitos/Transf:</span> <span class="font-bold">$<span x-text="sistema.bancos"></span></span></li>
+                <li class="flex justify-between"><span>De Una:</span> <span class="font-bold">$<span x-text="sistema.de_una"></span></span></li>
+            </ul>
+            <div class="mt-4 pt-2 border-t flex justify-between font-bold text-lg">
+                <span>Total:</span> <span>$<span x-text="sistema.efectivo + sistema.bancos + sistema.de_una"></span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-8 rounded shadow text-center mb-6">
+        <h2 class="text-xl font-bold mb-4">Declaración de Efectivo</h2>
+        <p class="text-sm text-gray-600 mb-4">Ingrese el monto exacto de billetes y monedas que tiene en mano.</p>
+        
+        <div class="flex items-center justify-center">
+            <span class="text-3xl font-bold text-gray-400 mr-2">$</span>
+            <input type="number" x-model.number="declarado" class="text-4xl w-48 text-center border-b-2 border-gray-300 focus:border-green-500 focus:outline-none py-2 font-bold text-green-700">
+        </div>
+
+        <div class="mt-6 p-4 rounded" :class="diferencia === 0 ? 'bg-green-100 text-green-800' : (diferencia < 0 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800')">
+            <div class="font-bold">Diferencia: $<span x-text="Math.abs(diferencia).toFixed(2)"></span></div>
+            <div class="text-sm" x-text="mensajeDiferencia"></div>
+        </div>
+    </div>
+
+    <button @click="declarar" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-4 rounded text-lg">
+        Confirmar Arqueo y Finalizar Jornada
+    </button>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('cierreCaja', () => ({
+        sistema: {
+            efectivo: 450.50,
+            bancos: 120.00,
+            de_una: 55.00
+        },
+        declarado: 0,
+
+        get diferencia() {
+            return this.declarado - this.sistema.efectivo;
+        },
+
+        get mensajeDiferencia() {
+            if(this.diferencia === 0) return 'Caja cuadrada perfectamente.';
+            if(this.diferencia < 0) return 'Faltante de caja. Se reportará al administrador.';
+            return 'Sobrante de caja. Se reportará al administrador.';
+        },
+
+        async declarar() {
+            // POST /api/guias-ruta/{id}/arqueo
+            alert('Arqueo registrado. Buen trabajo.');
+            window.location.href = '/entregas';
+        }
+    }));
+});
+</script>
+@endsection

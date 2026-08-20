@@ -1,0 +1,13 @@
+{
+    "name": "Fritolay Ambato",
+    "short_name": "Fritolay",
+    "description": "Sistema de pedidos y entregas Fritolay Ambato",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FFFFFF",
+    "theme_color": "#E3001B",
+    "icons": [
+        { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+        { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    ]
+}

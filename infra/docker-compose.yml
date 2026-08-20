@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  # ─── Backend REST API ───────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../infra/Dockerfile.backend
+    container_name: fritolay_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/var/www/backend
+      - backend_vendor:/var/www/backend/vendor
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-fritolay_db}
+      DB_USERNAME: ${DB_USERNAME:-fritolay}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production}
+      JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES:-60}
+      GCS_BUCKET_IMAGENES: ${GCS_BUCKET_IMAGENES:-}
+      GCS_BUCKET_COMPROBANTES: ${GCS_BUCKET_COMPROBANTES:-}
+      GCS_IMAGE_CACHE_HOURS: ${GCS_IMAGE_CACHE_HOURS:-4}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH:-}
+      GPS_UPDATE_INTERVAL_SECONDS: ${GPS_UPDATE_INTERVAL_SECONDS:-5}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@fritolay.com}
+      PIN_DIGITS: ${PIN_DIGITS:-6}
+      IVA_PORCENTAJE: ${IVA_PORCENTAJE:-15}
+      STOCK_ALERT_THRESHOLD_PERCENT: ${STOCK_ALERT_THRESHOLD_PERCENT:-10}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - fritolay_net
+
+  # ─── Frontend Laravel Blade + Alpine.js ─────────────────────────────────────
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../infra/Dockerfile.frontend
+    container_name: fritolay_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../frontend:/var/www/frontend
+      - frontend_vendor:/var/www/frontend/vendor
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      BACKEND_API_URL: http://backend:8000
+      GPS_UPDATE_INTERVAL_SECONDS: ${GPS_UPDATE_INTERVAL_SECONDS:-5}
+      GCS_IMAGE_CACHE_HOURS: ${GCS_IMAGE_CACHE_HOURS:-4}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+    depends_on:
+      - backend
+    networks:
+      - fritolay_net
+
+  # ─── MySQL 8 ────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: fritolay_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootsecret}
+      MYSQL_DATABASE: ${DB_DATABASE:-fritolay_db}
+      MYSQL_USER: ${DB_USERNAME:-fritolay}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fritolay_net
+
+volumes:
+  mysql_data:
+  backend_vendor:
+  frontend_vendor:
+
+networks:
+  fritolay_net:
+    driver: bridge

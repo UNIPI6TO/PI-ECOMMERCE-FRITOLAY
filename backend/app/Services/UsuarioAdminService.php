@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Contracts\UserRepositoryInterface;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+
+class UsuarioAdminService
+{
+    public function __construct(
+        private readonly UserRepositoryInterface $userRepository,
+        private readonly AuditoriaService $auditoriaService
+    ) {}
+
+    public function crearEmpleado(array $data, int $adminId): object
+    {
+        $data['password'] = bcrypt($data['email']);
+        $empleado = $this->userRepository->create($data);
+        $this->auditoriaService->log('creacion_empleado', 'Se creó el empleado ' . $empleado->id, $adminId);
+        return $empleado;
+    }
+
+    public function inactivar(int $id, int $adminId): bool
+    {
+        $res = $this->userRepository->update($id, ['activo' => false]);
+        $this->auditoriaService->log('inactivar_empleado', 'Se inactivó el empleado ' . $id, $adminId);
+        return (bool)$res;
+    }
+
+    public function activar(int $id, int $adminId): bool
+    {
+        $res = $this->userRepository->update($id, ['activo' => true]);
+        $this->auditoriaService->log('activar_empleado', 'Se activó el empleado ' . $id, $adminId);
+        return (bool)$res;
+    }
+
+    public function resetearPassword(int $id, int $adminId): string
+    {
+        $newPassword = Str::random(8);
+        $this->userRepository->update($id, ['password' => bcrypt($newPassword)]);
+        $this->auditoriaService->log('reset_password', 'Se reseteó el password del empleado ' . $id, $adminId);
+        return $newPassword;
+    }
+
+    public function listarEmpleados(): Collection
+    {
+        return $this->userRepository->getAll(['roles' => ['operador', 'chofer']]);
+    }
+}
