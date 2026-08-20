@@ -1,0 +1,70 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies
+/vendor/
+/backend/vendor/
+/frontend/vendor/
+/node_modules/
+/frontend/node_modules/
+
+# Build assets
+/public/build/
+/frontend/public/build/
+/public/hot
+/frontend/public/hot
+
+# Logs
+*.log
+storage/logs/
+/backend/storage/logs/*
+!/backend/storage/logs/.gitignore
+/frontend/storage/logs/*
+!/frontend/storage/logs/.gitignore
+
+# Framework temporary storage
+/backend/storage/framework/cache/*
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+/backend/storage/app/public/*
+/frontend/storage/framework/cache/*
+/frontend/storage/framework/sessions/*
+/frontend/storage/framework/views/*
+
+# Security and Credentials
+firebase-credentials.json
+*firebase-credentials*.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pub
+auth.json
+
+# Operating System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# Terraform local state and files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc

@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Contracts\PedidoRepositoryInterface;
+use App\Contracts\CamionRepositoryInterface;
+use App\Contracts\GuiaRepositoryInterface;
+use App\Contracts\BodegaRepositoryInterface;
+use Exception;
+use Illuminate\Support\Collection;
+
+class RutaService
+{
+    public function __construct(
+        private readonly PedidoRepositoryInterface $pedidoRepository,
+        private readonly CamionRepositoryInterface $camionRepository,
+        private readonly GuiaRepositoryInterface $guiaRepository,
+        private readonly BodegaRepositoryInterface $bodegaRepository,
+        private readonly InventarioService $inventarioService,
+        private readonly AuditoriaService $auditoriaService
+    ) {}
+
+    public function crearAsignacion(array $pedidoIds, int $camionId, int $operadorId): array
+    {
+        $camion = $this->camionRepository->findById($camionId);
+        if (!$camion || $camion->estado !== 'activo') {
+            throw new Exception('El camión no está activo.', 422);
+        }
+
+        foreach ($pedidoIds as $pedidoId) {
+            $pedido = $this->pedidoRepository->findById($pedidoId);
+            if ($this->pedidoRepository->isAsignado($pedidoId)) {
+                throw new Exception('El pedido ' . $pedidoId . ' ya está asignado.', 409);
+            }
+        }
+
+        $guiaRemision = $this->guiaRepository->createRemision(['camion_id' => $camionId, 'estado' => 'abierta', 'operador_id' => $operadorId]);
+        $guiaRuta = $this->guiaRepository->createRuta(['guia_remision_id' => $guiaRemision->id]);
+
+        $asignaciones = [];
+        $orden = 1;
+        foreach ($pedidoIds as $pedidoId) {
+            $asignaciones[] = $this->pedidoRepository->asignarCamion($pedidoId, $camionId, $orden++);
+            $pedido = $this->pedidoRepository->update($pedidoId, ['estado' => 'listo_para_entregar']);
+            
+            foreach ($pedido->items as $item) {
+                $this->inventarioService->ingresoFisicoCamion($camionId, $item->producto_id, $item->cantidad);
+            }
+        }
+
+        $this->auditoriaService->log('asignacion_ruta', 'Se asignaron pedidos al camión ' . $camionId, $operadorId);
+
+        return [
+            'guia_remision' => $guiaRemision,
+            'guia_ruta' => $guiaRuta,
+            'asignaciones' => $asignaciones
+        ];
+    }
+
+    public function getAsignacion(int $guiaRemisionId): array
+    {
+        return $this->guiaRepository->getDetalleRemision($guiaRemisionId);
+    }
+
+    public function getCamionesActivos(): Collection
+    {
+        return $this->camionRepository->findActivos();
+    }
+
+    public function getPedidosEnEspera(array $filtros): Collection
+    {
+        return $this->pedidoRepository->findEnEspera($filtros);
+    }
+}

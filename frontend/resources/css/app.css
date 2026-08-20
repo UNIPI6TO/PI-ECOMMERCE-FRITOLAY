@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #E3001B;
+  --color-secondary: #F5C518;
+  --color-neutral: #333333;
+}
+
+.mini-cart {
+  transition: transform 0.3s ease-in-out;
+}
+
+.mini-cart-open {
+  transform: translateX(0);
+}
+
+.mini-cart-closed {
+  transform: translateX(100%);
+}
+
+/* Badge estilos especiales */
+.badge-low-stock {
+  @apply bg-secondary text-neutral-dark text-xs font-bold px-2 py-1 rounded absolute top-2 right-2;
+}
+
+.badge-out-of-stock {
+  @apply bg-red-600 text-white text-xs font-bold px-2 py-1 rounded absolute top-2 right-2;
+}
