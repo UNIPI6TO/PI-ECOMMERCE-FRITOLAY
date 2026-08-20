@@ -24,9 +24,6 @@ resource "google_firestore_database" "database" {
   name        = "(default)"
   location_id = "us-central1"
   type        = "FIRESTORE_NATIVE"
-  cmek_config {
-    kms_key_name = data.google_kms_crypto_key.firestore_key.id
-  }
 }
 
 
