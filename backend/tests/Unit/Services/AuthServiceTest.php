@@ -10,8 +10,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class AuthServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_generate_pin()
     {
         $service = $this->app->make(AuthService::class);

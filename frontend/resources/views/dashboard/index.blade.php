@@ -57,8 +57,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="border-b"><td class="p-2">Juan Perez</td><td class="p-2 text-right">$45.00</td></tr>
-                        <tr class="border-b"><td class="p-2">Maria Lopez</td><td class="p-2 text-right">$12.50</td></tr>
+                        <template x-if="carritos.length === 0">
+                            <tr><td colspan="2" class="p-4 text-center text-gray-500">No hay carritos abandonados</td></tr>
+                        </template>
+                        <template x-for="carrito in carritos" :key="carrito.cliente">
+                            <tr class="border-b">
+                                <td class="p-2" x-text="carrito.cliente"></td>
+                                <td class="p-2 text-right" x-text="'$' + Number(carrito.monto).toFixed(2)"></td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -84,6 +91,7 @@ document.addEventListener('alpine:init', () => {
             entregas_hoy: 0,
             productos_bajo_stock: 0
         },
+        carritos: [],
 
         async init() {
             try {
@@ -91,6 +99,12 @@ document.addEventListener('alpine:init', () => {
                 const kpisData = await window.api('/api/dashboard/kpis').catch(() => null);
                 if (kpisData) {
                     this.kpis = kpisData;
+                }
+
+                // Fetch Carritos
+                const carritosData = await window.api('/api/dashboard/carritos-abandonados').catch(() => []);
+                if (carritosData) {
+                    this.carritos = carritosData;
                 }
 
                 // Fetch Ventas

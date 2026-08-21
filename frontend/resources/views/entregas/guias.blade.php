@@ -28,9 +28,14 @@
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('guiasActivas', () => ({
-        guias: [
-            {id: 45, pedidos_count: 12, fecha: '2023-10-24'}
-        ]
+        guias: [],
+        async init() {
+            try {
+                this.guias = await window.api('/api/guias-ruta');
+            } catch (error) {
+                console.error("Error al cargar guias:", error);
+            }
+        }
     }));
 });
 </script>

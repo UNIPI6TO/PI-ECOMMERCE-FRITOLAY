@@ -23,6 +23,11 @@ Route::prefix('auth')->group(function () {
     Route::get('/recover', [AuthFrontController::class, 'recover']);
 });
 
+Route::prefix('perfil')->group(function () {
+    Route::get('/', fn() => view('auth.perfil'));
+    Route::get('/password', fn() => view('auth.password'));
+});
+
 Route::prefix('gestion-pedidos')->group(function () {
     Route::get('/', [GestionPedidosController::class, 'index']);
     Route::get('/aprobacion', [GestionPedidosController::class, 'aprobacion']);

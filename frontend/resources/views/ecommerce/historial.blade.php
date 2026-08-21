@@ -50,10 +50,18 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('historial', () => ({
         dateFilter: '',
-        pedidos: [
-            { id: 'PED-001', fecha: '2023-10-01', estado: 'ENTREGADO', total: 45.50 },
-            { id: 'PED-002', fecha: '2023-10-15', estado: 'EN RUTA', total: 12.00 }
-        ],
+        pedidos: [],
+        async init() {
+            try {
+                // Get current client info to get clienteId
+                const clienteData = await window.api('/api/clientes/me');
+                if (clienteData && clienteData.id) {
+                    this.pedidos = await window.api(`/api/clientes/${clienteData.id}/pedidos`);
+                }
+            } catch (error) {
+                console.error("Error al cargar historial:", error);
+            }
+        },
         filtrar() {
             // Logica filtro
         },

@@ -3,8 +3,20 @@
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="camiones()">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Gestión de Camiones</h1>
-        <button @click="modal = true" class="bg-gray-800 text-white px-4 py-2 rounded font-medium">+ Nuevo Camión</button>
+        <h1 class="text-2xl font-bold">Gestión de Flota (Camiones)</h1>
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 text-sm">
+                <span class="text-gray-600">Mostrar:</span>
+                <select x-model="perPage" @change="currentPage = 1" class="border-gray-300 rounded-md text-sm py-1 pl-2 pr-8 focus:ring-primary focus:border-primary border">
+                    <option :value="5">5</option>
+                    <option :value="10">10</option>
+                    <option :value="20">20</option>
+                    <option :value="50">50</option>
+                </select>
+                <span class="text-gray-600">registros</span>
+            </div>
+            <button @click="modal = true" class="bg-gray-800 hover:bg-red-800 text-white px-4 py-2 rounded font-medium transition-colors shadow-sm">+ Nuevo Camión</button>
+        </div>
     </div>
 
     <div class="bg-white rounded shadow overflow-hidden">
@@ -19,7 +31,10 @@
                 </tr>
             </thead>
             <tbody>
-                <template x-for="c in listado" :key="c.id">
+                <template x-if="paginatedListado.length === 0">
+                    <tr><td colspan="5" class="p-4 text-center text-gray-500">No hay camiones para mostrar</td></tr>
+                </template>
+                <template x-for="c in paginatedListado" :key="c.id">
                     <tr class="border-b hover:bg-gray-50">
                         <td class="p-4 font-bold" x-text="c.placa"></td>
                         <td class="p-4" x-text="c.descripcion"></td>
@@ -27,7 +42,7 @@
                             <select x-model="c.chofer_id" class="border rounded p-1 text-sm w-full bg-white">
                                 <option value="">Sin Asignar</option>
                                 <template x-for="ch in choferes" :key="ch.id">
-                                    <option :value="ch.id" x-text="ch.nombre"></option>
+                                    <option :value="ch.id" x-text="ch.nombre" :selected="ch.id == c.chofer_id"></option>
                                 </template>
                             </select>
                         </td>
@@ -39,12 +54,24 @@
                             </select>
                         </td>
                         <td class="p-4 text-center">
-                            <button @click="guardarCambios(c)" class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded font-medium hover:bg-blue-200">Guardar</button>
+                            <button @click="guardarCambios(c)" class="bg-blue-600 text-white px-3 py-1 rounded text-sm mb-1 hover:bg-blue-700">Guardar</button>
                         </td>
                     </tr>
                 </template>
             </tbody>
         </table>
+
+        <!-- Paginador -->
+        <div class="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+            <div class="text-sm text-gray-500">
+                Mostrando pág <span class="font-medium text-gray-800" x-text="currentPage"></span> de <span class="font-medium text-gray-800" x-text="totalPages"></span> 
+                (<span x-text="listado.length"></span> registros totales)
+            </div>
+            <div class="flex space-x-2">
+                <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
+                <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Siguiente</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Crear -->
@@ -76,6 +103,27 @@ document.addEventListener('alpine:init', () => {
         choferes: [],
         listado: [],
         nuevo: {placa: '', descripcion: ''},
+        
+        // Paginación
+        currentPage: 1,
+        perPage: 10,
+        
+        get totalPages() {
+            return Math.ceil(this.listado.length / this.perPage) || 1;
+        },
+        
+        get paginatedListado() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.listado.slice(start, start + this.perPage);
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) this.currentPage++;
+        },
+        
+        prevPage() {
+            if (this.currentPage > 1) this.currentPage--;
+        },
 
         async init() {
             await this.fetchCamiones();

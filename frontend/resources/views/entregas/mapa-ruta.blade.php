@@ -47,17 +47,20 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('mapaRuta', (id) => ({
         guiaId: id,
         orden: 'CERCANO',
-        pedidos: [
-            {id: 1, cliente: 'Tienda 1', direccion: 'Calle A', lat: -1.24, lng: -78.61, estado: 'PENDIENTE'},
-            {id: 2, cliente: 'Tienda 2', direccion: 'Calle B', lat: -1.25, lng: -78.62, estado: 'ENTREGADO'}
-        ],
+        pedidos: [],
         map: null,
 
         get pedidosList() {
-            return this.pedidos; // Add sort logic here
+            return this.pedidos;
         },
 
-        init() {
+        async init() {
+            try {
+                // If API exists to fetch this guia's details:
+                // this.pedidos = await window.api(`/api/guias-ruta/${this.guiaId}/pedidos`);
+            } catch (e) {
+                console.error(e);
+            }
             setTimeout(() => {
                 this.map = L.map('mapa-ruta-full').setView([-1.249, -78.616], 14);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);

@@ -111,12 +111,36 @@
                         </template>
                     </div>
 
-                    <div x-data="{ token: localStorage.getItem('jwt_token') }">
+                    <div x-data="{ token: localStorage.getItem('jwt_token'), dropdownOpen: false }" class="relative ml-4">
                         <template x-if="!token">
-                            <a href="/auth/login" class="bg-primary hover:bg-red-800 text-white px-4 py-2 rounded-md font-medium ml-4 transition-colors">Login</a>
+                            <a href="/auth/login" class="bg-primary hover:bg-red-800 text-white px-4 py-2 rounded-md font-medium transition-colors">Login</a>
                         </template>
                         <template x-if="token">
-                            <button @click="logout" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md font-medium ml-4 transition-colors">Salir</button>
+                            <div>
+                                <button @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false" class="flex items-center space-x-2 focus:outline-none p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </button>
+                                
+                                <!-- Dropdown menu -->
+                                <div x-show="dropdownOpen" x-transition.opacity style="display: none;"
+                                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
+                                    <a href="/perfil" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                        Mi Perfil
+                                    </a>
+                                    <a href="/perfil/password" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                        Cambiar Contraseña
+                                    </a>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <button @click="logout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 font-medium flex items-center transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                        Salir
+                                    </button>
+                                </div>
+                            </div>
                         </template>
                     </div>
                 </div>

@@ -4,7 +4,18 @@
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="usuarios()">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Gestión de Usuarios Empleados</h1>
-        <button @click="openModal()" class="bg-primary hover:bg-red-800 text-white px-4 py-2 rounded font-medium transition-colors shadow-sm">+ Nuevo Usuario</button>
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 text-sm">
+                <span class="text-gray-600">Mostrar:</span>
+                <select x-model="perPage" @change="currentPage = 1" class="border-gray-300 rounded-md text-sm py-1 pl-2 pr-8 focus:ring-primary focus:border-primary border">
+                    <option :value="5">5</option>
+                    <option :value="10">10</option>
+                    <option :value="20">20</option>
+                    <option :value="50">50</option>
+                </select>
+            </div>
+            <button @click="openModal()" class="bg-primary hover:bg-red-800 text-white px-4 py-2 rounded font-medium transition-colors shadow-sm">+ Nuevo Usuario</button>
+        </div>
     </div>
 
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
@@ -19,7 +30,10 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-                <template x-for="u in listado" :key="u.id">
+                <template x-if="paginatedListado.length === 0">
+                    <tr><td colspan="5" class="p-4 text-center text-gray-500">No hay usuarios para mostrar</td></tr>
+                </template>
+                <template x-for="u in paginatedListado" :key="u.id">
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="p-4 font-medium text-gray-800" x-text="u.nombre"></td>
                         <td class="p-4 text-gray-600" x-text="u.email"></td>
@@ -54,6 +68,18 @@
                 </template>
             </tbody>
         </table>
+        
+        <!-- Paginador -->
+        <div class="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+            <div class="text-sm text-gray-500">
+                Mostrando pág <span class="font-medium text-gray-800" x-text="currentPage"></span> de <span class="font-medium text-gray-800" x-text="totalPages"></span> 
+                (<span x-text="listado.length"></span> registros totales)
+            </div>
+            <div class="flex space-x-2">
+                <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
+                <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Siguiente</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Formulario -->
@@ -98,6 +124,27 @@ document.addEventListener('alpine:init', () => {
         modal: false,
         listado: [],
         form: { id: null, nombre: '', email: '', rol: 'operador' },
+        
+        // Paginación
+        currentPage: 1,
+        perPage: 10,
+        
+        get totalPages() {
+            return Math.ceil(this.listado.length / this.perPage) || 1;
+        },
+        
+        get paginatedListado() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.listado.slice(start, start + this.perPage);
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) this.currentPage++;
+        },
+        
+        prevPage() {
+            if (this.currentPage > 1) this.currentPage--;
+        },
 
         async init() {
             await this.fetchUsuarios();
