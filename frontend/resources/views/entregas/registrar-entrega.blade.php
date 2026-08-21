@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="max-w-3xl mx-auto py-8 px-4" x-data="registrarEntrega('{{ $pedidoId }}')">
@@ -78,10 +78,11 @@ document.addEventListener('alpine:init', () => {
         async confirmarEntrega() {
             // POST /api/entregas
             if(window.pdfGenerator) window.pdfGenerator.generateFactura();
-            alert('Entrega registrada');
+            Swal.fire('Éxito', 'Entrega registrada', 'success');
             window.location.href = '/entregas/mapa/1'; // redirect a mapa ruta
         }
     }));
 });
 </script>
 @endsection
+

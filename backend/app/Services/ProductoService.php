@@ -16,7 +16,7 @@ class ProductoService
 
     public function getCatalogo(array $filters, string $orderBy = 'nombre', string $orden = 'asc'): Collection
     {
-        $productos = $this->productoRepository->getAll($filters, $orderBy, $orden);
+        $productos = $this->productoRepository->getAllWithStock($filters, $orderBy);
 
         return $productos->map(function ($producto) {
             $disponible = $producto->cantidad_fisica - $producto->en_pedidos;

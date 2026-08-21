@@ -1,11 +1,11 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="max-w-4xl mx-auto py-8 px-4" x-data="cierreGuia()">
-    <h1 class="text-2xl font-bold mb-6">Cierre de Guía de Remisión</h1>
+    <h1 class="text-2xl font-bold mb-6">Cierre de GuÃ­a de RemisiÃ³n</h1>
 
     <div class="bg-white p-6 rounded shadow mb-6">
-        <h2 class="font-bold text-lg mb-4">Clasificación de Mercadería</h2>
+        <h2 class="font-bold text-lg mb-4">ClasificaciÃ³n de MercaderÃ­a</h2>
         <div class="space-y-4">
             <template x-for="item in productos" :key="item.id">
                 <div class="flex items-center justify-between border-b pb-4">
@@ -33,7 +33,7 @@
         <div class="grid grid-cols-2 gap-4 text-sm">
             <div>Total Ventas Efectivo:</div>
             <div class="text-right font-bold text-green-600">$<span x-text="totales.efectivo"></span></div>
-            <div>Total Ventas Depósito/Transferencia:</div>
+            <div>Total Ventas DepÃ³sito/Transferencia:</div>
             <div class="text-right font-bold text-blue-600">$<span x-text="totales.bancos"></span></div>
             <hr class="col-span-2">
             <div class="font-bold">Total Recaudado:</div>
@@ -42,7 +42,7 @@
     </div>
 
     <button @click="confirmarCierre" class="w-full bg-[#E3001B] hover:bg-red-700 text-white font-bold py-3 rounded">
-        Confirmar Cierre de Guía
+        Confirmar Cierre de GuÃ­a
     </button>
 </div>
 
@@ -60,10 +60,12 @@ document.addEventListener('alpine:init', () => {
 
         async confirmarCierre() {
             // PATCH /api/guias-remision/{id}/cerrar
-            alert('Guía cerrada exitosamente');
+            Swal.fire('Éxito', 'Guía cerrada exitosamente', 'success');
             window.location.href = '/gestion-pedidos';
         }
     }));
 });
 </script>
 @endsection
+
+

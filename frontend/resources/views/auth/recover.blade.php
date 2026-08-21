@@ -1,12 +1,12 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
-@section('title', 'Recuperar Contraseña - Fritolay')
+@section('title', 'Recuperar ContraseÃ±a - Fritolay')
 
 @section('content')
 <div class="max-w-md mx-auto mt-10 bg-white p-8 rounded-lg shadow-md" x-data="recoverForm()">
     <div class="text-center mb-8">
         <h1 class="text-3xl font-bold text-primary">Frito<span class="text-secondary">lay</span></h1>
-        <p class="text-neutral-dark mt-2">Recuperar Contraseña</p>
+        <p class="text-neutral-dark mt-2">Recuperar ContraseÃ±a</p>
     </div>
 
     <!-- Step 1: Request PIN -->
@@ -35,17 +35,17 @@
         </template>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700">PIN de Recuperación</label>
+            <label class="block text-sm font-medium text-gray-700">PIN de RecuperaciÃ³n</label>
             <input type="text" x-model="pin" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-primary" required>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
+            <label class="block text-sm font-medium text-gray-700">Nueva ContraseÃ±a</label>
             <input type="password" x-model="newPassword" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-primary" required>
         </div>
 
         <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-red-700">
-            Restablecer Contraseña
+            Restablecer ContraseÃ±a
         </button>
     </form>
     
@@ -72,10 +72,12 @@ function recoverForm() {
         async resetPassword() {
             this.error = '';
             // Mock api call
-            alert('Contraseña restablecida exitosamente');
+            Swal.fire('Éxito', 'Contraseña restablecida exitosamente', 'success');
             window.location.href = '/login';
         }
     }
 }
 </script>
 @endsection
+
+

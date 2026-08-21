@@ -1,9 +1,9 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="usuarios()">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Gestión de Usuarios Empleados</h1>
+        <h1 class="text-2xl font-bold">GestiÃ³n de Usuarios Empleados</h1>
         <button @click="modal = true" class="bg-[#E3001B] text-white px-4 py-2 rounded font-medium">+ Nuevo Usuario</button>
     </div>
 
@@ -60,7 +60,7 @@
                         <option value="CHOFER">Chofer</option>
                     </select>
                 </div>
-                <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border">La contraseña por defecto será: Fritolay2024*</div>
+                <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border">La contraseÃ±a por defecto serÃ¡: Fritolay2024*</div>
             </div>
             <div class="flex justify-end space-x-2 mt-6">
                 <button @click="modal = false" class="px-4 py-2 border rounded">Cancelar</button>
@@ -85,16 +85,18 @@ document.addEventListener('alpine:init', () => {
             // POST api/usuarios
         },
         toggleEstado(u) {
-            if(confirm(`¿Seguro que desea ${u.activo ? 'inactivar' : 'activar'} a ${u.nombre}?`)) {
+            if(confirm(`Â¿Seguro que desea ${u.activo ? 'inactivar' : 'activar'} a ${u.nombre}?`)) {
                 u.activo = !u.activo;
             }
         },
         resetPass(u) {
-            if(confirm(`¿Resetear contraseña de ${u.nombre}?`)) {
-                alert('Contraseña reseteada');
+            if(confirm(`Â¿Resetear contraseÃ±a de ${u.nombre}?`)) {
+                Swal.fire('Éxito', 'Contraseña reseteada', 'success');
             }
         }
     }));
 });
 </script>
 @endsection
+
+

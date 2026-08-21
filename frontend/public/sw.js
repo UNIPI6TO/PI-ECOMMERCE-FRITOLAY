@@ -1,9 +1,9 @@
-const CACHE_NAME = 'fritolay-v1';
+﻿const CACHE_NAME = 'fritolay-v1';
 const GCS_CACHE_NAME = 'fritolay-gcs-v1';
 
 const URLS_TO_CACHE = [
     '/',
-    '/login',
+    '/auth/login',
     '/manifest.json'
 ];
 
@@ -31,7 +31,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Estrategia: Cache-First para imágenes (GCS)
+    // Estrategia: Cache-First para imÃ¡genes (GCS)
     if (url.origin.includes('storage.googleapis.com')) {
         event.respondWith(
             caches.open(GCS_CACHE_NAME).then(async (cache) => {

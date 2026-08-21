@@ -1,4 +1,4 @@
-<!-- Mini Carrito Overlays -->
+﻿<!-- Mini Carrito Overlays -->
 <div x-data="miniCart()" 
      @toggle-cart.window="open = !open" 
      @cart-updated.window="updateCart()"
@@ -32,7 +32,7 @@
         <!-- Items -->
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
             <template x-if="items.length === 0">
-                <p class="text-gray-500 text-center mt-4">Tu carrito está vacío.</p>
+                <p class="text-gray-500 text-center mt-4">Tu carrito estÃ¡ vacÃ­o.</p>
             </template>
 
             <template x-for="item in items" :key="item.productoId">
@@ -88,9 +88,11 @@ function miniCart() {
             }
         },
         checkout() {
-            alert('Redirigiendo a pasarela de pago / confirmación de pedido...');
+            Swal.fire({title: 'Procesando...', text: 'Redirigiendo a pasarela de pago / confirmación de pedido...', icon: 'info', timer: 2000, showConfirmButton: false});
             // window.location.href = '/checkout';
         }
     }
 }
 </script>
+
+

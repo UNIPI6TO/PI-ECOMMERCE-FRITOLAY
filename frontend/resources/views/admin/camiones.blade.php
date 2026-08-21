@@ -1,10 +1,10 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="camiones()">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Gestión de Camiones</h1>
-        <button @click="modal = true" class="bg-gray-800 text-white px-4 py-2 rounded font-medium">+ Nuevo Camión</button>
+        <h1 class="text-2xl font-bold">GestiÃ³n de Camiones</h1>
+        <button @click="modal = true" class="bg-gray-800 text-white px-4 py-2 rounded font-medium">+ Nuevo CamiÃ³n</button>
     </div>
 
     <div class="bg-white rounded shadow overflow-hidden">
@@ -12,7 +12,7 @@
             <thead class="bg-gray-100">
                 <tr>
                     <th class="p-4">Placa</th>
-                    <th class="p-4">Descripción</th>
+                    <th class="p-4">DescripciÃ³n</th>
                     <th class="p-4">Chofer Asignado</th>
                     <th class="p-4">Estado</th>
                     <th class="p-4 text-center">Acciones</th>
@@ -50,14 +50,14 @@
     <!-- Modal Crear -->
     <div x-show="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-96">
-            <h3 class="font-bold text-lg mb-4">Registrar Camión</h3>
+            <h3 class="font-bold text-lg mb-4">Registrar CamiÃ³n</h3>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm mb-1">Placa</label>
                     <input type="text" x-model="nuevo.placa" placeholder="ABC-1234" class="w-full border rounded px-3 py-2 uppercase">
                 </div>
                 <div>
-                    <label class="block text-sm mb-1">Descripción / Modelo</label>
+                    <label class="block text-sm mb-1">DescripciÃ³n / Modelo</label>
                     <input type="text" x-model="nuevo.descripcion" class="w-full border rounded px-3 py-2">
                 </div>
             </div>
@@ -89,9 +89,10 @@ document.addEventListener('alpine:init', () => {
         },
         guardarCambios(camion) {
             // PUT api/camiones/{id}
-            alert('Cambios guardados en ' + camion.placa);
+            Swal.fire('Éxito', 'Cambios guardados en ' + camion.placa, 'success');
         }
     }));
 });
 </script>
 @endsection
+

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Catálogo - Fritolay')
 
@@ -11,7 +11,7 @@
         
         <div class="mb-4">
             <label class="block font-medium mb-1">Ordenar por</label>
-            <select x-model="sortBy" @change="fetchProducts" class="w-full border-gray-300 rounded p-2 text-sm border focus:ring-primary">
+            <select x-model="sortBy" @change="sortLocalProducts" class="w-full border-gray-300 rounded p-2 text-sm border focus:ring-primary">
                 <option value="name_asc">Nombre (A-Z)</option>
                 <option value="price_asc">Menor Precio</option>
                 <option value="price_desc">Mayor Precio</option>
@@ -22,15 +22,11 @@
             <label class="block font-medium mb-1">Tipo de Producto</label>
             <div class="space-y-2">
                 <label class="flex items-center">
-                    <input type="checkbox" value="snacks" x-model="filters.types" @change="fetchProducts" class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
+                    <input type="checkbox" value="Snack" x-model="filters.types" @change="applyFilters" class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
                     <span class="ml-2 text-sm">Snacks (Papas, Tortillas)</span>
                 </label>
                 <label class="flex items-center">
-                    <input type="checkbox" value="nuts" x-model="filters.types" @change="fetchProducts" class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
-                    <span class="ml-2 text-sm">Nueces y Semillas</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" value="dips" x-model="filters.types" @change="fetchProducts" class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
+                    <input type="checkbox" value="Dips" x-model="filters.types" @change="applyFilters" class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
                     <span class="ml-2 text-sm">Dips y Salsas</span>
                 </label>
             </div>
@@ -39,31 +35,40 @@
 
     <!-- Product Grid -->
     <div class="w-full md:w-3/4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <template x-for="product in products" :key="product.id">
+        
+        <div x-show="loading" class="text-center py-10">
+            <p class="text-gray-500">Cargando productos desde el servidor...</p>
+        </div>
+
+        <div x-show="!loading && displayedProducts.length === 0" class="text-center py-10">
+            <p class="text-gray-500">No se encontraron productos.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" x-show="!loading && displayedProducts.length > 0">
+            <template x-for="product in displayedProducts" :key="product.id">
                 <div class="bg-white rounded-lg shadow overflow-hidden relative flex flex-col">
                     
                     <!-- Badges -->
-                    <template x-if="product.stock === 0">
-                        <span class="badge-out-of-stock">Agotado</span>
+                    <template x-if="product.cantidad_fisica <= 0">
+                        <span class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">Agotado</span>
                     </template>
-                    <template x-if="product.stock > 0 && product.stock <= 5">
-                        <span class="badge-low-stock">¡Pocas unidades!</span>
+                    <template x-if="product.cantidad_fisica > 0 && product.cantidad_fisica <= 5">
+                        <span class="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">¡Pocas unidades!</span>
                     </template>
 
-                    <img :src="product.image || 'https://via.placeholder.com/150'" alt="Producto" loading="lazy" class="w-full h-48 object-cover">
+                    <img :src="product.imagen_gcs_path || 'https://via.placeholder.com/150'" alt="Producto" loading="lazy" class="w-full h-48 object-cover">
                     
                     <div class="p-4 flex-grow flex flex-col">
-                        <h3 class="font-bold text-lg text-neutral-dark" x-text="product.name"></h3>
-                        <p class="text-sm text-gray-500 mb-2" x-text="product.type"></p>
-                        <p class="text-xl font-bold text-primary mb-4" x-text="'$' + product.price.toFixed(2)"></p>
+                        <h3 class="font-bold text-lg text-neutral-dark" x-text="product.nombre"></h3>
+                        <p class="text-sm text-gray-500 mb-2" x-text="product.tipo"></p>
+                        <p class="text-xl font-bold text-primary mb-4" x-text="'$' + parseFloat(product.precio).toFixed(2)"></p>
                         
                         <div class="mt-auto flex items-center space-x-2" x-data="{ qty: 1 }">
-                            <input type="number" x-model="qty" min="1" :max="product.stock" class="w-16 border rounded p-1 text-center" :disabled="product.stock === 0">
+                            <input type="number" x-model.number="qty" min="1" :max="product.cantidad_fisica" class="w-16 border rounded p-1 text-center" :disabled="product.cantidad_fisica <= 0">
                             
-                            <button @click="window.CarritoManager.agregarItem(product.id, product.name, qty, product.price); $dispatch('cart-updated')" 
+                            <button @click="window.CarritoManager.agregarItem(product.id, product.nombre, qty, parseFloat(product.precio)); $dispatch('cart-updated')" 
                                     class="flex-grow bg-primary text-white py-1 px-3 rounded hover:bg-red-700 disabled:opacity-50"
-                                    :disabled="product.stock === 0">
+                                    :disabled="product.cantidad_fisica <= 0">
                                 Agregar
                             </button>
                         </div>
@@ -77,8 +82,10 @@
 <script>
 function catalogo() {
     return {
-        products: [],
+        allProducts: [],
+        displayedProducts: [],
         sortBy: 'name_asc',
+        loading: true,
         filters: {
             types: []
         },
@@ -86,21 +93,39 @@ function catalogo() {
             this.fetchProducts();
         },
         async fetchProducts() {
-            // Mock data fetch. In reality, call the API with this.filters and this.sortBy
-            this.products = [
-                { id: 1, name: 'Doritos Nacho', type: 'Snacks', price: 0.60, stock: 100, image: 'https://storage.googleapis.com/fritolay/doritos.png' },
-                { id: 2, name: 'Lays Clásicas', type: 'Snacks', price: 0.50, stock: 3, image: 'https://storage.googleapis.com/fritolay/lays.png' },
-                { id: 3, name: 'Tostitos Salsa', type: 'Dips', price: 2.50, stock: 0, image: 'https://storage.googleapis.com/fritolay/tostitos.png' },
-                { id: 4, name: 'Cheetos Queso', type: 'Snacks', price: 0.40, stock: 50, image: 'https://storage.googleapis.com/fritolay/cheetos.png' }
-            ];
-            
-            // Simple client side sort for demo
+            this.loading = true;
+            try {
+                // El backend está corriendo en el puerto 8000
+                const response = await fetch('http://localhost:8000/api/productos');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Puede venir directamente como array o dentro de un objeto de paginación (data.data)
+                    this.allProducts = Array.isArray(data) ? data : (data.data || []);
+                    this.applyFilters();
+                } else {
+                    console.error('Error fetching products:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        applyFilters() {
+            let filtered = this.allProducts;
+            if (this.filters.types.length > 0) {
+                filtered = filtered.filter(p => this.filters.types.includes(p.tipo));
+            }
+            this.displayedProducts = filtered;
+            this.sortLocalProducts();
+        },
+        sortLocalProducts() {
             if (this.sortBy === 'price_asc') {
-                this.products.sort((a,b) => a.price - b.price);
+                this.displayedProducts.sort((a, b) => parseFloat(a.precio) - parseFloat(b.precio));
             } else if (this.sortBy === 'price_desc') {
-                this.products.sort((a,b) => b.price - a.price);
+                this.displayedProducts.sort((a, b) => parseFloat(b.precio) - parseFloat(a.precio));
             } else {
-                this.products.sort((a,b) => a.name.localeCompare(b.name));
+                this.displayedProducts.sort((a, b) => a.nombre.localeCompare(b.nombre));
             }
         }
     }

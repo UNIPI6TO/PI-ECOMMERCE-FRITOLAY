@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="max-w-3xl mx-auto py-8 px-4" x-data="cierreCaja()">
@@ -6,7 +6,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div class="bg-white p-6 rounded shadow border-t-4 border-blue-500">
-            <h2 class="font-bold mb-4 text-gray-700">Resumen de Guía</h2>
+            <h2 class="font-bold mb-4 text-gray-700">Resumen de GuÃ­a</h2>
             <ul class="space-y-2 text-sm">
                 <li class="flex justify-between"><span>Pedidos Totales:</span> <span class="font-bold">25</span></li>
                 <li class="flex justify-between text-green-600"><span>Entregados:</span> <span class="font-bold">22</span></li>
@@ -16,10 +16,10 @@
         </div>
 
         <div class="bg-white p-6 rounded shadow border-t-4 border-green-500">
-            <h2 class="font-bold mb-4 text-gray-700">Recaudación por Sistema</h2>
+            <h2 class="font-bold mb-4 text-gray-700">RecaudaciÃ³n por Sistema</h2>
             <ul class="space-y-2 text-sm">
                 <li class="flex justify-between"><span>Efectivo:</span> <span class="font-bold">$<span x-text="sistema.efectivo"></span></span></li>
-                <li class="flex justify-between"><span>Depósitos/Transf:</span> <span class="font-bold">$<span x-text="sistema.bancos"></span></span></li>
+                <li class="flex justify-between"><span>DepÃ³sitos/Transf:</span> <span class="font-bold">$<span x-text="sistema.bancos"></span></span></li>
                 <li class="flex justify-between"><span>De Una:</span> <span class="font-bold">$<span x-text="sistema.de_una"></span></span></li>
             </ul>
             <div class="mt-4 pt-2 border-t flex justify-between font-bold text-lg">
@@ -29,7 +29,7 @@
     </div>
 
     <div class="bg-white p-8 rounded shadow text-center mb-6">
-        <h2 class="text-xl font-bold mb-4">Declaración de Efectivo</h2>
+        <h2 class="text-xl font-bold mb-4">DeclaraciÃ³n de Efectivo</h2>
         <p class="text-sm text-gray-600 mb-4">Ingrese el monto exacto de billetes y monedas que tiene en mano.</p>
         
         <div class="flex items-center justify-center">
@@ -64,16 +64,17 @@ document.addEventListener('alpine:init', () => {
 
         get mensajeDiferencia() {
             if(this.diferencia === 0) return 'Caja cuadrada perfectamente.';
-            if(this.diferencia < 0) return 'Faltante de caja. Se reportará al administrador.';
-            return 'Sobrante de caja. Se reportará al administrador.';
+            if(this.diferencia < 0) return 'Faltante de caja. Se reportarÃ¡ al administrador.';
+            return 'Sobrante de caja. Se reportarÃ¡ al administrador.';
         },
 
         async declarar() {
             // POST /api/guias-ruta/{id}/arqueo
-            alert('Arqueo registrado. Buen trabajo.');
+            Swal.fire('¡Buen trabajo!', 'Arqueo registrado.', 'success');
             window.location.href = '/entregas';
         }
     }));
 });
 </script>
 @endsection
+

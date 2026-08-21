@@ -15,6 +15,9 @@
     
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gray-50 text-neutral-dark min-h-screen flex flex-col font-sans">
     
@@ -31,7 +34,7 @@
                     <!-- Nav links condition based on roles (mocked in JS/Session) -->
                     <div x-data="{ role: localStorage.getItem('role') || 'guest' }" class="hidden md:flex space-x-4">
                         <template x-if="role === 'guest' || role === 'cliente'">
-                            <a href="/" class="hover:text-secondary px-3 py-2 rounded-md font-medium">Catálogo</a>
+                            <a href="/" class="hover:text-secondary px-3 py-2 rounded-md font-medium">CatÃ¡logo</a>
                         </template>
                         <template x-if="role === 'chofer'">
                             <a href="/rutas" class="hover:text-secondary px-3 py-2 rounded-md font-medium">Mis Rutas</a>
@@ -49,7 +52,7 @@
                     <!-- Auth Links -->
                     <div x-data="{ token: localStorage.getItem('jwt_token') }">
                         <template x-if="!token">
-                            <a href="/login" class="hover:text-secondary px-3 py-2 font-medium">Login</a>
+                            <a href="/auth/login" class="hover:text-secondary px-3 py-2 font-medium">Login</a>
                         </template>
                         <template x-if="token">
                             <button @click="logout()" class="hover:text-secondary px-3 py-2 font-medium">Logout</button>
@@ -89,7 +92,7 @@
         function logout() {
             localStorage.removeItem('jwt_token');
             localStorage.removeItem('role');
-            window.location.href = '/login';
+            window.location.href = '/auth/login';
         }
 
         // Register Service Worker

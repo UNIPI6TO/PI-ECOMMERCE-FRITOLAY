@@ -68,3 +68,15 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# Temporary scripts and standalone tools
+composer.phar
+*.py
+fetch_images.py
+insert_*.php
+seed_*.php
+
+# AI Agent directories
+.gemini/
+brain/
+scratch/
