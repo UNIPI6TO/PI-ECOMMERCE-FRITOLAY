@@ -17,10 +17,18 @@ class UsuarioAdminService
 
     public function crearEmpleado(array $data, int $adminId): object
     {
-        $data['password'] = bcrypt($data['email']);
+        // En lugar de bcrypt aquí, pasamos el password limpio para que el repositorio lo hashee
+        $data['password'] = $data['email']; 
         $empleado = $this->userRepository->create($data);
         $this->auditoriaService->log('creacion_empleado', 'Se creó el empleado ' . $empleado->id, $adminId);
         return $empleado;
+    }
+
+    public function actualizarEmpleado(int $id, array $data, int $adminId): object
+    {
+        $this->userRepository->update($id, $data);
+        $this->auditoriaService->log('actualizacion_empleado', 'Se actualizó el empleado ' . $id, $adminId);
+        return $this->userRepository->findById($id);
     }
 
     public function inactivar(int $id, int $adminId): bool
@@ -47,6 +55,6 @@ class UsuarioAdminService
 
     public function listarEmpleados(): Collection
     {
-        return $this->userRepository->getAll(['roles' => ['operador', 'chofer']]);
+        return $this->userRepository->getAll(['roles' => ['administrador', 'operador', 'chofer']]);
     }
 }

@@ -51,10 +51,17 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('registrarEntrega', (id) => ({
         pedidoId: id,
         metodoPago: 'EFECTIVO', // Simulado
-        items: [
-            {id: 1, nombre: 'Papas Fritas', solicitado: 10, entregado: 10, precio: 1.50},
-            {id: 2, nombre: 'Doritos', solicitado: 5, entregado: 5, precio: 2.00}
-        ],
+        items: [],
+
+        async init() {
+            try {
+                // To be wired to GET /api/pedidos/{pedidoId} if needed
+                // const data = await window.api(`/api/pedidos/${this.pedidoId}`);
+                // this.items = data.items;
+            } catch (e) {
+                console.error(e);
+            }
+        },
 
         get total() {
             return this.items.reduce((acc, item) => acc + (item.entregado * item.precio), 0);
@@ -78,10 +85,11 @@ document.addEventListener('alpine:init', () => {
         async confirmarEntrega() {
             // POST /api/entregas
             if(window.pdfGenerator) window.pdfGenerator.generateFactura();
-            alert('Entrega registrada');
+            Swal.fire('Éxito', 'Entrega registrada', 'success');
             window.location.href = '/entregas/mapa/1'; // redirect a mapa ruta
         }
     }));
 });
 </script>
 @endsection
+

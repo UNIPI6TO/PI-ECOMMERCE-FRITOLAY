@@ -62,25 +62,48 @@
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('aprobacion', () => ({
-        pedidos: [
-            {id: 'PED-101', cliente: 'Carlos Ruiz', metodo: 'DEPOSITO', total: 150},
-            {id: 'PED-102', cliente: 'Maria Paz', metodo: 'DE_UNA', total: 75}
-        ],
+        pedidos: [],
         selected: null,
         rechazarModal: false,
         motivo: '',
 
-        async aprobar(id) {
-            // PATCH /api/pedidos/{id}/aprobar
-            this.pedidos = this.pedidos.filter(p => p.id !== id);
-            this.selected = null;
+        async init() {
+            await this.fetchPedidos();
         },
+
+        async fetchPedidos() {
+            try {
+                this.pedidos = await window.api('/api/pedidos/pendientes-aprobacion');
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
+        async aprobar(id) {
+            try {
+                await window.api(`/api/pedidos/${id}/aprobar`, { method: 'PATCH' });
+                this.pedidos = this.pedidos.filter(p => p.id !== id);
+                this.selected = null;
+                Swal.fire('Éxito', 'Pedido aprobado', 'success');
+            } catch (e) {
+                Swal.fire('Error', e.message, 'error');
+            }
+        },
+
         async rechazar(id) {
-            // PATCH /api/pedidos/{id}/rechazar
-            this.pedidos = this.pedidos.filter(p => p.id !== id);
-            this.rechazarModal = false;
-            this.selected = null;
-            this.motivo = '';
+            try {
+                await window.api(`/api/pedidos/${id}/rechazar`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ motivo: this.motivo })
+                });
+                this.pedidos = this.pedidos.filter(p => p.id !== id);
+                this.rechazarModal = false;
+                this.selected = null;
+                this.motivo = '';
+                Swal.fire('Éxito', 'Pedido rechazado', 'success');
+            } catch (e) {
+                Swal.fire('Error', e.message, 'error');
+            }
         }
     }));
 });

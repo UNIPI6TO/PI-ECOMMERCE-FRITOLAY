@@ -116,7 +116,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('checkout', () => ({
         items: [],
-        direcciones: [{id: 1, texto: 'Av. Cevallos y Montalvo'}],
+        direcciones: [],
         metodosPago: [
             {id: 'EFECTIVO', nombre: 'Efectivo'},
             {id: 'DEPOSITO', nombre: 'Depósito/Transferencia'},
@@ -128,16 +128,27 @@ document.addEventListener('alpine:init', () => {
         comprobante: null,
         showAddressModal: false,
 
+        async init() {
+            if(window.CarritoManager) {
+                this.items = window.CarritoManager.getItems();
+            }
+            try {
+                const clienteData = await window.api('/api/clientes/me');
+                if (clienteData && clienteData.id) {
+                    this.direcciones = await window.api(`/api/clientes/${clienteData.id}/direcciones`);
+                    if(this.direcciones.length > 0) {
+                        this.selectedDireccion = this.direcciones[0].id;
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        },
+
         get subtotal() { return this.items.reduce((acc, item) => acc + (item.precio * item.qty), 0); },
         get descuento() { return 0; }, // Logica de descuento
         get iva() { return (this.subtotal - this.descuento) * 0.15; },
         get total() { return this.subtotal - this.descuento + this.iva; },
-
-        init() {
-            if(window.CarritoManager) {
-                this.items = window.CarritoManager.getItems();
-            }
-        },
 
         handleFile(e) {
             this.comprobante = e.target.files[0];
@@ -145,12 +156,8 @@ document.addEventListener('alpine:init', () => {
 
         async finalizarCompra() {
             try {
-                const res = await fetch(`${window.BACKEND_URL}/api/pedidos`, {
+                const data = await window.api('/api/pedidos', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
-                    },
                     body: JSON.stringify({
                         items: this.items,
                         direccion_id: this.selectedDireccion,
@@ -158,13 +165,11 @@ document.addEventListener('alpine:init', () => {
                         total: this.total
                     })
                 });
-
-                if (res.status === 201) {
-                    if (window.pdfGenerator) window.pdfGenerator.generateFactura();
-                    window.location.href = '/ecommerce/confirmacion';
-                }
+                if (window.pdfGenerator) window.pdfGenerator.generateFactura();
+                Swal.fire({ icon: 'success', title: '¡Pedido realizado!', text: 'Tu pedido fue registrado exitosamente.', confirmButtonColor: '#E3001B' })
+                    .then(() => window.location.href = '/ecommerce/confirmacion');
             } catch (error) {
-                console.error(error);
+                Swal.fire({ icon: 'error', title: 'Error al procesar pedido', text: error.message, confirmButtonColor: '#E3001B' });
             }
         },
         

@@ -1,9 +1,9 @@
-const CACHE_NAME = 'fritolay-v1';
+﻿const CACHE_NAME = 'fritolay-v1';
 const GCS_CACHE_NAME = 'fritolay-gcs-v1';
 
 const URLS_TO_CACHE = [
     '/',
-    '/login',
+    '/auth/login',
     '/manifest.json'
 ];
 
@@ -31,7 +31,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Estrategia: Cache-First para imágenes (GCS)
+    // Estrategia: Cache-First para imÃƒÂ¡genes (GCS)
     if (url.origin.includes('storage.googleapis.com')) {
         event.respondWith(
             caches.open(GCS_CACHE_NAME).then(async (cache) => {
@@ -50,6 +50,19 @@ self.addEventListener('fetch', (event) => {
 
     // Estrategia: Network-First para API y HTML/JS
     event.respondWith(
-        fetch(event.request).catch(() => caches.match(event.request))
+        fetch(event.request).catch(async () => {
+            const cachedResponse = await caches.match(event.request);
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+            // Retorno por defecto si falla la red y no estÃ¡ en cachÃ©
+            if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('application/json')) {
+                return new Response(JSON.stringify({ message: "Servicio no disponible u offline." }), {
+                    status: 503,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            return new Response("Offline", { status: 503 });
+        })
     );
 });

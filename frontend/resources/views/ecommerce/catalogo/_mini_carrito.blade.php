@@ -1,4 +1,4 @@
-<!-- Mini Carrito Overlays -->
+﻿<!-- Mini Carrito Overlays -->
 <div x-data="miniCart()" 
      @toggle-cart.window="open = !open" 
      @cart-updated.window="updateCart()"
@@ -88,9 +88,11 @@ function miniCart() {
             }
         },
         checkout() {
-            alert('Redirigiendo a pasarela de pago / confirmación de pedido...');
+            Swal.fire({title: 'Procesando...', text: 'Redirigiendo a pasarela de pago / confirmación de pedido...', icon: 'info', timer: 2000, showConfirmButton: false});
             // window.location.href = '/checkout';
         }
     }
 }
 </script>
+
+

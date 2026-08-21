@@ -7,9 +7,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#E3001B',
-        secondary: '#F5C518',
+        primary: '#C8102E', // Softer, more corporate Frito-Lay red (Pantone 186 C)
+        secondary: '#FCA311', // Warmer, more golden yellow
         'neutral-dark': '#333333',
+        'neutral-light': '#F8F9FA'
       }
     },
   },

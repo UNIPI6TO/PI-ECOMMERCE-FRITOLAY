@@ -49,21 +49,20 @@
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('cierreGuia', () => ({
-        productos: [
-            {id: 1, nombre: 'Papas Fritas 50g', devueltos: 10, buen_estado: 10},
-            {id: 2, nombre: 'Doritos 100g', devueltos: 5, buen_estado: 3}
-        ],
+        productos: [],
         totales: {
-            efectivo: 150.50,
-            bancos: 300.00
+            efectivo: 0,
+            bancos: 0
         },
 
         async confirmarCierre() {
             // PATCH /api/guias-remision/{id}/cerrar
-            alert('Guía cerrada exitosamente');
+            Swal.fire('Éxito', 'Guía cerrada exitosamente', 'success');
             window.location.href = '/gestion-pedidos';
         }
     }));
 });
 </script>
 @endsection
+
+

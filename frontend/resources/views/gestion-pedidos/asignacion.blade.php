@@ -21,7 +21,7 @@
                     </label>
                 </template>
             </div>
-            <button @click="moverADerecha" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Añadir a Ruta →</button>
+            <button @click="moverADerecha" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Añadir a Ruta â†’</button>
         </div>
 
         <!-- Panel Derecho: Camion y Asignados -->
@@ -54,10 +54,7 @@
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('asignacion', () => ({
-        pendientes: [
-            {id: 'PED-201', cliente: 'Tienda Juan', direccion: 'Centro'},
-            {id: 'PED-202', cliente: 'Mini Market', direccion: 'Sur'}
-        ],
+        pendientes: [],
         asignados: [],
         selectedPendientes: [],
         camionSeleccionado: '',
@@ -88,10 +85,12 @@ document.addEventListener('alpine:init', () => {
                 window.pdfGenerator.generateGuiaRemision();
                 window.pdfGenerator.generateGuiaRuta();
             }
-            alert('Ruta asignada con éxito');
+            Swal.fire('Éxito', 'Ruta asignada con éxito', 'success');
             this.asignados = [];
         }
     }));
 });
 </script>
 @endsection
+
+

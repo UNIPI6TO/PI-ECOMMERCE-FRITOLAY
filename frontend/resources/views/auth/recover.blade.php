@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Recuperar Contraseña - Fritolay')
 
@@ -72,10 +72,12 @@ function recoverForm() {
         async resetPassword() {
             this.error = '';
             // Mock api call
-            alert('Contraseña restablecida exitosamente');
+            Swal.fire('Éxito', 'Contraseña restablecida exitosamente', 'success');
             window.location.href = '/login';
         }
     }
 }
 </script>
 @endsection
+
+

@@ -11,19 +11,19 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-white p-4 rounded shadow border-l-4 border-blue-500">
             <div class="text-sm text-gray-500">Ventas Totales</div>
-            <div class="text-2xl font-bold">$12,450.00</div>
+            <div class="text-2xl font-bold">$<span x-text="kpis.ventas_totales || '0.00'"></span></div>
         </div>
         <div class="bg-white p-4 rounded shadow border-l-4 border-green-500">
             <div class="text-sm text-gray-500">Efectividad de Entrega</div>
-            <div class="text-2xl font-bold">94.5%</div>
+            <div class="text-2xl font-bold"><span x-text="kpis.efectividad || '0'"></span>%</div>
         </div>
         <div class="bg-white p-4 rounded shadow border-l-4 border-yellow-500">
             <div class="text-sm text-gray-500">Pedidos Entregados</div>
-            <div class="text-2xl font-bold">845</div>
+            <div class="text-2xl font-bold" x-text="kpis.pedidos_entregados || '0'"></div>
         </div>
         <div class="bg-white p-4 rounded shadow border-l-4 border-red-500">
             <div class="text-sm text-gray-500">Recaudación Efectivo</div>
-            <div class="text-2xl font-bold">$4,120.50</div>
+            <div class="text-2xl font-bold">$<span x-text="kpis.recaudacion_efectivo || '0.00'"></span></div>
         </div>
     </div>
 
@@ -57,8 +57,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="border-b"><td class="p-2">Juan Perez</td><td class="p-2 text-right">$45.00</td></tr>
-                        <tr class="border-b"><td class="p-2">Maria Lopez</td><td class="p-2 text-right">$12.50</td></tr>
+                        <template x-if="carritos.length === 0">
+                            <tr><td colspan="2" class="p-4 text-center text-gray-500">No hay carritos abandonados</td></tr>
+                        </template>
+                        <template x-for="carrito in carritos" :key="carrito.cliente">
+                            <tr class="border-b">
+                                <td class="p-2" x-text="carrito.cliente"></td>
+                                <td class="p-2 text-right" x-text="'$' + Number(carrito.monto).toFixed(2)"></td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -78,13 +85,41 @@
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('dashboard', () => ({
-        init() {
-            setTimeout(() => {
+        kpis: {
+            ingresos_mes: 0,
+            pedidos_pendientes: 0,
+            entregas_hoy: 0,
+            productos_bajo_stock: 0
+        },
+        carritos: [],
+
+        async init() {
+            try {
+                // Fetch KPIs
+                const kpisData = await window.api('/api/dashboard/kpis').catch(() => null);
+                if (kpisData) {
+                    this.kpis = kpisData;
+                }
+
+                // Fetch Carritos
+                const carritosData = await window.api('/api/dashboard/carritos-abandonados').catch(() => []);
+                if (carritosData) {
+                    this.carritos = carritosData;
+                }
+
+                // Fetch Ventas
+                const ventasData = await window.api('/api/dashboard/ventas').catch(() => null);
+                
                 new Chart(document.getElementById('ventasDia'), {
                     type: 'line',
                     data: {
-                        labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
-                        datasets: [{ label: 'Ventas ($)', data: [1200, 1900, 1500, 2200, 2800, 1800, 1000], borderColor: '#E3001B', tension: 0.1 }]
+                        labels: ventasData ? ventasData.labels : [],
+                        datasets: [{ 
+                            label: 'Ventas ($)', 
+                            data: ventasData ? ventasData.data : [], 
+                            borderColor: '#E3001B', 
+                            tension: 0.1 
+                        }]
                     }
                 });
 
@@ -92,19 +127,27 @@ document.addEventListener('alpine:init', () => {
                     type: 'pie',
                     data: {
                         labels: ['Efectivo', 'Depósito', 'De Una', 'Tarjeta', 'Crédito'],
-                        datasets: [{ data: [40, 20, 25, 10, 5], backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c'] }]
+                        datasets: [{ 
+                            data: [], // Replace with real data when recaudacion API is implemented
+                            backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c'] 
+                        }]
                     }
                 });
 
                 new Chart(document.getElementById('ventasCamion'), {
                     type: 'bar',
-                    options: { indexAxis: 'y' },
                     data: {
-                        labels: ['CAM-01', 'CAM-02', 'CAM-03', 'CAM-04'],
-                        datasets: [{ label: 'Ventas ($)', data: [4500, 3200, 2800, 1950], backgroundColor: '#F5C518' }]
+                        labels: [], // Replace with real data 
+                        datasets: [{ 
+                            label: 'Total Vendido ($)', 
+                            data: [], 
+                            backgroundColor: '#3498db' 
+                        }]
                     }
                 });
-            }, 200);
+            } catch (error) {
+                console.error("Error al cargar el dashboard", error);
+            }
         }
     }));
 });

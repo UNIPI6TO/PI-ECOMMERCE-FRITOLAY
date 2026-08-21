@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="max-w-3xl mx-auto py-8 px-4" x-data="cierreCaja()">
@@ -70,10 +70,11 @@ document.addEventListener('alpine:init', () => {
 
         async declarar() {
             // POST /api/guias-ruta/{id}/arqueo
-            alert('Arqueo registrado. Buen trabajo.');
+            Swal.fire('¡Buen trabajo!', 'Arqueo registrado.', 'success');
             window.location.href = '/entregas';
         }
     }));
 });
 </script>
 @endsection
+

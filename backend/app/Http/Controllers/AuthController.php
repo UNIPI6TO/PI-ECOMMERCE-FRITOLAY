@@ -41,9 +41,43 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json([
-            'user_id' => $request->input('user_id'),
-            'rol' => $request->input('user_rol')
+        $user = \App\Models\Usuario::find($request->input('user_id'));
+        if (!$user) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+        return response()->json($user);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'email' => 'required|email|unique:usuarios,email,' . $request->input('user_id')
         ]);
+        
+        $user = \App\Models\Usuario::find($request->input('user_id'));
+        $user->update([
+            'nombre' => $request->nombre,
+            'email' => $request->email
+        ]);
+        
+        return response()->json(['message' => 'Perfil actualizado correctamente', 'user' => $user]);
+    }
+
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed'
+        ]);
+
+        $user = \App\Models\Usuario::find($request->input('user_id'));
+        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password_hash)) {
+            return response()->json(['error' => 'La contraseña actual es incorrecta'], 400);
+        }
+
+        $user->update(['password_hash' => \Illuminate\Support\Facades\Hash::make($request->new_password)]);
+        
+        return response()->json(['message' => 'Contraseña actualizada correctamente']);
     }
 }

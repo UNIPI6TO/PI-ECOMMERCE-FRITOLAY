@@ -25,6 +25,12 @@ class UsuarioAdminController extends Controller
         return response()->json(['message' => 'Empleado creado', 'data' => $empleado], 201);
     }
 
+    public function update(UsuarioAdminRequest $request, int $id)
+    {
+        $empleado = $this->usuarioAdminService->actualizarEmpleado($id, $request->validated(), auth()->id());
+        return response()->json(['message' => 'Empleado actualizado', 'data' => $empleado]);
+    }
+
     public function inactivar(int $id)
     {
         $this->usuarioAdminService->inactivar($id, auth()->id());

@@ -81,19 +81,37 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('descuentos', () => ({
         modal: false,
-        listado: [
-            {id: 1, tipo: 'GENERAL', detalle: 'Promoción Verano', porcentaje: 5, caducidad: '2024-12-31'},
-            {id: 2, tipo: 'METODO_PAGO', detalle: 'Pago en Efectivo', porcentaje: 10, caducidad: '2024-06-30'}
-        ],
+        listado: [],
         nuevo: {tipo: 'GENERAL', cliente_id: '', metodo_pago: 'EFECTIVO', porcentaje: 5, fecha_caducidad: ''},
 
-        guardar() {
-            // POST /api/descuentos
-            this.modal = false;
+        async init() {
+            try {
+                this.listado = await window.api('/api/admin/descuentos');
+            } catch (error) {
+                console.error("Error al cargar descuentos:", error);
+            }
         },
-        eliminar(id) {
-            // DELETE /api/descuentos/{id}
-            this.listado = this.listado.filter(d => d.id !== id);
+
+        async guardar() {
+            try {
+                await window.api('/api/admin/descuentos', {
+                    method: 'POST',
+                    body: JSON.stringify(this.nuevo)
+                });
+                this.modal = false;
+                await this.init();
+            } catch (error) {
+                console.error("Error al guardar descuento:", error);
+            }
+        },
+        
+        async eliminar(id) {
+            try {
+                await window.api(`/api/admin/descuentos/${id}`, { method: 'DELETE' });
+                this.listado = this.listado.filter(d => d.id !== id);
+            } catch (error) {
+                console.error("Error al eliminar descuento:", error);
+            }
         }
     }));
 });

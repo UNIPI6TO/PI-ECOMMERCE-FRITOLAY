@@ -5,19 +5,19 @@
         "build": "vite build"
     },
     "devDependencies": {
-        "vite": "^5.0",
-        "@vitejs/plugin-php": "^0.8",
-        "laravel-vite-plugin": "^1.0",
         "autoprefixer": "^10.4",
+        "laravel-vite-plugin": "^1.0",
+        "postcss": "^8.4",
         "tailwindcss": "^3.4",
-        "postcss": "^8.4"
+        "vite": "^5.0"
     },
     "dependencies": {
         "alpinejs": "^3.13",
-        "leaflet": "^1.9",
         "chart.js": "^4.4",
+        "firebase": "^10.12",
         "jspdf": "^2.5",
         "jspdf-autotable": "^3.8",
-        "firebase": "^10.12"
-    }
+        "leaflet": "^1.9"
+    },
+    "type": "module"
 }
