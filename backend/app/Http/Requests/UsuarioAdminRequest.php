@@ -15,10 +15,11 @@ class UsuarioAdminRequest extends FormRequest
 
     public function rules(): array
     {
+        $id = $this->route('id');
         return [
             'nombre' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:usuarios,email',
-            'rol' => 'required|in:operador,chofer'
+            'email' => 'required|email|max:255|unique:usuarios,email,' . $id,
+            'rol' => 'required|in:administrador,operador,chofer'
         ];
     }
 }

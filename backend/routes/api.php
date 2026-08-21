@@ -175,6 +175,7 @@ Route::middleware('jwt')->group(function () {
     Route::prefix('admin/usuarios')->middleware('role:administrador')->group(function () {
         Route::get('/',                          [UsuarioAdminController::class, 'index']);
         Route::post('/',                         [UsuarioAdminController::class, 'store']);
+        Route::put('/{id}',                      [UsuarioAdminController::class, 'update']);
         Route::patch('/{id}/inactivar',          [UsuarioAdminController::class, 'inactivar']);
         Route::patch('/{id}/activar',            [UsuarioAdminController::class, 'activar']);
         Route::patch('/{id}/resetear-password',  [UsuarioAdminController::class, 'resetearPassword']);
