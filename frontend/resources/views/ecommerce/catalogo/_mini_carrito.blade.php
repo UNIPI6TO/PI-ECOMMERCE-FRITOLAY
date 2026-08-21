@@ -32,7 +32,7 @@
         <!-- Items -->
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
             <template x-if="items.length === 0">
-                <p class="text-gray-500 text-center mt-4">Tu carrito estÃ¡ vacÃ­o.</p>
+                <p class="text-gray-500 text-center mt-4">Tu carrito está vacío.</p>
             </template>
 
             <template x-for="item in items" :key="item.productoId">

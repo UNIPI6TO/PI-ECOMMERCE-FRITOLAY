@@ -145,12 +145,8 @@ document.addEventListener('alpine:init', () => {
 
         async finalizarCompra() {
             try {
-                const res = await fetch(`${window.BACKEND_URL}/api/pedidos`, {
+                const data = await window.api('/api/pedidos', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
-                    },
                     body: JSON.stringify({
                         items: this.items,
                         direccion_id: this.selectedDireccion,
@@ -158,13 +154,11 @@ document.addEventListener('alpine:init', () => {
                         total: this.total
                     })
                 });
-
-                if (res.status === 201) {
-                    if (window.pdfGenerator) window.pdfGenerator.generateFactura();
-                    window.location.href = '/ecommerce/confirmacion';
-                }
+                if (window.pdfGenerator) window.pdfGenerator.generateFactura();
+                Swal.fire({ icon: 'success', title: '¡Pedido realizado!', text: 'Tu pedido fue registrado exitosamente.', confirmButtonColor: '#E3001B' })
+                    .then(() => window.location.href = '/ecommerce/confirmacion');
             } catch (error) {
-                console.error(error);
+                Swal.fire({ icon: 'error', title: 'Error al procesar pedido', text: error.message, confirmButtonColor: '#E3001B' });
             }
         },
         

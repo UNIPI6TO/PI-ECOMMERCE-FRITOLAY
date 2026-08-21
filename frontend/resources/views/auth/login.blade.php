@@ -40,34 +40,24 @@ function loginForm() {
     return {
         email: '',
         password: '',
-        error: '',
         loading: false,
         async submit() {
             this.loading = true;
-            this.error = '';
             try {
-                // Mocked fetch for now, replace with actual API call
-                const res = await fetch('{{ env('BACKEND_API_URL', 'http://localhost:8000') }}/api/auth/login', {
+                const data = await window.api('/api/auth/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: this.email, password: this.password })
                 });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    localStorage.setItem('jwt_token', data.token);
-                    localStorage.setItem('role', data.role || 'cliente');
-                    window.location.href = '/';
-                } else {
-                    this.error = 'Credenciales inválidas.';
-                }
-            } catch (e) {
-                this.error = 'Error de conexión. Intente nuevamente.';
-                // DEMO MODE: Simulate login success
-                console.warn('Network error, simulating login for demo');
-                localStorage.setItem('jwt_token', 'demo_token');
-                localStorage.setItem('role', 'cliente');
+                localStorage.setItem('jwt_token', data.token);
+                localStorage.setItem('role', data.user?.rol || data.role || 'cliente');
                 window.location.href = '/';
+            } catch (e) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al iniciar sesión',
+                    text: e.message || 'Credenciales inválidas. Verifica tu email y contraseña.',
+                    confirmButtonColor: '#E3001B'
+                });
             } finally {
                 this.loading = false;
             }

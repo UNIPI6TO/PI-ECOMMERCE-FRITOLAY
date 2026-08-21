@@ -1,9 +1,9 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="usuarios()">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">GestiÃ³n de Usuarios Empleados</h1>
+        <h1 class="text-2xl font-bold">Gestión de Usuarios Empleados</h1>
         <button @click="modal = true" class="bg-[#E3001B] text-white px-4 py-2 rounded font-medium">+ Nuevo Usuario</button>
     </div>
 
@@ -60,7 +60,7 @@
                         <option value="CHOFER">Chofer</option>
                     </select>
                 </div>
-                <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border">La contraseÃ±a por defecto serÃ¡: Fritolay2024*</div>
+                <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border">La contraseña por defecto será: Fritolay2024*</div>
             </div>
             <div class="flex justify-end space-x-2 mt-6">
                 <button @click="modal = false" class="px-4 py-2 border rounded">Cancelar</button>
@@ -74,29 +74,62 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('usuarios', () => ({
         modal: false,
-        listado: [
-            {id: 1, nombre: 'Admin Master', email: 'admin@fritolay.com', rol: 'ADMIN', activo: true},
-            {id: 2, nombre: 'Luis Chofer', email: 'luis@fritolay.com', rol: 'CHOFER', activo: true}
-        ],
-        nuevo: {nombre: '', email: '', rol: 'OPERADOR'},
+        listado: [],
+        nuevo: {nombre: '', email: '', rol: 'operador'},
 
-        guardar() {
-            this.modal = false;
-            // POST api/usuarios
+        async init() {
+            await this.fetchUsuarios();
         },
-        toggleEstado(u) {
-            if(confirm(`Â¿Seguro que desea ${u.activo ? 'inactivar' : 'activar'} a ${u.nombre}?`)) {
-                u.activo = !u.activo;
+
+        async fetchUsuarios() {
+            try {
+                const data = await window.api('/api/admin/usuarios');
+                this.listado = data;
+            } catch (error) {
+                console.error("Error al cargar usuarios:", error);
             }
         },
-        resetPass(u) {
-            if(confirm(`Â¿Resetear contraseÃ±a de ${u.nombre}?`)) {
-                Swal.fire('Éxito', 'Contraseña reseteada', 'success');
+
+        async guardar() {
+            try {
+                await window.api('/api/admin/usuarios', {
+                    method: 'POST',
+                    body: JSON.stringify(this.nuevo)
+                });
+                this.modal = false;
+                this.nuevo = {nombre: '', email: '', rol: 'operador'};
+                await this.fetchUsuarios();
+                Swal.fire('Éxito', 'Usuario creado', 'success');
+            } catch (e) {
+                Swal.fire('Error', e.message || 'No se pudo guardar', 'error');
+            }
+        },
+
+        async toggleEstado(u) {
+            if(confirm(`¿Seguro que desea ${u.activo ? 'inactivar' : 'activar'} a ${u.nombre}?`)) {
+                const endpoint = u.activo ? `/api/admin/usuarios/${u.id}/inactivar` : `/api/admin/usuarios/${u.id}/activar`;
+                try {
+                    await window.api(endpoint, { method: 'PATCH' });
+                    await this.fetchUsuarios();
+                } catch (e) {
+                    Swal.fire('Error', e.message, 'error');
+                }
+            }
+        },
+
+        async resetPass(u) {
+            if(confirm(`¿Resetear contraseña de ${u.nombre}?`)) {
+                try {
+                    await window.api(`/api/admin/usuarios/${u.id}/resetear-password`, { method: 'PATCH' });
+                    Swal.fire('Éxito', 'Contraseña reseteada', 'success');
+                } catch (e) {
+                    Swal.fire('Error', e.message, 'error');
+                }
             }
         }
     }));
 });
 </script>
+
+
 @endsection
-
-

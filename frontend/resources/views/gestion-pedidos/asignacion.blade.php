@@ -1,8 +1,8 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="asignacion()">
-    <h1 class="text-2xl font-bold mb-6">AsignaciÃ³n de Rutas</h1>
+    <h1 class="text-2xl font-bold mb-6">Asignación de Rutas</h1>
     
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Panel Izquierdo: Mapa y Disponibles -->
@@ -21,14 +21,14 @@
                     </label>
                 </template>
             </div>
-            <button @click="moverADerecha" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">AÃ±adir a Ruta â†’</button>
+            <button @click="moverADerecha" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Añadir a Ruta â†’</button>
         </div>
 
         <!-- Panel Derecho: Camion y Asignados -->
         <div class="bg-white p-4 rounded shadow flex flex-col">
             <h3 class="font-bold mb-2">Configurar Ruta</h3>
             <select x-model="camionSeleccionado" class="w-full border rounded p-2 mb-4">
-                <option value="">Seleccione un camiÃ³n...</option>
+                <option value="">Seleccione un camión...</option>
                 <option value="CAM-1">CAM-1 (Chofer: Luis)</option>
                 <option value="CAM-2">CAM-2 (Chofer: Mario)</option>
             </select>
@@ -45,7 +45,7 @@
             </div>
             
             <button @click="cerrarAsignacion" :disabled="!camionSeleccionado || asignados.length === 0" class="mt-4 w-full bg-green-600 text-white py-3 rounded font-bold disabled:opacity-50">
-                Cerrar AsignaciÃ³n e Imprimir GuÃ­as
+                Cerrar Asignación e Imprimir Guías
             </button>
         </div>
     </div>
@@ -54,10 +54,7 @@
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('asignacion', () => ({
-        pendientes: [
-            {id: 'PED-201', cliente: 'Tienda Juan', direccion: 'Centro'},
-            {id: 'PED-202', cliente: 'Mini Market', direccion: 'Sur'}
-        ],
+        pendientes: [],
         asignados: [],
         selectedPendientes: [],
         camionSeleccionado: '',

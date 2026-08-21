@@ -18,6 +18,11 @@ class UserRepository implements UserRepositoryInterface
         return Usuario::find($id);
     }
 
+    public function getAll(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Usuario::all();
+    }
+
     public function create(array $data): Usuario
     {
         $data['password_hash'] = Hash::make($data['password']);

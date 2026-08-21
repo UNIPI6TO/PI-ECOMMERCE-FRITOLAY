@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Catálogo - Fritolay')
 
@@ -95,18 +95,13 @@ function catalogo() {
         async fetchProducts() {
             this.loading = true;
             try {
-                // El backend está corriendo en el puerto 8000
-                const response = await fetch('http://localhost:8000/api/productos');
-                if (response.ok) {
-                    const data = await response.json();
-                    // Puede venir directamente como array o dentro de un objeto de paginación (data.data)
-                    this.allProducts = Array.isArray(data) ? data : (data.data || []);
-                    this.applyFilters();
-                } else {
-                    console.error('Error fetching products:', response.statusText);
-                }
+                const data = await window.api('/api/productos');
+                // La respuesta viene como { data: [...] }
+                this.allProducts = Array.isArray(data) ? data : (data.data || []);
+                this.applyFilters();
             } catch (error) {
-                console.error('Fetch error:', error);
+                console.error('Error al cargar productos:', error.message);
+                Swal.fire({ icon: 'error', title: 'Sin conexión', text: 'No se pudo cargar el catálogo.', confirmButtonColor: '#E3001B' });
             } finally {
                 this.loading = false;
             }
