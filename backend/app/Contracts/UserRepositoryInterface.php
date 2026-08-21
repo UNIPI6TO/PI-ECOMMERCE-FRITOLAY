@@ -7,7 +7,7 @@ interface UserRepositoryInterface
 {
     public function findByEmail(string $email): ?Usuario;
     public function findById(int $id): ?Usuario;
-    public function getAll(): \Illuminate\Database\Eloquent\Collection;
+    public function getAll(array $filters = []): \Illuminate\Database\Eloquent\Collection;
     public function create(array $data): Usuario;
     public function update(int $id, array $data): bool;
     public function deactivate(int $id): bool;

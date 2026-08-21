@@ -24,10 +24,12 @@ class ReporteRepository
     {
         return DB::table('pedidos')
             ->join('asignacion_pedido_camion', 'pedidos.id', '=', 'asignacion_pedido_camion.pedido_id')
-            ->select('asignacion_pedido_camion.camion_id', DB::raw('SUM(pedidos.total) as total'))
+            ->join('guias_ruta', 'asignacion_pedido_camion.guia_ruta_id', '=', 'guias_ruta.id')
+            ->join('guias_remision', 'guias_ruta.guia_remision_id', '=', 'guias_remision.id')
+            ->select('guias_remision.camion_id', DB::raw('SUM(pedidos.total) as total'))
             ->whereIn('pedidos.estado', ['entregado', 'entregado_parcialmente'])
             ->whereBetween('pedidos.creado_en', [$inicio, $fin])
-            ->groupBy('asignacion_pedido_camion.camion_id')
+            ->groupBy('guias_remision.camion_id')
             ->get();
     }
 

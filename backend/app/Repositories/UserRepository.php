@@ -18,9 +18,15 @@ class UserRepository implements UserRepositoryInterface
         return Usuario::find($id);
     }
 
-    public function getAll(): \Illuminate\Database\Eloquent\Collection
+    public function getAll(array $filters = []): \Illuminate\Database\Eloquent\Collection
     {
-        return Usuario::all();
+        $query = Usuario::query();
+
+        if (isset($filters['roles']) && is_array($filters['roles'])) {
+            $query->whereIn('rol', $filters['roles']);
+        }
+
+        return $query->get();
     }
 
     public function create(array $data): Usuario
