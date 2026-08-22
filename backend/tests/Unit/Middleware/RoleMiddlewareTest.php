@@ -11,8 +11,7 @@ class RoleMiddlewareTest extends TestCase
 {
     public function test_rol_no_permitido()
     {
-        $request = Request::create('/api/test', 'GET');
-        $request->attributes->set('auth_user', (object)['rol' => 'cliente']);
+        $request = Request::create('/api/test', 'GET', ['user_rol' => 'cliente']);
         
         $middleware = new RoleMiddleware();
         
@@ -25,8 +24,7 @@ class RoleMiddlewareTest extends TestCase
 
     public function test_rol_permitido()
     {
-        $request = Request::create('/api/test', 'GET');
-        $request->attributes->set('auth_user', (object)['rol' => 'administrador']);
+        $request = Request::create('/api/test', 'GET', ['user_rol' => 'administrador']);
         
         $middleware = new RoleMiddleware();
         
