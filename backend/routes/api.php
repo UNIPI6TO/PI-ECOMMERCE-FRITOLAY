@@ -21,6 +21,16 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UsuarioAdminController;
 use App\Http\Controllers\EmpresaConfigController;
 
+// 🚀 ENDPOINT DE STATUS / INFO (público) 🚀
+Route::get('/info', function () {
+    return response()->json([
+        'status' => 'ok',
+        'api_name' => config('app.name', 'Fritolay Backend API'),
+        'environment' => config('app.env'),
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
 // ─── AUTENTICACIÓN (pública) ─────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
     Route::post('/login',          [AuthController::class, 'login']);
