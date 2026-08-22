@@ -64,6 +64,9 @@
 - Recaudación: Recaudación total y separado en efectivo, depósitos, cheques, De Una, Tarjeta de Crédito y Tarjetas de Débito.
 
 - Carritos Abandonados: Compras no concretadas que el usuario haya creado el carrito y haya cancelado la compra. Al cancelar, debe poner opciones de por qué cancela el pedido; las comunes son: No lo necesito, Era una proforma, Pedido Equivocado, No es lo que requiero, y otros.
+  - **Badge del Carrito:** El ícono del carrito en la barra de navegación muestra el número de **ítems únicos** (productos distintos), NO la suma total de unidades.
+  - **Vaciado con Registro de Abandono:** Cuando el usuario hace clic en "Vaciar Carrito", el sistema debe mostrar un modal de confirmación (SweetAlert) y, si acepta, registrar automáticamente un `POST /api/carritos-abandonados` con el `valor_total` del carrito y el motivo `'Carrito vaciado manualmente por el usuario'` antes de limpiar la cookie.
+  - **Vaciado al Finalizar Compra:** Al completar un pedido exitosamente, el sistema debe vaciar automáticamente el carrito (`CarritoManager.vaciar()`) antes de redirigir a la pantalla de confirmación. No se registra abandono en este caso (el pedido fue concretado).
 
 
 - Control de Stock: En el dashboard puede consultar el stock de los productos de las bodegas, de la bodega master y de los vehículos.

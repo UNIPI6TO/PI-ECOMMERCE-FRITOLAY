@@ -207,7 +207,17 @@ document.addEventListener('alpine:init', () => {
         },
 
         async eliminarDireccion(id) {
-            if(!confirm('¿Estás seguro de eliminar esta dirección?')) return;
+            const result = await Swal.fire({
+                title: '¿Eliminar dirección?',
+                text: 'Esta acción desactivará la dirección seleccionada.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#E3001B',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!result.isConfirmed) return;
             try {
                 await window.api(`/api/clientes/${this.clienteData.id}/direcciones/${id}`, {
                     method: 'DELETE'
@@ -296,7 +306,10 @@ document.addEventListener('alpine:init', () => {
                     window.generateFactura(pedidoParaFactura);
                 }
                 Swal.fire({ icon: 'success', title: '¡Pedido realizado!', text: 'Tu pedido fue registrado exitosamente.', confirmButtonColor: '#E3001B' })
-                    .then(() => window.location.href = '/ecommerce/confirmacion');
+                    .then(() => {
+                        window.CarritoManager.vaciar();
+                        window.location.href = '/ecommerce/confirmacion';
+                    });
             } catch (error) {
                 Swal.fire({ icon: 'error', title: 'Error al procesar pedido', text: error.message, confirmButtonColor: '#E3001B' });
             }

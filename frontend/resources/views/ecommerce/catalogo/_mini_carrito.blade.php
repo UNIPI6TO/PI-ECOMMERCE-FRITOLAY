@@ -63,7 +63,7 @@
                 <button @click="checkout" class="w-full bg-secondary text-neutral-dark font-bold py-2 rounded hover:bg-yellow-500" :disabled="items.length === 0">
                     Proceder al Checkout
                 </button>
-                <button @click="window.CarritoManager.vaciar(); updateCart();" class="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-100" :disabled="items.length === 0">
+                <button @click="vaciarConAbandono()" class="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-100" :disabled="items.length === 0">
                     Vaciar Carrito
                 </button>
             </div>
@@ -102,9 +102,23 @@ function miniCart() {
             setTimeout(() => {
                 window.location.href = '/ecommerce/checkout';
             }, 1000);
+        },
+        async vaciarConAbandono() {
+            const result = await Swal.fire({
+                title: '¿Vaciar carrito?',
+                text: 'Se registrará el abandono del carrito y se eliminará su contenido.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#E3001B',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, vaciar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!result.isConfirmed) return;
+            await window.CarritoManager.abandonarCarrito('Carrito vaciado manualmente por el usuario');
+            this.updateCart();
+            Swal.fire({ icon: 'info', title: 'Carrito vaciado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
         }
     }
 }
 </script>
-
-

@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="max-w-3xl mx-auto py-12 px-4" x-data="perfil()">
@@ -153,13 +153,23 @@ document.addEventListener('alpine:init', () => {
         },
 
         async eliminarDireccion(id) {
-            if (!confirm('Â¿Seguro que deseas eliminar esta direcciÃ³n?')) return;
+            const result = await Swal.fire({
+                title: '¿Eliminar dirección?',
+                text: 'Esta acción desactivará la dirección seleccionada.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#E3001B',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!result.isConfirmed) return;
             try {
                 await window.api(`/api/clientes/${this.clienteId}/direcciones/${id}`, { method: 'DELETE' });
                 await this.loadDirecciones();
-                if (typeof Swal !== 'undefined') Swal.fire({ icon: 'success', title: 'Eliminada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                Swal.fire({ icon: 'success', title: 'Eliminada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
             } catch (e) {
-                if (typeof Swal !== 'undefined') Swal.fire('Error', 'No se pudo eliminar la direcciÃ³n', 'error');
+                Swal.fire('Error', 'No se pudo eliminar la dirección', 'error');
             }
         },
 
