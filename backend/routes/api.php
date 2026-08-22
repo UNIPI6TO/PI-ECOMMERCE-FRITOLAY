@@ -19,6 +19,7 @@ use App\Http\Controllers\EntregaController;
 use App\Http\Controllers\GpsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UsuarioAdminController;
+use App\Http\Controllers\EmpresaConfigController;
 
 // ─── AUTENTICACIÓN (pública) ─────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
@@ -43,6 +44,9 @@ Route::prefix('productos')->group(function () {
 
 // Registro de carritos abandonados (sin JWT, puede ser invitado)
 Route::post('/carritos-abandonados', [CarritoAbandonadoController::class, 'store']);
+
+// Configuración pública del emisor (para generar facturas en el frontend)
+Route::get('/empresa', [EmpresaConfigController::class, 'show']);
 
 // ─── RUTAS PROTEGIDAS POR JWT ─────────────────────────────────────────────────
 Route::middleware('jwt')->group(function () {
@@ -93,7 +97,7 @@ Route::middleware('jwt')->group(function () {
     });
 
     // Listado de pedidos con filtros (operador/admin)
-    Route::get('/pedidos', [PagoController::class, 'index'])
+    Route::get('/pedidos', [PedidoController::class, 'index'])
         ->middleware('role:operador,administrador');
 
     // ── Asignaciones de rutas ────────────────────────────────────────────────
@@ -160,8 +164,8 @@ Route::middleware('jwt')->group(function () {
     Route::post('/gps/ubicacion', [GpsController::class, 'actualizarUbicacion'])
         ->middleware('role:chofer');
 
-    // ── Dashboard (solo administrador) ───────────────────────────────────────
-    Route::prefix('dashboard')->middleware('role:administrador')->group(function () {
+    // ── Dashboard (solo administrador y operador) ────────────────────────────
+    Route::prefix('dashboard')->middleware('role:administrador,operador,admin')->group(function () {
         Route::get('/kpis',                  [DashboardController::class, 'kpis']);
         Route::get('/ventas',                [DashboardController::class, 'ventas']);
         Route::get('/recaudacion',           [DashboardController::class, 'recaudacion']);

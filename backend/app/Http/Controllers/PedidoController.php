@@ -17,6 +17,33 @@ class PedidoController extends Controller
     ) {
     }
 
+    public function index(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $pedidos = \App\Models\Pedido::with(['cliente.usuario'])->orderBy('id', 'desc')->get();
+        
+        $data = $pedidos->map(function($p) {
+            $estadoStr = strtoupper($p->estado);
+            if (in_array($estadoStr, ['EN_ESPERA_APROBACION', 'EN_ESPERA_ASIGNACION'])) {
+                $estadoStr = 'PENDIENTE';
+            } elseif ($estadoStr === 'LISTO_PARA_ENTREGAR') {
+                $estadoStr = 'APROBADO';
+            } elseif ($estadoStr === 'ENTREGADO_PARCIALMENTE') {
+                $estadoStr = 'ENTREGADO';
+            }
+
+            return [
+                'id' => $p->id,
+                'cliente' => $p->cliente ? ($p->cliente->nombre_compania ?: ($p->cliente->usuario->nombre ?? 'Sin Cliente')) : 'Desconocido',
+                'pago' => strtoupper($p->metodo_pago),
+                'total' => $p->total,
+                'estado' => $estadoStr,
+                'fecha' => $p->creado_en ? $p->creado_en->format('Y-m-d H:i') : ''
+            ];
+        });
+
+        return response()->json($data);
+    }
+
     public function store(CheckoutRequest $request): JsonResponse
     {
         $data = $request->validated();

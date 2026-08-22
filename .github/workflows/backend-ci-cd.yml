@@ -52,6 +52,6 @@ jobs:
             --image=$IMAGE_PATH:latest \
             --region=${{ secrets.GCP_REGION }} \
             --platform=managed \
-            --allow-unauthenticated \
-            --set-secrets=JWT_SECRET=JWT_SECRET:latest,DB_PASSWORD=DB_PASSWORD:latest
+            --no-allow-unauthenticated \
+            --set-secrets="/secrets/.env=fritolay-backend-env:latest"
 

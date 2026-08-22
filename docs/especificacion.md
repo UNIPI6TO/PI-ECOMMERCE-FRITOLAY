@@ -1889,6 +1889,27 @@ erDiagram
         datetime fecha_abandono
     }
 
+    EMPRESA_CONFIG {
+        int id PK
+        string razon_social
+        string nombre_comercial
+        string ruc
+        string codigo_establecimiento
+        string punto_emision
+        string direccion_matriz
+        string direccion_sucursal
+        string telefono
+        string email
+        string tipo_contribuyente
+        boolean obligado_contabilidad
+        string tipo_ambiente
+        string tipo_emision
+        string logo_url
+        string color_primario
+        datetime created_at
+        datetime updated_at
+    }
+
     USUARIOS ||--o| CLIENTES : "tiene perfil"
     USUARIOS ||--o| CAMIONES : "conduce"
     CLIENTES ||--o{ DIRECCIONES_CLIENTE : "tiene"
@@ -1900,6 +1921,7 @@ erDiagram
     PEDIDOS }o--|| DIRECCIONES_CLIENTE : "entrega en"
     ITEMS_PEDIDO }o--|| PRODUCTOS : "referencia"
     PRODUCTOS ||--o{ TRANSACCIONES_INVENTARIO : "afectado en"
+    FACTURAS }o--|| EMPRESA_CONFIG : "usa datos emisor"
     PRODUCTOS ||--o{ BODEGA_CAMION : "almacenado en"
     CAMIONES ||--o{ GUIAS_REMISION : "asignado a"
     CAMIONES ||--o{ BODEGA_CAMION : "administra"
@@ -2300,6 +2322,29 @@ Comprobantes legales de venta generados por pedido completado.
 | `subtotal` | DECIMAL(10,2) | NOT NULL | Valor base. |
 | `iva` | DECIMAL(10,2) | NOT NULL | Impuestos. |
 | `total` | DECIMAL(10,2) | NOT NULL | Total facturado. |
+
+**Tabla: `EMPRESA_CONFIG`**
+Almacena la información legal del emisor, punto de emisión, código de establecimiento SRI, para usarse globalmente al generar facturas y guías.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador único. |
+| `razon_social` | VARCHAR(200) | NOT NULL | Nombre legal de la empresa. |
+| `nombre_comercial` | VARCHAR(200) | NULL | Nombre comercial. |
+| `ruc` | VARCHAR(13) | NOT NULL | RUC del emisor. |
+| `codigo_establecimiento` | VARCHAR(3) | NOT NULL, Default '003' | Código SRI del establecimiento (Ej. 003 Ambato). |
+| `punto_emision` | VARCHAR(3) | NOT NULL, Default '001' | Código SRI del punto de emisión. |
+| `direccion_matriz` | VARCHAR(300) | NOT NULL | Dirección legal de la matriz. |
+| `direccion_sucursal` | VARCHAR(300) | NULL | Dirección del establecimiento emisor. |
+| `telefono` | VARCHAR(20) | NULL | Teléfono de contacto. |
+| `email` | VARCHAR(100) | NULL | Correo electrónico de facturación. |
+| `tipo_contribuyente` | VARCHAR(100) | NOT NULL, Default 'ESPECIAL' | Resolución del contribuyente. |
+| `obligado_contabilidad`| BOOLEAN | NOT NULL, Default TRUE | Indica si está obligado a llevar contabilidad. |
+| `tipo_ambiente` | VARCHAR(1) | NOT NULL, Default '1' | Ambiente SRI (1=Pruebas, 2=Producción). |
+| `tipo_emision` | VARCHAR(1) | NOT NULL, Default '1' | Tipo Emisión SRI (1=Normal). |
+| `logo_url` | VARCHAR(500) | NULL | Enlace al logo institucional. |
+| `color_primario` | VARCHAR(7) | NOT NULL, Default '#E3001B'| Color de marca para PDF (Ej. Fritolay Red). |
+| `created_at` / `updated_at`| TIMESTAMP | | Control de auditoría base. |
 
 **Tabla: `MERCADERIA_MAL_ESTADO`**
 Registro de devoluciones o daños reportados durante la ruta.

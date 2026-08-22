@@ -1,4 +1,4 @@
-terraform {
+﻿terraform {
   backend "gcs" {
     bucket = "tfstate-pi-8vo-semestre-2026"
     prefix = "terraform/state/mysql"
@@ -53,6 +53,7 @@ resource "google_sql_user" "backend_sa_user" {
   type     = "CLOUD_IAM_SERVICE_ACCOUNT"
 }
 
+
 resource "google_sql_user" "admin_user" {
   name     = "octavosemetreuniandes2026@gmail.com"
   instance = google_sql_database_instance.mysql_instance.name
@@ -81,5 +82,3 @@ import {
   to = google_sql_database_instance.mysql_instance
   id = "projects/project-3e1faa58-1e7d-4e8d-933/instances/fritolay-mysql"
 }
-
-

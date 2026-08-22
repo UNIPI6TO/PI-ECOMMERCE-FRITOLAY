@@ -31,4 +31,4 @@ RUN php artisan config:clear || true \
 
 # Run migrations + serve
 EXPOSE 8000
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
+CMD ["sh", "-c", "cp /secrets/.env /var/www/backend/.env && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]

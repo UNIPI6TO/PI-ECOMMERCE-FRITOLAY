@@ -1,75 +1,145 @@
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-export const generateFactura = (facturaData) => {
+/** Cache de la configuración de empresa para no llamar la API en cada factura */
+let _empresaCache = null;
+
+async function getEmpresaConfig() {
+    if (_empresaCache) return _empresaCache;
+    try {
+        const res = await fetch(`${window.BACKEND_URL}/api/empresa`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+            const json = await res.json();
+            _empresaCache = json.data;
+        }
+    } catch (e) {
+        console.warn('[pdf-generator] No se pudo cargar empresa_config, usando valores por defecto.', e);
+    }
+    // Fallback a datos hardcoded si la API falla
+    if (!_empresaCache) {
+        _empresaCache = {
+            razon_social: 'Pepsico Alimentos Ecuador Cia. Ltda.',
+            nombre_comercial: 'Fritolay Ambato',
+            ruc: '1790205401001',
+            codigo_establecimiento: '003',
+            punto_emision: '001',
+            direccion_matriz: 'Av. General Rumiñahui Lote 2, Sangolquí, Pichincha',
+            direccion_sucursal: 'Zona Industrial de Ambato, Tungurahua, Ecuador',
+            telefono: '032-000-000',
+            tipo_contribuyente: 'ESPECIAL',
+            obligado_contabilidad: true,
+            color_primario: '#E3001B',
+        };
+    }
+    return _empresaCache;
+}
+
+/**
+ * Genera el número de factura formateado según SRI Ecuador.
+ * Formato: {est}-{pto}-{secuencial}
+ */
+function formatNumeroSRI(empresa, secuencial) {
+    const est = (empresa.codigo_establecimiento || '003').padStart(3, '0');
+    const pto = (empresa.punto_emision || '001').padStart(3, '0');
+    const seq = String(secuencial).padStart(9, '0');
+    return `${est}-${pto}-${seq}`;
+}
+
+/**
+ * Convierte color hex #RRGGBB a array [R, G, B]
+ */
+function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+}
+
+export const generateFactura = async (facturaData) => {
+    const empresa = await getEmpresaConfig();
+    const [r, g, b] = hexToRgb(empresa.color_primario || '#E3001B');
     const doc = new jsPDF();
-    
-    // Header - Logo/Empresa
-    doc.setFillColor(227, 0, 27); // Fritolay Red #E3001B
-    doc.rect(0, 0, 210, 35, 'F');
-    
+
+    // ── Header Banner ─────────────────────────────────────────────────────────
+    doc.setFillColor(r, g, b);
+    doc.rect(0, 0, 210, 38, 'F');
+
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
+    doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("FRITOLAY AMBATO", 14, 23);
-    
-    // Cuadro SRI (Arriba a la derecha)
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(110, 10, 90, 30, 2, 2, 'F');
-    doc.setDrawColor(200, 200, 200);
-    doc.roundedRect(110, 10, 90, 30, 2, 2, 'S');
-    
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("RUC: 1890000000001", 115, 18);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("FACTURA", 115, 25);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`No. ${facturaData.numero}`, 115, 32);
-    
-    // Datos de la empresa
+    doc.text(empresa.nombre_comercial || empresa.razon_social, 14, 18);
     doc.setFontSize(9);
-    doc.text("Dirección Matriz: Av. Los Guaytambos y Montalvo", 14, 45);
-    doc.text("OBLIGADO A LLEVAR CONTABILIDAD: SÍ", 14, 50);
-
-    // Datos del Cliente (Recuadro)
-    doc.roundedRect(14, 55, 186, 30, 2, 2, 'S');
-    doc.setFont("helvetica", "bold");
-    doc.text("Razón Social / Nombres y Apellidos:", 17, 62);
     doc.setFont("helvetica", "normal");
-    doc.text(facturaData.clienteNombre, 75, 62);
+    doc.text(empresa.razon_social, 14, 25);
+    doc.text(`RUC: ${empresa.ruc}`, 14, 31);
+    doc.text(`Contribuyente ${empresa.tipo_contribuyente}`, 14, 36);
+
+    // ── Cuadro SRI (derecha) ──────────────────────────────────────────────────
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(118, 5, 87, 30, 2, 2, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.roundedRect(118, 5, 87, 30, 2, 2, 'S');
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    const numSRI = facturaData.numero;
+    doc.setFont("helvetica", "bold");
+    doc.text("FACTURA", 120, 12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`No. ${numSRI}`, 120, 18);
+    doc.text(`Ambiente: ${empresa.tipo_ambiente === '1' ? 'PRUEBAS' : 'PRODUCCIÓN'}`, 120, 24);
+    doc.text(`Emisión: ${empresa.tipo_emision === '1' ? 'NORMAL' : 'IND. ELEC.'}`, 120, 30);
+
+    // ── Datos Empresa ─────────────────────────────────────────────────────────
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Dir. Matriz: ${empresa.direccion_matriz}`, 14, 44);
+    if (empresa.direccion_sucursal) {
+        doc.text(`Dir. Sucursal: ${empresa.direccion_sucursal}`, 14, 49);
+    }
+    doc.text(`Obligado a llevar contabilidad: ${empresa.obligado_contabilidad ? 'SÍ' : 'NO'}`, 14, 54);
+
+    // ── Datos del Cliente ─────────────────────────────────────────────────────
+    doc.setDrawColor(180, 180, 180);
+    doc.roundedRect(14, 58, 183, 28, 2, 2, 'S');
+    doc.setFontSize(8.5);
+
+    doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
+    doc.text("Razón Social / Nombres:", 17, 65);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(facturaData.clienteNombre || 'Consumidor Final').substring(0, 55), 68, 65);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Identificación (RUC/C.I.):", 17, 69);
+    doc.text("Identificación (RUC/C.I.):", 17, 71);
     doc.setFont("helvetica", "normal");
-    doc.text(facturaData.clienteRuc, 60, 69);
+    doc.text(String(facturaData.clienteRuc || '9999999999999'), 65, 71);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Fecha Emisión:", 130, 69);
+    doc.text("Fecha Emisión:", 130, 71);
     doc.setFont("helvetica", "normal");
-    doc.text(facturaData.fecha, 160, 69);
+    doc.text(facturaData.fecha, 162, 71);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Dirección:", 17, 76);
+    doc.text("Dirección:", 17, 77);
     doc.setFont("helvetica", "normal");
-    doc.text(facturaData.clienteDireccion.substring(0, 50), 38, 76);
+    doc.text(String(facturaData.clienteDireccion || 'S/N').substring(0, 50), 37, 77);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Teléfono:", 130, 76);
+    doc.text("Teléfono:", 130, 77);
     doc.setFont("helvetica", "normal");
-    doc.text(facturaData.clienteTelefono || 'S/N', 150, 76);
+    doc.text(String(facturaData.clienteTelefono || 'S/N'), 152, 77);
 
-    // Tabla de Detalles
-    const tableColumn = ["Cod.", "Cantidad", "Descripción", "P. Unitario", "Descuento", "Total"];
-    const tableRows = facturaData.items.map((item, index) => [
-        `PRD-${index+1}`,
+    // ── Tabla Detalles ────────────────────────────────────────────────────────
+    const tableColumn = ["#", "Cantidad", "Descripción", "P. Unit.", "Descuento", "Total"];
+    const tableRows = (facturaData.items || []).map((item, index) => [
+        `${index + 1}`,
         item.cantidad,
         item.nombre,
         `$${Number(item.precioUnitario).toFixed(2)}`,
-        `$0.00`, // Individual discounts not handled atm
+        `$0.00`,
         `$${(item.cantidad * item.precioUnitario).toFixed(2)}`
     ]);
 
@@ -77,61 +147,81 @@ export const generateFactura = (facturaData) => {
         head: [tableColumn],
         body: tableRows,
         startY: 90,
-        headStyles: { fillColor: [227, 0, 27], textColor: [255, 255, 255], fontStyle: 'bold' },
-        styles: { fontSize: 9 },
+        headStyles: { fillColor: [r, g, b], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 8 },
+        columnStyles: { 2: { cellWidth: 60 } }
     });
 
     const finalY = doc.lastAutoTable.finalY || 90;
 
-    // Forma de Pago
-    doc.roundedRect(14, finalY + 10, 80, 25, 2, 2, 'S');
-    doc.setFont("helvetica", "bold");
-    doc.text("Forma de Pago", 17, finalY + 16);
+    // ── Forma de Pago ─────────────────────────────────────────────────────────
+    doc.roundedRect(14, finalY + 8, 80, 22, 2, 2, 'S');
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+    doc.text("Forma de Pago", 17, finalY + 14);
     doc.setFont("helvetica", "normal");
-    doc.text(facturaData.metodoPago.toUpperCase().replace(/_/g, ' '), 17, finalY + 23);
-    doc.text(`Valor: $${facturaData.total}`, 17, finalY + 30);
+    doc.text(String(facturaData.metodoPago || '').toUpperCase().replace(/_/g, ' '), 17, finalY + 20);
+    doc.text(`Valor: $${Number(facturaData.total).toFixed(2)}`, 17, finalY + 26);
 
-    // Subtotales (Derecha)
-    const xTotals = 140;
-    const xValues = 180;
-    let currentY = finalY + 15;
+    // ── Totales ───────────────────────────────────────────────────────────────
+    const xL = 130; const xR = 195;
+    let cy = finalY + 14;
+    const row = (label, value) => {
+        doc.setFont("helvetica", "bold"); doc.text(label, xL, cy);
+        doc.setFont("helvetica", "normal"); doc.text(`$${Number(value).toFixed(2)}`, xR, cy, { align: 'right' });
+        cy += 6;
+    };
+    row("SUBTOTAL:", facturaData.subtotal);
+    row("DESCUENTO:", facturaData.descuento || 0);
+    row("IVA 15%:", facturaData.iva);
 
-    doc.setFont("helvetica", "bold");
-    doc.text("SUBTOTAL 15%", xTotals, currentY);
-    doc.setFont("helvetica", "normal");
-    doc.text(`$${facturaData.subtotal}`, xValues, currentY);
-    currentY += 6;
+    doc.setFontSize(10); doc.setFont("helvetica", "bold");
+    doc.text("VALOR TOTAL:", xL, cy);
+    doc.text(`$${Number(facturaData.total).toFixed(2)}`, xR, cy, { align: 'right' });
 
-    doc.setFont("helvetica", "bold");
-    doc.text("DESCUENTO", xTotals, currentY);
-    doc.setFont("helvetica", "normal");
-    doc.text(`$${facturaData.descuento}`, xValues, currentY);
-    currentY += 6;
+    // ── Footer ────────────────────────────────────────────────────────────────
+    doc.setFontSize(7); doc.setFont("helvetica", "italic"); doc.setTextColor(120, 120, 120);
+    doc.text(`Documento generado el ${new Date().toLocaleString('es-EC')} — Ambiente: ${empresa.tipo_ambiente === '1' ? 'PRUEBAS' : 'PRODUCCIÓN'}`, 14, 285);
 
-    doc.setFont("helvetica", "bold");
-    doc.text("IVA 15%", xTotals, currentY);
-    doc.setFont("helvetica", "normal");
-    doc.text(`$${facturaData.iva}`, xValues, currentY);
-    currentY += 6;
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("VALOR TOTAL", xTotals, currentY);
-    doc.text(`$${facturaData.total}`, xValues, currentY);
-
-    doc.save(`factura_${facturaData.numero}.pdf`);
+    doc.save(`factura_${numSRI}.pdf`);
 };
 
-export const generateGuiaRemision = (guiaData) => {
+export const generateGuiaRemision = async (guiaData) => {
+    const empresa = await getEmpresaConfig();
+    const [r, g, b] = hexToRgb(empresa.color_primario || '#E3001B');
     const doc = new jsPDF();
-    doc.text("Guía de Remisión - Fritolay", 14, 20);
-    // similar structure to factura
-    doc.save(`guia_remision_${guiaData.id}.pdf`);
+
+    doc.setFillColor(r, g, b);
+    doc.rect(0, 0, 210, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16); doc.setFont("helvetica", "bold");
+    doc.text("GUÍA DE REMISIÓN", 14, 14);
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    doc.text(`${empresa.nombre_comercial} | RUC: ${empresa.ruc}`, 14, 22);
+
+    doc.setTextColor(0, 0, 0); doc.setFontSize(9);
+    doc.text(`No. Guía: ${guiaData.id || 'N/A'}`, 14, 35);
+    doc.text(`Camión: ${guiaData.camion || 'N/A'}`, 14, 41);
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-EC')}`, 14, 47);
+
+    doc.save(`guia_remision_${guiaData.id || 'N'}.pdf`);
 };
 
-export const generateGuiaRuta = (guiaData) => {
+export const generateGuiaRuta = async (guiaData) => {
+    const empresa = await getEmpresaConfig();
+    const [r, g, b] = hexToRgb(empresa.color_primario || '#E3001B');
     const doc = new jsPDF();
-    doc.text("Guía de Ruta - Fritolay", 14, 20);
-    // similar structure with list of businesses
-    doc.save(`guia_ruta_${guiaData.id}.pdf`);
+
+    doc.setFillColor(r, g, b);
+    doc.rect(0, 0, 210, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16); doc.setFont("helvetica", "bold");
+    doc.text("GUÍA DE RUTA", 14, 14);
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    doc.text(`${empresa.nombre_comercial} | RUC: ${empresa.ruc}`, 14, 22);
+
+    doc.setTextColor(0, 0, 0); doc.setFontSize(9);
+    doc.text(`No. Ruta: ${guiaData.id || 'N/A'}`, 14, 35);
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-EC')}`, 14, 41);
+
+    doc.save(`guia_ruta_${guiaData.id || 'N'}.pdf`);
 };

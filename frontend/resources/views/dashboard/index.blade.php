@@ -95,52 +95,99 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             try {
-                // Fetch KPIs
+                // Obtener datos
                 const kpisData = await window.api('/api/dashboard/kpis').catch(() => null);
-                if (kpisData) {
-                    this.kpis = kpisData;
-                }
-
-                // Fetch Carritos
-                const carritosData = await window.api('/api/dashboard/carritos-abandonados').catch(() => []);
-                if (carritosData) {
-                    this.carritos = carritosData;
-                }
-
-                // Fetch Ventas
                 const ventasData = await window.api('/api/dashboard/ventas').catch(() => null);
+                const recData = await window.api('/api/dashboard/recaudacion').catch(() => null);
+                const carritosData = await window.api('/api/dashboard/carritos-abandonados').catch(() => []);
                 
+                this.carritos = carritosData || [];
+
+                // Mapear KPIs
+                let ventasTotales = '0.00';
+                let efectividad = '0';
+                let pedidosEntregados = 0;
+                let recEfvo = '0.00';
+
+                if (ventasData && ventasData.total_periodo) {
+                    ventasTotales = Number(ventasData.total_periodo).toFixed(2);
+                }
+
+                if (kpisData) {
+                    efectividad = kpisData.efectividad_general || 0;
+                    pedidosEntregados = (kpisData.pedidos_por_estado?.entregado || 0) + (kpisData.pedidos_por_estado?.entregado_parcialmente || 0);
+                }
+
+                if (recData && recData.por_metodo_pago) {
+                    const efectivoItem = recData.por_metodo_pago.find(m => String(m.metodo_pago).toLowerCase() === 'efectivo');
+                    if (efectivoItem) {
+                        recEfvo = Number(efectivoItem.total).toFixed(2);
+                    }
+                }
+
+                this.kpis = {
+                    ventas_totales: ventasTotales,
+                    efectividad: efectividad,
+                    pedidos_entregados: pedidosEntregados,
+                    recaudacion_efectivo: recEfvo
+                };
+
+                // Chart: Ventas por Día
+                let labelsVentasDia = [];
+                let dataVentasDia = [];
+                if (ventasData && ventasData.por_dia) {
+                    labelsVentasDia = ventasData.por_dia.map(i => i.fecha);
+                    dataVentasDia = ventasData.por_dia.map(i => i.total);
+                }
+
                 new Chart(document.getElementById('ventasDia'), {
                     type: 'line',
                     data: {
-                        labels: ventasData ? ventasData.labels : [],
+                        labels: labelsVentasDia,
                         datasets: [{ 
                             label: 'Ventas ($)', 
-                            data: ventasData ? ventasData.data : [], 
+                            data: dataVentasDia, 
                             borderColor: '#E3001B', 
                             tension: 0.1 
                         }]
                     }
                 });
 
+                // Chart: Metodos de Pago
+                let labelsMetodos = [];
+                let dataMetodos = [];
+                const colors = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c'];
+                if (recData && recData.por_metodo_pago) {
+                    labelsMetodos = recData.por_metodo_pago.map(i => String(i.metodo_pago).toUpperCase());
+                    dataMetodos = recData.por_metodo_pago.map(i => i.total);
+                }
+
                 new Chart(document.getElementById('metodosPago'), {
                     type: 'pie',
                     data: {
-                        labels: ['Efectivo', 'Depósito', 'De Una', 'Tarjeta', 'Crédito'],
+                        labels: labelsMetodos.length ? labelsMetodos : ['Sin Datos'],
                         datasets: [{ 
-                            data: [], // Replace with real data when recaudacion API is implemented
-                            backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c'] 
+                            data: dataMetodos.length ? dataMetodos : [1], 
+                            backgroundColor: colors
                         }]
                     }
                 });
 
+                // Chart: Ventas por Camión
+                let labelsCamion = [];
+                let dataCamion = [];
+                if (ventasData && ventasData.por_camion) {
+                    labelsCamion = ventasData.por_camion.map(i => 'Camión ' + i.camion_id);
+                    dataCamion = ventasData.por_camion.map(i => i.total);
+                }
+
                 new Chart(document.getElementById('ventasCamion'), {
                     type: 'bar',
                     data: {
-                        labels: [], // Replace with real data 
+                        labels: labelsCamion, 
                         datasets: [{ 
                             label: 'Total Vendido ($)', 
-                            data: [], 
+                            data: dataCamion, 
                             backgroundColor: '#3498db' 
                         }]
                     }

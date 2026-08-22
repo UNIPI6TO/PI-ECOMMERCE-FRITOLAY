@@ -19,8 +19,11 @@ class Factura extends Model
 
     public static function generarNumero(int $id): string
     {
-        // Formato Ecuador: Establecimiento (001) - Punto Emisión (001) - Secuencial (9 dígitos)
-        return '001-001-' . str_pad((string)$id, 9, '0', STR_PAD_LEFT);
+        $config = \App\Models\EmpresaConfig::get();
+        $est = $config ? str_pad($config->codigo_establecimiento, 3, '0', STR_PAD_LEFT) : '003';
+        $pto = $config ? str_pad($config->punto_emision, 3, '0', STR_PAD_LEFT) : '001';
+        
+        return $est . '-' . $pto . '-' . str_pad((string)$id, 9, '0', STR_PAD_LEFT);
     }
 
     public function pedido(): BelongsTo
