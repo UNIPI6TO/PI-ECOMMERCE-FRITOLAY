@@ -32,7 +32,9 @@ class RutaServiceTest extends TestCase
         $inventarioSvc = Mockery::mock(InventarioService::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
-        $camionMock = (object)["id" => 5, "estado" => "inactivo"];
+        $camionMock = Mockery::mock(\App\Models\Camion::class)->makePartial();
+        $camionMock->id = 5;
+        $camionMock->estado = 'inactivo';
         $camionRepo->shouldReceive("findById")->with(5)->andReturn($camionMock);
 
         $service = new RutaService($pedidoRepo, $camionRepo, $guiaRepo, $bodegaRepo, $inventarioSvc, $auditoriaSvc);

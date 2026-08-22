@@ -26,11 +26,10 @@ class AprobacionServiceTest extends TestCase
         $productoRepo = Mockery::mock(ProductoRepositoryInterface::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
-        $pedidoBase = (object)[
-            'id' => 1,
-            'estado' => 'en_espera_aprobacion',
-            'toArray' => function() { return ['id' => 1, 'estado' => 'en_espera_asignacion']; }
-        ];
+        $pedidoBase = Mockery::mock(\App\Models\Pedido::class)->makePartial();
+        $pedidoBase->id = 1;
+        $pedidoBase->estado = 'en_espera_aprobacion';
+        $pedidoBase->shouldReceive('toArray')->andReturn(['id' => 1, 'estado' => 'en_espera_asignacion']);
 
         $pedidoRepo->shouldReceive('findById')->with(1)->andReturn($pedidoBase);
         $pedidoRepo->shouldReceive('update')->with(1, ['estado' => 'en_espera_asignacion'])->andReturn($pedidoBase);
@@ -48,13 +47,15 @@ class AprobacionServiceTest extends TestCase
         $productoRepo = Mockery::mock(ProductoRepositoryInterface::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
-        $itemMock = (object)['producto_id' => 5, 'cantidad' => 10];
-        $pedidoBase = (object)[
-            'id' => 1,
-            'estado' => 'en_espera_aprobacion',
-            'items' => [$itemMock],
-            'toArray' => function() { return ['id' => 1, 'estado' => 'cancelado']; }
-        ];
+        $itemMock = Mockery::mock(\App\Models\PedidoItem::class)->makePartial();
+        $itemMock->producto_id = 5;
+        $itemMock->cantidad = 10;
+        
+        $pedidoBase = Mockery::mock(\App\Models\Pedido::class)->makePartial();
+        $pedidoBase->id = 1;
+        $pedidoBase->estado = 'en_espera_aprobacion';
+        $pedidoBase->items = [$itemMock];
+        $pedidoBase->shouldReceive('toArray')->andReturn(['id' => 1, 'estado' => 'cancelado']);
 
         $pedidoRepo->shouldReceive('findById')->with(1)->andReturn($pedidoBase);
         $pedidoRepo->shouldReceive('update')->with(1, [
@@ -77,10 +78,9 @@ class AprobacionServiceTest extends TestCase
         $productoRepo = Mockery::mock(ProductoRepositoryInterface::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
-        $pedidoBase = (object)[
-            'id' => 1,
-            'estado' => 'entregado'
-        ];
+        $pedidoBase = Mockery::mock(\App\Models\Pedido::class)->makePartial();
+        $pedidoBase->id = 1;
+        $pedidoBase->estado = 'entregado';
 
         $pedidoRepo->shouldReceive('findById')->with(1)->andReturn($pedidoBase);
 

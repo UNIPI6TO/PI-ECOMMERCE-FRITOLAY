@@ -32,7 +32,10 @@ class EntregaServiceTest extends TestCase
         $inventarioSvc = Mockery::mock(InventarioService::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
-        $pedidoBase = (object)['id' => 1, 'estado' => 'en_ruta'];
+        $pedidoBase = Mockery::mock(\App\Models\Pedido::class)->makePartial();
+        $pedidoBase->id = 1;
+        $pedidoBase->estado = 'en_ruta';
+
         $pedidoRepo->shouldReceive('update')->with(1, ['estado' => 'en_ruta'])->andReturn($pedidoBase);
 
         $service = new EntregaService($pedidoRepo, $inventarioSvc, $auditoriaSvc);
@@ -47,7 +50,10 @@ class EntregaServiceTest extends TestCase
         $inventarioSvc = Mockery::mock(InventarioService::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
-        $pedidoBase = (object)['id' => 1, 'metodo_pago' => 'tarjeta'];
+        $pedidoBase = Mockery::mock(\App\Models\Pedido::class)->makePartial();
+        $pedidoBase->id = 1;
+        $pedidoBase->metodo_pago = 'tarjeta';
+
         $pedidoRepo->shouldReceive('findById')->with(1)->andReturn($pedidoBase);
 
         $service = new EntregaService($pedidoRepo, $inventarioSvc, $auditoriaSvc);

@@ -44,12 +44,11 @@ class PedidoServiceTest extends TestCase
         $service = new PedidoService($pedidoRepo, $productoRepo, $inventarioSvc, $descuentoSvc, $auditoriaSvc);
 
         // Mock producto response
-        $productoMock = (object)[
-            'id' => 1,
-            'precio' => 10,
-            'cantidad_fisica' => 100,
-            'en_pedidos' => 0
-        ];
+        $productoMock = Mockery::mock(\App\Models\Producto::class)->makePartial();
+        $productoMock->id = 1;
+        $productoMock->precio = 10;
+        $productoMock->cantidad_fisica = 100;
+        $productoMock->en_pedidos = 0;
         $productoRepo->shouldReceive('findById')->with(1)->andReturn($productoMock);
 
         // Descuento = 0
@@ -57,7 +56,8 @@ class PedidoServiceTest extends TestCase
         
         config(['fritolay.iva_porcentaje' => 15]);
 
-        $pedidoMock = (object)['id' => 123];
+        $pedidoMock = Mockery::mock(\App\Models\Pedido::class)->makePartial();
+        $pedidoMock->id = 123;
         $pedidoRepo->shouldReceive('create')->with(Mockery::on(function ($data) {
             return $data['estado'] === 'en_espera_asignacion' 
                 && $data['metodo_pago'] === 'efectivo'
@@ -65,7 +65,12 @@ class PedidoServiceTest extends TestCase
                 && $data['total'] == 23; // 20 + 15% IVA (3)
         }))->andReturn($pedidoMock);
 
-        $pedidoRepo->shouldReceive('createItem')->andReturn((object)[]);
+        $itemMock = Mockery::mock(\App\Models\PedidoItem::class)->makePartial();
+        
+        $hasManyMock = Mockery::mock();
+        $hasManyMock->shouldReceive('create')->andReturn($itemMock);
+        $pedidoMock->shouldReceive('items')->andReturn($hasManyMock);
+
         $inventarioSvc->shouldReceive('incrementarEnPedidos')->with(1, 2.0);
         $auditoriaSvc->shouldReceive('log');
 
@@ -75,7 +80,7 @@ class PedidoServiceTest extends TestCase
             'items' => [
                 ['producto_id' => 1, 'cantidad' => 2]
             ]
-        ], 99);
+        ], 99, 99);
 
         $this->assertEquals(123, $result['pedido']->id);
     }
@@ -90,23 +95,27 @@ class PedidoServiceTest extends TestCase
 
         $service = new PedidoService($pedidoRepo, $productoRepo, $inventarioSvc, $descuentoSvc, $auditoriaSvc);
 
-        $productoMock = (object)[
-            'id' => 1,
-            'precio' => 10,
-            'cantidad_fisica' => 100,
-            'en_pedidos' => 0
-        ];
+        $productoMock = Mockery::mock(\App\Models\Producto::class)->makePartial();
+        $productoMock->id = 1;
+        $productoMock->precio = 10;
+        $productoMock->cantidad_fisica = 100;
+        $productoMock->en_pedidos = 0;
         $productoRepo->shouldReceive('findById')->with(1)->andReturn($productoMock);
 
         $descuentoSvc->shouldReceive('calcularDescuento')->andReturn(0.0);
         config(['fritolay.iva_porcentaje' => 15]);
 
-        $pedidoMock = (object)['id' => 124];
+        $pedidoMock = Mockery::mock(\App\Models\Pedido::class)->makePartial();
+        $pedidoMock->id = 124;
         $pedidoRepo->shouldReceive('create')->with(Mockery::on(function ($data) {
             return $data['estado'] === 'en_espera_aprobacion' && $data['metodo_pago'] === 'deposito';
         }))->andReturn($pedidoMock);
 
-        $pedidoRepo->shouldReceive('createItem')->andReturn((object)[]);
+        $itemMock = Mockery::mock(\App\Models\PedidoItem::class)->makePartial();
+        $hasManyMock = Mockery::mock();
+        $hasManyMock->shouldReceive('create')->andReturn($itemMock);
+        $pedidoMock->shouldReceive('items')->andReturn($hasManyMock);
+
         $inventarioSvc->shouldReceive('incrementarEnPedidos');
         $auditoriaSvc->shouldReceive('log');
 
@@ -116,7 +125,7 @@ class PedidoServiceTest extends TestCase
             'items' => [
                 ['producto_id' => 1, 'cantidad' => 2]
             ]
-        ], 99);
+        ], 99, 99);
 
         $this->assertEquals(124, $result['pedido']->id);
     }
@@ -131,12 +140,11 @@ class PedidoServiceTest extends TestCase
 
         $service = new PedidoService($pedidoRepo, $productoRepo, $inventarioSvc, $descuentoSvc, $auditoriaSvc);
 
-        $productoMock = (object)[
-            'id' => 1,
-            'precio' => 10,
-            'cantidad_fisica' => 10,
-            'en_pedidos' => 5 // Disponible = 5
-        ];
+        $productoMock = Mockery::mock(\App\Models\Producto::class)->makePartial();
+        $productoMock->id = 1;
+        $productoMock->precio = 10;
+        $productoMock->cantidad_fisica = 10;
+        $productoMock->en_pedidos = 5; // Disponible = 5
         $productoRepo->shouldReceive('findById')->with(1)->andReturn($productoMock);
 
         $this->expectException(\Exception::class);
@@ -148,7 +156,7 @@ class PedidoServiceTest extends TestCase
             'items' => [
                 ['producto_id' => 1, 'cantidad' => 6] // Pide 6, solo hay 5
             ]
-        ], 99);
+        ], 99, 99);
     }
 
     public function test_calculo_iva_correcto()
