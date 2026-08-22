@@ -64,6 +64,9 @@
 - Recaudación: Recaudación total y separado en efectivo, depósitos, cheques, De Una, Tarjeta de Crédito y Tarjetas de Débito.
 
 - Carritos Abandonados: Compras no concretadas que el usuario haya creado el carrito y haya cancelado la compra. Al cancelar, debe poner opciones de por qué cancela el pedido; las comunes son: No lo necesito, Era una proforma, Pedido Equivocado, No es lo que requiero, y otros.
+  - **Badge del Carrito:** El ícono del carrito en la barra de navegación muestra el número de **ítems únicos** (productos distintos), NO la suma total de unidades.
+  - **Vaciado con Registro de Abandono:** Cuando el usuario hace clic en "Vaciar Carrito", el sistema debe mostrar un modal de confirmación (SweetAlert) y, si acepta, registrar automáticamente un `POST /api/carritos-abandonados` con el `valor_total` del carrito y el motivo `'Carrito vaciado manualmente por el usuario'` antes de limpiar la cookie.
+  - **Vaciado al Finalizar Compra:** Al completar un pedido exitosamente, el sistema debe vaciar automáticamente el carrito (`CarritoManager.vaciar()`) antes de redirigir a la pantalla de confirmación. No se registra abandono en este caso (el pedido fue concretado).
 
 
 - Control de Stock: En el dashboard puede consultar el stock de los productos de las bodegas, de la bodega master y de los vehículos.
@@ -154,10 +157,13 @@
 
 - o Por defecto debe usar la ubicación actual, mover el punto de entrega y su dirección debe aparecer en el cuadro de texto.
 
-- o También debe permitir buscar una dirección o coordenadas con un cuadro de texto, cuando ocurra esto el ping en el mapa debe moverse a lo que indica el cuadro de texto.
+- o También debe permitir buscar una dirección o coordenadas con un cuadro de texto. Se ha implementado un sistema de autocompletado predictivo (dropdown) que despliega las mejores coincidencias incluyendo ciudad, provincia y país. Además, utilizando la fórmula Haversine, el sistema calcula la distancia en kilómetros desde la ubicación actual del usuario hasta los resultados sugeridos y los ordena por cercanía, replicando la experiencia de Google Maps.
+- o Al hacer clic en cualquier punto dentro del mapa interactivo, el sistema debe mover el marcador automáticamente a esas coordenadas, realizar una geocodificación inversa (reverse geocoding) y actualizar el campo de texto con la dirección aproximada correspondiente.
 
-
-- o Puede seleccionar la dirección por defecto que aparecerá en los pedidos. El usuario debe permitir cambiar con otra o crear, editar o eliminar direcciones en el proceso de ingreso de datos o checkout.
+- o Puede seleccionar la dirección por defecto que aparecerá en los pedidos. El usuario debe permitir cambiar con otra o crear, editar o eliminar (opción de borrado disponible junto a cada dirección guardada) direcciones en el proceso de ingreso de datos o checkout. 
+- o **Soft Delete para Direcciones:** Las direcciones NUNCA se eliminan físicamente de la base de datos (no se permite el uso de sentencias DELETE puras). En su lugar, se utiliza un borrado lógico (soft delete) cambiando el flag `estado` a `false` o desactivado.
+- o El sistema debe validar estrictamente que el usuario no pueda finalizar la compra (el botón de Finalizar Compra se deshabilita y se genera un modal de advertencia) si no tiene ninguna dirección seleccionada.
+- o **Estándar de Interfaz (Notificaciones):** Queda estrictamente prohibido el uso de ventanas de alerta nativas del navegador (`alert()`). Todas las validaciones, notificaciones de éxito y errores en todos los formularios deben presentarse utilizando la librería **SweetAlert** (`Swal.fire`).
 
 - Liquidación de Pago: En el proceso de check out debe aparecer el detalle de los productos y cálculo de descuentos, impuesto IVA, total y sub total. Siempre debe mostrar el total del pedido y el ahorro por los descuentos configurados.
 
@@ -1883,6 +1889,27 @@ erDiagram
         datetime fecha_abandono
     }
 
+    EMPRESA_CONFIG {
+        int id PK
+        string razon_social
+        string nombre_comercial
+        string ruc
+        string codigo_establecimiento
+        string punto_emision
+        string direccion_matriz
+        string direccion_sucursal
+        string telefono
+        string email
+        string tipo_contribuyente
+        boolean obligado_contabilidad
+        string tipo_ambiente
+        string tipo_emision
+        string logo_url
+        string color_primario
+        datetime created_at
+        datetime updated_at
+    }
+
     USUARIOS ||--o| CLIENTES : "tiene perfil"
     USUARIOS ||--o| CAMIONES : "conduce"
     CLIENTES ||--o{ DIRECCIONES_CLIENTE : "tiene"
@@ -1894,6 +1921,7 @@ erDiagram
     PEDIDOS }o--|| DIRECCIONES_CLIENTE : "entrega en"
     ITEMS_PEDIDO }o--|| PRODUCTOS : "referencia"
     PRODUCTOS ||--o{ TRANSACCIONES_INVENTARIO : "afectado en"
+    FACTURAS }o--|| EMPRESA_CONFIG : "usa datos emisor"
     PRODUCTOS ||--o{ BODEGA_CAMION : "almacenado en"
     CAMIONES ||--o{ GUIAS_REMISION : "asignado a"
     CAMIONES ||--o{ BODEGA_CAMION : "administra"
@@ -2168,6 +2196,7 @@ Almacena los datos del perfil comercial de los usuarios con rol de cliente.
 | `usuario_id` | INT | FK (USUARIOS.id) | Referencia a la cuenta de usuario. |
 | `ruc_cedula` | VARCHAR(20) | UNIQUE, NOT NULL | Identificación comercial o personal. |
 | `razon_social` | VARCHAR(255) | NOT NULL | Nombre del negocio o persona. |
+| `nombre_cliente` | VARCHAR(255) | NULL | Nombre de la persona o cliente. |
 | `telefono` | VARCHAR(20) | NOT NULL | Número de contacto. |
 
 **Tabla: `DIRECCIONES_CLIENTE`**
@@ -2178,6 +2207,7 @@ Almacena los puntos de entrega asociados a cada cliente.
 | `id` | INT | PK, Auto Increment | Identificador de la dirección. |
 | `cliente_id` | INT | FK (CLIENTES.id) | Cliente propietario de la dirección. |
 | `descripcion` | TEXT | NOT NULL | Detalle de la dirección. |
+| `referencia` | TEXT | NULL | Referencia de la dirección. |
 | `latitud` | DECIMAL(10,8) | NOT NULL | Coordenada GPS latitud. |
 | `longitud` | DECIMAL(11,8) | NOT NULL | Coordenada GPS longitud. |
 | `es_por_defecto`| BOOLEAN | DEFAULT FALSE | Dirección principal de entrega. |
@@ -2292,6 +2322,29 @@ Comprobantes legales de venta generados por pedido completado.
 | `subtotal` | DECIMAL(10,2) | NOT NULL | Valor base. |
 | `iva` | DECIMAL(10,2) | NOT NULL | Impuestos. |
 | `total` | DECIMAL(10,2) | NOT NULL | Total facturado. |
+
+**Tabla: `EMPRESA_CONFIG`**
+Almacena la información legal del emisor, punto de emisión, código de establecimiento SRI, para usarse globalmente al generar facturas y guías.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador único. |
+| `razon_social` | VARCHAR(200) | NOT NULL | Nombre legal de la empresa. |
+| `nombre_comercial` | VARCHAR(200) | NULL | Nombre comercial. |
+| `ruc` | VARCHAR(13) | NOT NULL | RUC del emisor. |
+| `codigo_establecimiento` | VARCHAR(3) | NOT NULL, Default '003' | Código SRI del establecimiento (Ej. 003 Ambato). |
+| `punto_emision` | VARCHAR(3) | NOT NULL, Default '001' | Código SRI del punto de emisión. |
+| `direccion_matriz` | VARCHAR(300) | NOT NULL | Dirección legal de la matriz. |
+| `direccion_sucursal` | VARCHAR(300) | NULL | Dirección del establecimiento emisor. |
+| `telefono` | VARCHAR(20) | NULL | Teléfono de contacto. |
+| `email` | VARCHAR(100) | NULL | Correo electrónico de facturación. |
+| `tipo_contribuyente` | VARCHAR(100) | NOT NULL, Default 'ESPECIAL' | Resolución del contribuyente. |
+| `obligado_contabilidad`| BOOLEAN | NOT NULL, Default TRUE | Indica si está obligado a llevar contabilidad. |
+| `tipo_ambiente` | VARCHAR(1) | NOT NULL, Default '1' | Ambiente SRI (1=Pruebas, 2=Producción). |
+| `tipo_emision` | VARCHAR(1) | NOT NULL, Default '1' | Tipo Emisión SRI (1=Normal). |
+| `logo_url` | VARCHAR(500) | NULL | Enlace al logo institucional. |
+| `color_primario` | VARCHAR(7) | NOT NULL, Default '#E3001B'| Color de marca para PDF (Ej. Fritolay Red). |
+| `created_at` / `updated_at`| TIMESTAMP | | Control de auditoría base. |
 
 **Tabla: `MERCADERIA_MAL_ESTADO`**
 Registro de devoluciones o daños reportados durante la ruta.

@@ -1,4 +1,4 @@
-﻿<!-- Mini Carrito Overlays -->
+<!-- Mini Carrito Overlays -->
 <div x-data="miniCart()" 
      @toggle-cart.window="open = !open" 
      @cart-updated.window="updateCart()"
@@ -40,7 +40,7 @@
                     <div>
                         <h4 class="font-bold text-sm text-neutral-dark" x-text="item.nombre"></h4>
                         <div class="text-xs text-gray-500 mt-1">
-                            <span x-text="item.cantidad + ' x $' + item.precioUnitario.toFixed(2)"></span>
+                            <span x-text="formatQty(item) + ' x $' + item.precioUnitario.toFixed(2)"></span>
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -63,7 +63,7 @@
                 <button @click="checkout" class="w-full bg-secondary text-neutral-dark font-bold py-2 rounded hover:bg-yellow-500" :disabled="items.length === 0">
                     Proceder al Checkout
                 </button>
-                <button @click="window.CarritoManager.vaciar(); updateCart();" class="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-100" :disabled="items.length === 0">
+                <button @click="vaciarConAbandono()" class="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-100" :disabled="items.length === 0">
                     Vaciar Carrito
                 </button>
             </div>
@@ -87,12 +87,38 @@ function miniCart() {
                 this.$dispatch('cart-updated-internal');
             }
         },
+        formatQty(item) {
+            let uP = item.unidadesPorPaca || 1;
+            if (uP <= 1) return `${item.cantidad} unds`;
+            let pacas = Math.floor(item.cantidad / uP);
+            let unds = item.cantidad % uP;
+            let res = [];
+            if (pacas > 0) res.push(`${pacas} paca${pacas > 1 ? 's' : ''}`);
+            if (unds > 0) res.push(`${unds} und${unds > 1 ? 's' : ''}`);
+            return res.join(' y ') || '0 unds';
+        },
         checkout() {
-            Swal.fire({title: 'Procesando...', text: 'Redirigiendo a pasarela de pago / confirmación de pedido...', icon: 'info', timer: 2000, showConfirmButton: false});
-            // window.location.href = '/checkout';
+            Swal.fire({title: 'Procesando...', text: 'Redirigiendo a pasarela de pago / confirmación de pedido...', icon: 'info', timer: 1000, showConfirmButton: false});
+            setTimeout(() => {
+                window.location.href = '/ecommerce/checkout';
+            }, 1000);
+        },
+        async vaciarConAbandono() {
+            const result = await Swal.fire({
+                title: '¿Vaciar carrito?',
+                text: 'Se registrará el abandono del carrito y se eliminará su contenido.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#E3001B',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, vaciar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!result.isConfirmed) return;
+            await window.CarritoManager.abandonarCarrito('Carrito vaciado manualmente por el usuario');
+            this.updateCart();
+            Swal.fire({ icon: 'info', title: 'Carrito vaciado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
         }
     }
 }
 </script>
-
-

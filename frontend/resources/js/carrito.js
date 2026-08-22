@@ -22,18 +22,20 @@ export const CarritoManager = {
         window.dispatchEvent(new Event('cart-updated'));
     },
 
-    agregarItem(productoId, nombre, cantidad, precioUnitario) {
+    agregarItem(productoId, nombre, cantidad, precioUnitario, unidadesPorPaca = 1) {
         let cart = this._getCookie();
         let existing = cart.find(item => item.productoId === productoId);
         
         if (existing) {
             existing.cantidad += parseInt(cantidad, 10);
+            if(unidadesPorPaca) existing.unidadesPorPaca = unidadesPorPaca;
         } else {
             cart.push({
                 productoId,
                 nombre,
                 cantidad: parseInt(cantidad, 10),
-                precioUnitario: parseFloat(precioUnitario)
+                precioUnitario: parseFloat(precioUnitario),
+                unidadesPorPaca: parseInt(unidadesPorPaca, 10) || 1
             });
         }
         this._setCookie(cart);
@@ -67,8 +69,43 @@ export const CarritoManager = {
         this._setCookie([]);
     },
 
+    /** Número de ítems únicos (no suma de unidades) — para el badge del carrito */
     getCount() {
-        let cart = this._getCookie();
-        return cart.reduce((total, item) => total + item.cantidad, 0);
+        return this._getCookie().length;
+    },
+
+    /** Registra el abandono en el backend y luego vacía el carrito */
+    async abandonarCarrito(motivo = 'Carrito vaciado manualmente') {
+        const cart = this._getCookie();
+        if (cart.length === 0) {
+            this.vaciar();
+            return;
+        }
+        const valorTotal = parseFloat(this.calcularSubtotal());
+        // Intentar obtener cliente_id del JWT si está disponible
+        let clienteId = null;
+        try {
+            const token = localStorage.getItem('jwt_token');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                clienteId = payload.cliente_id || null;
+            }
+        } catch (_) {}
+
+        try {
+            await fetch(`${window.BACKEND_URL}/api/carritos-abandonados`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({
+                    cliente_id: clienteId,
+                    motivo_cancelacion: motivo,
+                    valor_total: valorTotal
+                })
+            });
+        } catch (e) {
+            console.warn('[CarritoManager] No se pudo registrar abandono:', e);
+        } finally {
+            this.vaciar();
+        }
     }
 };

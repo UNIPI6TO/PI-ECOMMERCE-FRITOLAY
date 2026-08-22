@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DireccionCliente extends Model
 {
     protected $table = 'direcciones_cliente';
-    protected $fillable = ['cliente_id', 'descripcion', 'latitud', 'longitud', 'es_por_defecto'];
+    protected $fillable = ['cliente_id', 'descripcion', 'latitud', 'longitud', 'es_por_defecto', 'referencia', 'estado'];
     
     protected $casts = [
         'latitud' => 'decimal:8',
         'longitud' => 'decimal:8',
-        'es_por_defecto' => 'boolean'
+        'es_por_defecto' => 'boolean',
+        'estado' => 'boolean'
     ];
 
     public function cliente(): BelongsTo

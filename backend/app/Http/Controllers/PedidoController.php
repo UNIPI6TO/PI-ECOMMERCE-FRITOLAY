@@ -17,13 +17,44 @@ class PedidoController extends Controller
     ) {
     }
 
+    public function index(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $pedidos = \App\Models\Pedido::with(['cliente.usuario'])->orderBy('id', 'desc')->get();
+        
+        $data = $pedidos->map(function($p) {
+            $estadoStr = strtoupper($p->estado);
+            if (in_array($estadoStr, ['EN_ESPERA_APROBACION', 'EN_ESPERA_ASIGNACION'])) {
+                $estadoStr = 'PENDIENTE';
+            } elseif ($estadoStr === 'LISTO_PARA_ENTREGAR') {
+                $estadoStr = 'APROBADO';
+            } elseif ($estadoStr === 'ENTREGADO_PARCIALMENTE') {
+                $estadoStr = 'ENTREGADO';
+            }
+
+            return [
+                'id' => $p->id,
+                'cliente' => $p->cliente ? ($p->cliente->nombre_compania ?: ($p->cliente->usuario->nombre ?? 'Sin Cliente')) : 'Desconocido',
+                'pago' => strtoupper($p->metodo_pago),
+                'total' => $p->total,
+                'estado' => $estadoStr,
+                'fecha' => $p->creado_en ? $p->creado_en->format('Y-m-d H:i') : ''
+            ];
+        });
+
+        return response()->json($data);
+    }
+
     public function store(CheckoutRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $usuarioId = auth()->id();
+        $usuarioId = (int) $request->input('user_id');
+        $cliente = \App\Models\Cliente::where('usuario_id', $usuarioId)->first();
+        if (!$cliente) {
+            return response()->json(['error' => 'Cliente no encontrado'], 404);
+        }
 
         try {
-            $resultado = $this->pedidoService->crearPedido($data, $usuarioId);
+            $resultado = $this->pedidoService->crearPedido($data, $cliente->id, $usuarioId);
             
             if ($request->hasFile('comprobante')) {
                 $path = $this->gcsService->subirComprobante($request->file('comprobante'), $resultado['pedido']->id);
@@ -37,21 +68,21 @@ class PedidoController extends Controller
         }
     }
 
-    public function show(int $id): JsonResponse
+    public function show(int $id, \Illuminate\Http\Request $request): JsonResponse
     {
         try {
-            $pedido = $this->pedidoService->getPedido($id, auth()->id());
+            $pedido = $this->pedidoService->getPedido($id, (int) $request->input('user_id'));
             return response()->json(['data' => $pedido]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 404);
         }
     }
 
-    public function comprobante(int $id): JsonResponse
+    public function comprobante(int $id, \Illuminate\Http\Request $request): JsonResponse
     {
         try {
             // Se asume que getPedido() sin $clienteId en caso de ser admin
-            $pedido = $this->pedidoService->getPedido($id, auth()->id()); // Ajustar lógica según roles si es necesario
+            $pedido = $this->pedidoService->getPedido($id, (int) $request->input('user_id')); // Ajustar lógica según roles si es necesario
             $url = $this->gcsService->getUrlFirmada($pedido->comprobante_path ?? '');
             return response()->json(['data' => ['url' => $url]]);
         } catch (\Exception $e) {
@@ -59,13 +90,24 @@ class PedidoController extends Controller
         }
     }
 
-    public function historial(int $clienteId): JsonResponse
+    public function historial(int $clienteId, \Illuminate\Http\Request $request): JsonResponse
     {
-        if (auth()->id() !== $clienteId) {
+        $cliente = \App\Models\Cliente::find($clienteId);
+        if (!$cliente || (int) $request->input('user_id') !== $cliente->usuario_id) {
             return response()->json(['error' => 'No autorizado'], 403);
         }
         
         $pedidos = $this->pedidoService->getHistorial($clienteId);
         return response()->json(['data' => $pedidos]);
+    }
+
+    public function cancelar(int $id, \Illuminate\Http\Request $request): JsonResponse
+    {
+        try {
+            $this->pedidoService->cancelarPedido($id, (int) $request->input('user_id'));
+            return response()->json(['message' => 'Pedido cancelado correctamente']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
     }
 }

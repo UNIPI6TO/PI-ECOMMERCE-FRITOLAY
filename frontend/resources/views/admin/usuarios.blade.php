@@ -199,67 +199,55 @@ document.addEventListener('alpine:init', () => {
                         confirmButtonColor: '#C8102E'
                     });
                 } else {
-                    alert('Error: ' + (e.message || 'No se pudo guardar'));
+                    console.error('Error: ' + (e.message || 'No se pudo guardar'));
                 }
             }
         },
 
         async toggleEstado(u) {
-            if (typeof Swal !== 'undefined') {
-                const result = await Swal.fire({
-                    title: `¿Seguro que desea ${u.activo ? 'inactivar' : 'activar'} a ${u.nombre}?`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: u.activo ? '#d33' : '#28a745',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: u.activo ? 'Sí, inactivar' : 'Sí, activar',
-                    cancelButtonText: 'Cancelar'
-                });
-                
-                if (!result.isConfirmed) return;
-            } else {
-                if (!confirm(`¿Seguro que desea ${u.activo ? 'inactivar' : 'activar'} a ${u.nombre}?`)) return;
-            }
+            const result = await Swal.fire({
+                title: `¿Seguro que desea ${u.activo ? 'inactivar' : 'activar'} a ${u.nombre}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: u.activo ? '#d33' : '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: u.activo ? 'Sí, inactivar' : 'Sí, activar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!result.isConfirmed) return;
 
             const endpoint = u.activo ? `/api/admin/usuarios/${u.id}/inactivar` : `/api/admin/usuarios/${u.id}/activar`;
             try {
                 await window.api(endpoint, { method: 'PATCH' });
                 await this.fetchUsuarios();
             } catch (e) {
-                if (typeof Swal !== 'undefined') Swal.fire('Error', e.message, 'error');
+                Swal.fire('Error', e.message, 'error');
             }
         },
 
         async resetPass(u) {
-            if (typeof Swal !== 'undefined') {
-                const result = await Swal.fire({
-                    title: `¿Resetear contraseña de ${u.nombre}?`,
-                    text: "Se generará una nueva contraseña aleatoria.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#FCA311',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Sí, resetear',
-                    cancelButtonText: 'Cancelar'
-                });
-                
-                if (!result.isConfirmed) return;
-            } else {
-                if (!confirm(`¿Resetear contraseña de ${u.nombre}?`)) return;
-            }
+            const result = await Swal.fire({
+                title: `¿Resetear contraseña de ${u.nombre}?`,
+                text: "Se generará una nueva contraseña aleatoria.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#FCA311',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, resetear',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!result.isConfirmed) return;
 
             try {
                 const response = await window.api(`/api/admin/usuarios/${u.id}/resetear-password`, { method: 'PATCH' });
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        title: 'Éxito',
-                        html: `Contraseña reseteada. Nueva contraseña:<br><br><b style="font-size: 1.5em; letter-spacing: 2px;">${response.data.password}</b>`,
-                        icon: 'success',
-                        confirmButtonColor: '#C8102E'
-                    });
-                }
+                Swal.fire({
+                    title: 'Éxito',
+                    html: `Contraseña reseteada. Nueva contraseña:<br><br><b style="font-size: 1.5em; letter-spacing: 2px;">${response.data.password}</b>`,
+                    icon: 'success',
+                    confirmButtonColor: '#C8102E'
+                });
             } catch (e) {
-                if (typeof Swal !== 'undefined') Swal.fire('Error', e.message, 'error');
+                Swal.fire('Error', e.message, 'error');
             }
         }
     }));

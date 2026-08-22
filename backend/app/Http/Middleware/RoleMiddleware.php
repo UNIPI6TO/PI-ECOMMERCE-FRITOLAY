@@ -9,12 +9,11 @@ use Illuminate\Http\Request;
 
 class RoleMiddleware
 {
-    public function handle(Request $request, Closure $next, string $roles)
+    public function handle(Request $request, Closure $next, ...$roles)
     {
-        $allowedRoles = explode(',', $roles);
         $userRole = $request->input('user_rol');
 
-        if (!in_array($userRole, $allowedRoles)) {
+        if (!in_array($userRole, $roles)) {
             return response()->json([
                 'error' => 'Forbidden',
                 'message' => 'No tiene permisos para esta acción'

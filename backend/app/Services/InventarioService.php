@@ -20,14 +20,14 @@ class InventarioService
     {
         $producto = $this->productoRepository->findById($productoId);
         $producto->en_pedidos += $cantidad;
-        $this->productoRepository->update($productoId, ['en_pedidos' => $producto->en_pedidos]);
+        $producto->save();
     }
 
     public function decrementarEnPedidos(int $productoId, float $cantidad): void
     {
         $producto = $this->productoRepository->findById($productoId);
         $producto->en_pedidos -= $cantidad;
-        $this->productoRepository->update($productoId, ['en_pedidos' => $producto->en_pedidos]);
+        $producto->save();
     }
 
     public function egresoFisicoCamion(int $camionId, int $productoId, float $cantidad): void
@@ -68,7 +68,7 @@ class InventarioService
         DB::transaction(function () use ($productoId, $cantidad, $motivo) {
             $producto = $this->productoRepository->findById($productoId);
             $producto->cantidad_fisica += $cantidad;
-            $this->productoRepository->update($productoId, ['cantidad_fisica' => $producto->cantidad_fisica]);
+            $producto->save();
             
             DB::table('transacciones')->insert([
                 'tipo' => 'INGRESO',

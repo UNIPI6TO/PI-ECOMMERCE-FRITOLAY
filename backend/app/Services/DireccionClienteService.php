@@ -37,6 +37,10 @@ class DireccionClienteService
     public function delete(int $id): bool
     {
         $direccion = DireccionCliente::find($id);
-        return $direccion ? $direccion->delete() : false;
+        if ($direccion) {
+            $direccion->estado = false;
+            return $direccion->save();
+        }
+        return false;
     }
 }

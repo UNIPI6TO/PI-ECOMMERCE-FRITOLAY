@@ -63,14 +63,32 @@
                         <p class="text-sm text-gray-500 mb-2" x-text="product.tipo"></p>
                         <p class="text-xl font-bold text-primary mb-4" x-text="'$' + parseFloat(product.precio).toFixed(2)"></p>
                         
-                        <div class="mt-auto flex items-center space-x-2" x-data="{ qty: 1 }">
-                            <input type="number" x-model.number="qty" min="1" :max="product.cantidad_fisica" class="w-16 border rounded p-1 text-center" :disabled="product.cantidad_fisica <= 0">
+                        <div class="mt-auto flex flex-col space-y-2" x-data="{ qty: 1, tipoCompra: 'unidad' }">
+                            <template x-if="product.unidades_por_paca > 1">
+                                <select x-model="tipoCompra" class="w-full border rounded p-1 text-sm bg-gray-50">
+                                    <option value="unidad">Por Unidad</option>
+                                    <option value="paca" x-text="`Por Paca (${product.unidades_por_paca} unds) - $${(parseFloat(product.precio) * product.unidades_por_paca).toFixed(2)}`"></option>
+                                </select>
+                            </template>
                             
-                            <button @click="window.CarritoManager.agregarItem(product.id, product.nombre, qty, parseFloat(product.precio)); $dispatch('cart-updated')" 
-                                    class="flex-grow bg-primary text-white py-1 px-3 rounded hover:bg-red-700 disabled:opacity-50"
-                                    :disabled="product.cantidad_fisica <= 0">
-                                Agregar
-                            </button>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" x-model.number="qty" min="1" 
+                                    :max="tipoCompra === 'paca' ? Math.floor(product.cantidad_fisica / product.unidades_por_paca) : product.cantidad_fisica" 
+                                    class="w-16 border rounded p-1 text-center" 
+                                    :disabled="product.cantidad_fisica <= 0 || (tipoCompra === 'paca' && product.cantidad_fisica < product.unidades_por_paca)">
+                                
+                                <button @click="
+                                    let finalQty = qty;
+                                    if(tipoCompra === 'paca') finalQty = qty * product.unidades_por_paca;
+                                    window.CarritoManager.agregarItem(product.id, product.nombre, finalQty, parseFloat(product.precio), product.unidades_por_paca); 
+                                    $dispatch('cart-updated');
+                                    if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: 'Agregado al carrito', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000});
+                                " 
+                                        class="flex-grow bg-primary text-white py-1 px-3 rounded hover:bg-red-700 disabled:opacity-50"
+                                        :disabled="product.cantidad_fisica <= 0 || (tipoCompra === 'paca' && product.cantidad_fisica < product.unidades_por_paca)">
+                                    Agregar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

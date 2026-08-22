@@ -37,6 +37,7 @@
             "advisories": {
                 "block": false
             }
-        }
+        },
+        "platform-check": false
     }
 }

@@ -31,4 +31,10 @@ class CheckoutRequest extends FormRequest
             ],
         ];
     }
+
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        \Illuminate\Support\Facades\Log::error('Validation failed in CheckoutRequest', $validator->errors()->toArray());
+        parent::failedValidation($validator);
+    }
 }

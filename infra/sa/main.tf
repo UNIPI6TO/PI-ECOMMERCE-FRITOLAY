@@ -42,8 +42,12 @@ resource "google_project_iam_member" "backend_roles" {
 }
 
 resource "google_project_iam_member" "frontend_roles" {
+  for_each = toset([
+    "roles/storage.objectViewer",
+    "roles/run.invoker"
+  ])
   project = data.google_project.project.project_id
-  role    = "roles/storage.objectViewer"
+  role    = each.key
   member  = "serviceAccount:${google_service_account.frontend_sa.email}"
 }
 
