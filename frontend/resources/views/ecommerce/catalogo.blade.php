@@ -80,7 +80,7 @@
                                 <button @click="
                                     let finalQty = qty;
                                     if(tipoCompra === 'paca') finalQty = qty * product.unidades_por_paca;
-                                    window.CarritoManager.agregarItem(product.id, product.nombre, finalQty, parseFloat(product.precio)); 
+                                    window.CarritoManager.agregarItem(product.id, product.nombre, finalQty, parseFloat(product.precio), product.unidades_por_paca); 
                                     $dispatch('cart-updated');
                                     if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: 'Agregado al carrito', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000});
                                 " 

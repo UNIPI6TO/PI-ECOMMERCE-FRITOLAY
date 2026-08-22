@@ -1,11 +1,11 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="max-w-3xl mx-auto py-12 px-4" x-data="perfil()">
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
         <div class="p-6 border-b border-gray-100">
             <h1 class="text-2xl font-bold text-gray-800">Mi Perfil</h1>
-            <p class="text-sm text-gray-500 mt-1">Actualiza tu información personal y correo electrónico.</p>
+            <p class="text-sm text-gray-500 mt-1">Actualiza tu informaciÃ³n personal y correo electrÃ³nico.</p>
         </div>
         
         <div class="p-6 space-y-6">
@@ -15,14 +15,14 @@
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Correo ElectrÃ³nico</label>
                 <input type="email" x-model="form.email" class="w-full border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 px-3 py-2 border">
             </div>
             
             <template x-if="form.rol === 'cliente'">
                 <div>
                     <div class="space-y-6 pt-4 border-t">
-                        <h2 class="text-xl font-bold text-gray-800">Datos de Facturación (Cliente)</h2>
+                        <h2 class="text-xl font-bold text-gray-800">Datos de FacturaciÃ³n (Cliente)</h2>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente (Contacto Comercial)</label>
@@ -30,17 +30,17 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Razón Social o Nombre Legal</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">RazÃ³n Social o Nombre Legal</label>
                             <input type="text" x-model="form.razon_social" class="w-full border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 px-3 py-2 border">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">RUC/Cédula</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">RUC/CÃ©dula</label>
                             <input type="text" x-model="form.ruc_cedula" class="w-full border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 px-3 py-2 border">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">TelÃ©fono</label>
                             <input type="text" x-model="form.telefono" class="w-full border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 px-3 py-2 border">
                         </div>
                     </div>
@@ -48,7 +48,7 @@
                     <div class="space-y-6 pt-4 border-t mt-6">
                         <div class="flex justify-between items-center">
                             <h2 class="text-xl font-bold text-gray-800">Mis Direcciones</h2>
-                            <button @click="nuevaDireccion()" class="text-[#E3001B] font-medium text-sm">+ Nueva Dirección</button>
+                            <button @click="nuevaDireccion()" class="text-[#E3001B] font-medium text-sm">+ Nueva DirecciÃ³n</button>
                         </div>
                         
                         <div class="space-y-3">
@@ -86,10 +86,10 @@
         </div>
     </div>
 
-    <!-- Modal Dirección -->
+    <!-- Modal DirecciÃ³n -->
     <div x-show="showAddressModal" @update-dir-data.window="newAddressData = $event.detail" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-full max-w-2xl">
-            <h3 class="text-lg font-bold mb-4">Agregar Dirección</h3>
+            <h3 class="text-lg font-bold mb-4">Agregar DirecciÃ³n</h3>
             @include('ecommerce.mapa-direccion')
             <div class="mt-4 flex justify-end space-x-3">
                 <button @click="showAddressModal = false" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50">Cancelar</button>
@@ -153,22 +153,22 @@ document.addEventListener('alpine:init', () => {
         },
 
         async eliminarDireccion(id) {
-            if (!confirm('¿Seguro que deseas eliminar esta dirección?')) return;
+            if (!confirm('Â¿Seguro que deseas eliminar esta direcciÃ³n?')) return;
             try {
                 await window.api(`/api/clientes/${this.clienteId}/direcciones/${id}`, { method: 'DELETE' });
                 await this.loadDirecciones();
                 if (typeof Swal !== 'undefined') Swal.fire({ icon: 'success', title: 'Eliminada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
             } catch (e) {
-                if (typeof Swal !== 'undefined') Swal.fire('Error', 'No se pudo eliminar la dirección', 'error');
+                if (typeof Swal !== 'undefined') Swal.fire('Error', 'No se pudo eliminar la direcciÃ³n', 'error');
             }
         },
 
         async guardarDireccion() {
             if (!this.clienteId) {
-                return Swal.fire('Atención', 'Primero debes guardar tus Datos de Facturación antes de agregar una dirección.', 'warning');
+                return Swal.fire('AtenciÃ³n', 'Primero debes guardar tus Datos de FacturaciÃ³n antes de agregar una direcciÃ³n.', 'warning');
             }
             if (!this.newAddressData || !this.newAddressData.descripcion) {
-                return Swal.fire('Error', 'Selecciona una dirección válida', 'error');
+                return Swal.fire('Error', 'Selecciona una direcciÃ³n vÃ¡lida', 'error');
             }
             try {
                 const method = this.editingAddressId ? 'PUT' : 'POST';
@@ -189,13 +189,13 @@ document.addEventListener('alpine:init', () => {
                 await this.loadDirecciones();
                 this.showAddressModal = false;
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'success', title: 'Dirección guardada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                    Swal.fire({ icon: 'success', title: 'DirecciÃ³n guardada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
                 }
             } catch (e) {
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire('Error', 'No se pudo guardar la dirección', 'error');
+                    Swal.fire('Error', 'No se pudo guardar la direcciÃ³n', 'error');
                 } else {
-                    alert('Error al guardar dirección');
+                    console.error('Error al guardar direcciÃ³n');
                 }
             }
         },
@@ -228,7 +228,7 @@ document.addEventListener('alpine:init', () => {
                 
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
-                        title: 'Éxito',
+                        title: 'Ã‰xito',
                         text: 'Perfil actualizado correctamente',
                         icon: 'success',
                         confirmButtonColor: '#C8102E'
@@ -238,12 +238,12 @@ document.addEventListener('alpine:init', () => {
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         title: 'Error',
-                        text: e.message || 'No se pudo actualizar el perfil',
+                        text: e.message || 'Error al procesar la solicitud',
                         icon: 'error',
                         confirmButtonColor: '#C8102E'
                     });
                 } else {
-                    alert('Error: ' + e.message);
+                    console.error('Error: ' + e.message);
                 }
             } finally {
                 this.loading = false;

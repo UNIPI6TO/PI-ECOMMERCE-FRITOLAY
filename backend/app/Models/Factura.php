@@ -19,7 +19,8 @@ class Factura extends Model
 
     public static function generarNumero(int $id): string
     {
-        return 'FAC-' . date('Y') . '-' . str_pad((string)$id, 6, '0', STR_PAD_LEFT);
+        // Formato Ecuador: Establecimiento (001) - Punto Emisión (001) - Secuencial (9 dígitos)
+        return '001-001-' . str_pad((string)$id, 9, '0', STR_PAD_LEFT);
     }
 
     public function pedido(): BelongsTo

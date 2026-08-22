@@ -40,7 +40,7 @@
                     <div>
                         <h4 class="font-bold text-sm text-neutral-dark" x-text="item.nombre"></h4>
                         <div class="text-xs text-gray-500 mt-1">
-                            <span x-text="item.cantidad + ' x $' + item.precioUnitario.toFixed(2)"></span>
+                            <span x-text="formatQty(item) + ' x $' + item.precioUnitario.toFixed(2)"></span>
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -86,6 +86,16 @@ function miniCart() {
                 this.subtotal = window.CarritoManager.calcularSubtotal();
                 this.$dispatch('cart-updated-internal');
             }
+        },
+        formatQty(item) {
+            let uP = item.unidadesPorPaca || 1;
+            if (uP <= 1) return `${item.cantidad} unds`;
+            let pacas = Math.floor(item.cantidad / uP);
+            let unds = item.cantidad % uP;
+            let res = [];
+            if (pacas > 0) res.push(`${pacas} paca${pacas > 1 ? 's' : ''}`);
+            if (unds > 0) res.push(`${unds} und${unds > 1 ? 's' : ''}`);
+            return res.join(' y ') || '0 unds';
         },
         checkout() {
             Swal.fire({title: 'Procesando...', text: 'Redirigiendo a pasarela de pago / confirmación de pedido...', icon: 'info', timer: 1000, showConfirmButton: false});

@@ -154,10 +154,13 @@
 
 - o Por defecto debe usar la ubicación actual, mover el punto de entrega y su dirección debe aparecer en el cuadro de texto.
 
-- o También debe permitir buscar una dirección o coordenadas con un cuadro de texto, cuando ocurra esto el ping en el mapa debe moverse a lo que indica el cuadro de texto.
+- o También debe permitir buscar una dirección o coordenadas con un cuadro de texto. Se ha implementado un sistema de autocompletado predictivo (dropdown) que despliega las mejores coincidencias incluyendo ciudad, provincia y país. Además, utilizando la fórmula Haversine, el sistema calcula la distancia en kilómetros desde la ubicación actual del usuario hasta los resultados sugeridos y los ordena por cercanía, replicando la experiencia de Google Maps.
+- o Al hacer clic en cualquier punto dentro del mapa interactivo, el sistema debe mover el marcador automáticamente a esas coordenadas, realizar una geocodificación inversa (reverse geocoding) y actualizar el campo de texto con la dirección aproximada correspondiente.
 
-
-- o Puede seleccionar la dirección por defecto que aparecerá en los pedidos. El usuario debe permitir cambiar con otra o crear, editar o eliminar direcciones en el proceso de ingreso de datos o checkout.
+- o Puede seleccionar la dirección por defecto que aparecerá en los pedidos. El usuario debe permitir cambiar con otra o crear, editar o eliminar (opción de borrado disponible junto a cada dirección guardada) direcciones en el proceso de ingreso de datos o checkout. 
+- o **Soft Delete para Direcciones:** Las direcciones NUNCA se eliminan físicamente de la base de datos (no se permite el uso de sentencias DELETE puras). En su lugar, se utiliza un borrado lógico (soft delete) cambiando el flag `estado` a `false` o desactivado.
+- o El sistema debe validar estrictamente que el usuario no pueda finalizar la compra (el botón de Finalizar Compra se deshabilita y se genera un modal de advertencia) si no tiene ninguna dirección seleccionada.
+- o **Estándar de Interfaz (Notificaciones):** Queda estrictamente prohibido el uso de ventanas de alerta nativas del navegador (`alert()`). Todas las validaciones, notificaciones de éxito y errores en todos los formularios deben presentarse utilizando la librería **SweetAlert** (`Swal.fire`).
 
 - Liquidación de Pago: En el proceso de check out debe aparecer el detalle de los productos y cálculo de descuentos, impuesto IVA, total y sub total. Siempre debe mostrar el total del pedido y el ahorro por los descuentos configurados.
 

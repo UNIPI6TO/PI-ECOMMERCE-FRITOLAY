@@ -199,7 +199,7 @@ document.addEventListener('alpine:init', () => {
                         confirmButtonColor: '#C8102E'
                     });
                 } else {
-                    alert('Error: ' + (e.message || 'No se pudo guardar'));
+                    console.error('Error: ' + (e.message || 'No se pudo guardar'));
                 }
             }
         },

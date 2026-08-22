@@ -77,7 +77,7 @@ document.addEventListener('alpine:init', () => {
                         confirmButtonColor: '#C8102E'
                     });
                 } else {
-                    alert('Error: ' + e.message);
+                    console.error('Error: ' + e.message);
                 }
             } finally {
                 this.loading = false;

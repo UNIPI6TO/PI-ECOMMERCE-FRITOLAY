@@ -16,7 +16,9 @@ class DireccionClienteController extends Controller
 
     public function index(int $clienteId): JsonResponse
     {
-        $direcciones = \App\Models\DireccionCliente::where('cliente_id', $clienteId)->get();
+        $direcciones = \App\Models\DireccionCliente::where('cliente_id', $clienteId)
+            ->where('estado', true)
+            ->get();
         return response()->json($direcciones);
     }
 

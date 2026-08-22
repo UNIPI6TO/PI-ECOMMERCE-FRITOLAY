@@ -4,39 +4,120 @@ import "jspdf-autotable";
 export const generateFactura = (facturaData) => {
     const doc = new jsPDF();
     
-    // Header
+    // Header - Logo/Empresa
     doc.setFillColor(227, 0, 27); // Fritolay Red #E3001B
-    doc.rect(0, 0, 210, 40, 'F');
+    doc.rect(0, 0, 210, 35, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.text("Fritolay Ambato", 14, 25);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("FRITOLAY AMBATO", 14, 23);
+    
+    // Cuadro SRI (Arriba a la derecha)
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(110, 10, 90, 30, 2, 2, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.roundedRect(110, 10, 90, 30, 2, 2, 'S');
     
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(16);
-    doc.text(`Factura N°: ${facturaData.numero}`, 14, 50);
-    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("RUC: 1890000000001", 115, 18);
     doc.setFontSize(12);
-    doc.text(`Cliente: ${facturaData.clienteNombre}`, 14, 60);
-    doc.text(`Fecha: ${facturaData.fecha}`, 14, 70);
+    doc.setFont("helvetica", "bold");
+    doc.text("FACTURA", 115, 25);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`No. ${facturaData.numero}`, 115, 32);
+    
+    // Datos de la empresa
+    doc.setFontSize(9);
+    doc.text("Dirección Matriz: Av. Los Guaytambos y Montalvo", 14, 45);
+    doc.text("OBLIGADO A LLEVAR CONTABILIDAD: SÍ", 14, 50);
 
-    const tableColumn = ["Producto", "Cantidad", "P. Unitario", "Total"];
-    const tableRows = facturaData.items.map(item => [
-        item.nombre,
+    // Datos del Cliente (Recuadro)
+    doc.roundedRect(14, 55, 186, 30, 2, 2, 'S');
+    doc.setFont("helvetica", "bold");
+    doc.text("Razón Social / Nombres y Apellidos:", 17, 62);
+    doc.setFont("helvetica", "normal");
+    doc.text(facturaData.clienteNombre, 75, 62);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Identificación (RUC/C.I.):", 17, 69);
+    doc.setFont("helvetica", "normal");
+    doc.text(facturaData.clienteRuc, 60, 69);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Fecha Emisión:", 130, 69);
+    doc.setFont("helvetica", "normal");
+    doc.text(facturaData.fecha, 160, 69);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Dirección:", 17, 76);
+    doc.setFont("helvetica", "normal");
+    doc.text(facturaData.clienteDireccion.substring(0, 50), 38, 76);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Teléfono:", 130, 76);
+    doc.setFont("helvetica", "normal");
+    doc.text(facturaData.clienteTelefono || 'S/N', 150, 76);
+
+    // Tabla de Detalles
+    const tableColumn = ["Cod.", "Cantidad", "Descripción", "P. Unitario", "Descuento", "Total"];
+    const tableRows = facturaData.items.map((item, index) => [
+        `PRD-${index+1}`,
         item.cantidad,
-        `$${item.precioUnitario}`,
+        item.nombre,
+        `$${Number(item.precioUnitario).toFixed(2)}`,
+        `$0.00`, // Individual discounts not handled atm
         `$${(item.cantidad * item.precioUnitario).toFixed(2)}`
     ]);
 
     doc.autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 80,
-        headStyles: { fillColor: [245, 197, 24] }, // Fritolay Yellow #F5C518
+        startY: 90,
+        headStyles: { fillColor: [227, 0, 27], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 9 },
     });
 
-    const finalY = doc.lastAutoTable.finalY || 80;
-    doc.text(`Total a Pagar: $${facturaData.total}`, 14, finalY + 10);
+    const finalY = doc.lastAutoTable.finalY || 90;
+
+    // Forma de Pago
+    doc.roundedRect(14, finalY + 10, 80, 25, 2, 2, 'S');
+    doc.setFont("helvetica", "bold");
+    doc.text("Forma de Pago", 17, finalY + 16);
+    doc.setFont("helvetica", "normal");
+    doc.text(facturaData.metodoPago.toUpperCase().replace(/_/g, ' '), 17, finalY + 23);
+    doc.text(`Valor: $${facturaData.total}`, 17, finalY + 30);
+
+    // Subtotales (Derecha)
+    const xTotals = 140;
+    const xValues = 180;
+    let currentY = finalY + 15;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("SUBTOTAL 15%", xTotals, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(`$${facturaData.subtotal}`, xValues, currentY);
+    currentY += 6;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("DESCUENTO", xTotals, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(`$${facturaData.descuento}`, xValues, currentY);
+    currentY += 6;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("IVA 15%", xTotals, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(`$${facturaData.iva}`, xValues, currentY);
+    currentY += 6;
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("VALOR TOTAL", xTotals, currentY);
+    doc.text(`$${facturaData.total}`, xValues, currentY);
 
     doc.save(`factura_${facturaData.numero}.pdf`);
 };

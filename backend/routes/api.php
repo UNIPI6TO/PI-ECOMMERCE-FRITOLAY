@@ -74,6 +74,9 @@ Route::middleware('jwt')->group(function () {
         // Operador/Admin + cliente propio
         Route::get('/{id}', [PedidoController::class, 'show']);
 
+        // Cancelar pedido
+        Route::patch('/{id}/cancelar', [PedidoController::class, 'cancelar']);
+
         // Comprobante: solo operador/admin
         Route::get('/{id}/comprobante', [PedidoController::class, 'comprobante'])
             ->middleware('role:operador,administrador');

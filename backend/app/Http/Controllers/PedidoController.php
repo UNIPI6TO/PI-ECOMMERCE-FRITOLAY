@@ -73,4 +73,14 @@ class PedidoController extends Controller
         $pedidos = $this->pedidoService->getHistorial($clienteId);
         return response()->json(['data' => $pedidos]);
     }
+
+    public function cancelar(int $id, \Illuminate\Http\Request $request): JsonResponse
+    {
+        try {
+            $this->pedidoService->cancelarPedido($id, (int) $request->input('user_id'));
+            return response()->json(['message' => 'Pedido cancelado correctamente']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+    }
 }

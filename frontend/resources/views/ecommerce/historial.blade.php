@@ -47,13 +47,57 @@
                         </td>
                         <td class="p-4" x-text="`$${Number(pedido.total).toFixed(2)}`"></td>
                         <td class="p-4 text-center space-x-2">
-                            <button @click="verPdf(pedido)" class="text-sm bg-[#E3001B] text-white px-3 py-1 rounded">Ver Factura PDF</button>
-                            <a :href="`/ecommerce/rastreo/${pedido.id}`" x-show="pedido.estado === 'en_ruta'" class="text-sm bg-[#F5C518] text-black px-3 py-1 rounded font-medium">Rastrear</a>
+                            <button @click="verDetalle(pedido)" class="text-sm bg-gray-200 text-gray-800 px-3 py-1 rounded font-medium hover:bg-gray-300">Detalles</button>
+                            <button @click="verPdf(pedido)" class="text-sm bg-[#E3001B] text-white px-3 py-1 rounded font-medium hover:bg-red-700">Factura PDF</button>
+                            <a :href="`/ecommerce/rastreo/${pedido.id}`" x-show="pedido.estado === 'en_ruta'" class="text-sm bg-[#F5C518] text-black px-3 py-1 rounded font-medium hover:bg-yellow-500">Rastrear</a>
+                            <button @click="cancelarPedido(pedido)" x-show="!['en_ruta', 'listo_para_entregar', 'entregado', 'entregado_parcialmente', 'cancelado'].includes(pedido.estado)" class="text-sm bg-gray-800 text-white px-3 py-1 rounded font-medium hover:bg-black">Cancelar</button>
                         </td>
                     </tr>
                 </template>
             </tbody>
         </table>
+    </div>
+
+    <!-- Modal Detalles -->
+    <div x-show="pedidoSeleccionado" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-lg w-full max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto" @click.away="pedidoSeleccionado = null">
+            <button @click="pedidoSeleccionado = null" class="absolute top-4 right-4 text-gray-500 hover:text-black">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 class="text-2xl font-bold mb-4">Detalles del Pedido #<span x-text="pedidoSeleccionado?.id"></span></h2>
+            
+            <div class="mb-4 text-sm text-gray-700 grid grid-cols-2 gap-4">
+                <div><span class="font-bold">Fecha:</span> <span x-text="pedidoSeleccionado ? new Date(pedidoSeleccionado.creado_en || pedidoSeleccionado.created_at).toLocaleString() : ''"></span></div>
+                <div><span class="font-bold">Estado:</span> <span class="uppercase" x-text="pedidoSeleccionado?.estado.replace(/_/g, ' ')"></span></div>
+                <div><span class="font-bold">Método de Pago:</span> <span class="uppercase" x-text="pedidoSeleccionado?.metodo_pago.replace(/_/g, ' ')"></span></div>
+                <div><span class="font-bold">Subtotal:</span> $<span x-text="Number(pedidoSeleccionado?.subtotal).toFixed(2)"></span></div>
+                <div><span class="font-bold">IVA:</span> $<span x-text="Number(pedidoSeleccionado?.iva).toFixed(2)"></span></div>
+                <div><span class="font-bold">Descuento:</span> $<span x-text="Number(pedidoSeleccionado?.descuento).toFixed(2)"></span></div>
+                <div class="col-span-2 text-lg font-bold text-[#E3001B]">Total: $<span x-text="Number(pedidoSeleccionado?.total).toFixed(2)"></span></div>
+            </div>
+
+            <h3 class="font-bold text-lg mb-2 border-b pb-2">Productos</h3>
+            <ul class="space-y-3 mb-6">
+                <template x-for="item in pedidoSeleccionado?.items" :key="item.id">
+                    <li class="flex justify-between border-b pb-2">
+                        <div>
+                            <span class="font-semibold text-gray-800" x-text="item.producto ? item.producto.nombre : 'Producto ' + item.producto_id"></span>
+                            <div class="text-sm text-gray-500">Cantidad Solicitada: <span x-text="item.cantidad_solicitada"></span></div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold">$<span x-text="Number(item.precio_unitario * item.cantidad_solicitada).toFixed(2)"></span></div>
+                            <div class="text-xs text-gray-400">($<span x-text="Number(item.precio_unitario).toFixed(2)"></span> c/u)</div>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+            
+            <div class="flex justify-end">
+                <button @click="pedidoSeleccionado = null" class="bg-gray-200 px-4 py-2 rounded font-semibold">Cerrar</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -64,6 +108,7 @@ document.addEventListener('alpine:init', () => {
         fechaFin: '',
         pedidos: [],
         pedidosOriginales: [],
+        pedidoSeleccionado: null,
         async init() {
             try {
                 // Get current client info to get clienteId
@@ -107,8 +152,54 @@ document.addEventListener('alpine:init', () => {
             this.fechaFin = '';
             this.pedidos = [...this.pedidosOriginales];
         },
+        verDetalle(pedido) {
+            this.pedidoSeleccionado = pedido;
+        },
+        async cancelarPedido(pedido) {
+            const confirmacion = await Swal.fire({
+                title: '¿Cancelar Pedido?',
+                text: "Esta acción no se puede deshacer.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#E3001B',
+                cancelButtonColor: '#9CA3AF',
+                confirmButtonText: 'Sí, cancelar'
+            });
+
+            if (confirmacion.isConfirmed) {
+                try {
+                    await window.api(`/api/pedidos/${pedido.id}/cancelar`, { method: 'PATCH' });
+                    Swal.fire('Cancelado', 'El pedido ha sido cancelado.', 'success');
+                    this.init(); // Recargar historial
+                } catch (e) {
+                    Swal.fire('Error', e.message, 'error');
+                }
+            }
+        },
         verPdf(pedido) {
-            if(window.pdfGenerator) window.pdfGenerator.generateFactura(pedido);
+            if(!window.generateFactura) {
+                console.error("Generador de PDF no cargado");
+                return;
+            }
+            const facturaData = {
+                numero: pedido.factura ? pedido.factura.numero_factura : pedido.id,
+                clienteNombre: pedido.cliente ? pedido.cliente.nombre_cliente : 'Consumidor Final',
+                clienteRuc: pedido.cliente ? pedido.cliente.ruc_cedula : '9999999999999',
+                clienteDireccion: pedido.direccion ? pedido.direccion.descripcion : 'S/N',
+                clienteTelefono: pedido.cliente ? pedido.cliente.telefono : '',
+                metodoPago: pedido.metodo_pago,
+                fecha: new Date(pedido.creado_en || pedido.created_at).toLocaleDateString('es-EC'),
+                subtotal: Number(pedido.subtotal).toFixed(2),
+                descuento: Number(pedido.descuento).toFixed(2),
+                iva: Number(pedido.iva).toFixed(2),
+                total: Number(pedido.total).toFixed(2),
+                items: pedido.items.map(item => ({
+                    nombre: item.producto ? item.producto.nombre : 'Producto ' + item.producto_id,
+                    cantidad: item.cantidad_solicitada,
+                    precioUnitario: item.precio_unitario
+                }))
+            };
+            window.generateFactura(facturaData);
         }
     }));
 });

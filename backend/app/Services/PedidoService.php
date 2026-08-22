@@ -80,6 +80,17 @@ class PedidoService
 
             $this->auditoriaService->log($usuarioId, 'pedido_creado', 'pedidos', $pedido->id);
 
+            // Crear Factura
+            $factura = \App\Models\Factura::create([
+                'pedido_id' => $pedido->id,
+                'numero_factura' => \App\Models\Factura::generarNumero($pedido->id),
+                'fecha_emision' => now(),
+                'subtotal' => $subtotal,
+                'iva' => $iva,
+                'total' => $total,
+            ]);
+            $pedido->setRelation('factura', $factura);
+
             return ['pedido' => $pedido, 'items' => $items];
         });
     }
@@ -96,8 +107,34 @@ class PedidoService
     public function getHistorial(int $clienteId): Collection
     {
         return \App\Models\Pedido::where('cliente_id', $clienteId)
-            ->with(['items'])
+            ->with(['items.producto', 'cliente', 'factura', 'direccion'])
             ->orderBy('id', 'desc')
             ->get();
+    }
+
+    public function cancelarPedido(int $pedidoId, int $usuarioId): void
+    {
+        DB::transaction(function () use ($pedidoId, $usuarioId) {
+            $cliente = \App\Models\Cliente::where('usuario_id', $usuarioId)->first();
+            if (!$cliente) throw new Exception("Cliente no encontrado.");
+
+            $pedido = $this->getPedido($pedidoId, $cliente->id);
+
+            if (in_array($pedido->estado, ['en_ruta', 'listo_para_entregar', 'entregado', 'entregado_parcialmente', 'cancelado'])) {
+                throw new Exception("El pedido no puede ser cancelado en su estado actual.");
+            }
+
+            $pedido->estado = 'cancelado';
+            $pedido->motivo_cancelacion = 'Cancelado por el cliente';
+            $pedido->save();
+
+            // Liberar inventario
+            $items = $pedido->items;
+            foreach ($items as $item) {
+                $this->inventarioService->decrementarEnPedidos($item->producto_id, $item->cantidad_solicitada);
+            }
+
+            $this->auditoriaService->log($usuarioId, 'pedido_cancelado', 'pedidos', $pedido->id);
+        });
     }
 }

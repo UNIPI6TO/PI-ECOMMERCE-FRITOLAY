@@ -22,18 +22,20 @@ export const CarritoManager = {
         window.dispatchEvent(new Event('cart-updated'));
     },
 
-    agregarItem(productoId, nombre, cantidad, precioUnitario) {
+    agregarItem(productoId, nombre, cantidad, precioUnitario, unidadesPorPaca = 1) {
         let cart = this._getCookie();
         let existing = cart.find(item => item.productoId === productoId);
         
         if (existing) {
             existing.cantidad += parseInt(cantidad, 10);
+            if(unidadesPorPaca) existing.unidadesPorPaca = unidadesPorPaca;
         } else {
             cart.push({
                 productoId,
                 nombre,
                 cantidad: parseInt(cantidad, 10),
-                precioUnitario: parseFloat(precioUnitario)
+                precioUnitario: parseFloat(precioUnitario),
+                unidadesPorPaca: parseInt(unidadesPorPaca, 10) || 1
             });
         }
         this._setCookie(cart);
