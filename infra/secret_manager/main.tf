@@ -18,3 +18,10 @@ resource "google_secret_manager_secret" "backend_env" {
     auto {}
   }
 }
+
+resource "google_secret_manager_secret" "frontend_env" {
+  secret_id = "fritolay-frontend-env"
+  replication {
+    auto {}
+  }
+}

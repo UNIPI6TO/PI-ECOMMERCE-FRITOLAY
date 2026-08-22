@@ -27,6 +27,9 @@ jobs:
       - name: Setup Docker to use GCP Artifact Registry
         run: |
           gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
+      - name: Fetch Frontend Environment Variables
+        run: |
+          gcloud secrets versions access latest --secret="fritolay-frontend-env" > frontend/.env
       - name: Build and Push Frontend
         run: |
           IMAGE_PATH=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fritolay/frontend
