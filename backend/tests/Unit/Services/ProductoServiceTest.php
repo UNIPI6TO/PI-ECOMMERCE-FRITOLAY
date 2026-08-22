@@ -21,12 +21,15 @@ class ProductoServiceTest extends TestCase
     public function test_get_producto_calcula_stock()
     {
         $repo = Mockery::mock(ProductoRepositoryInterface::class);
-        $productoMock = (object)[
+        $productoMock = Mockery::mock(\App\Models\Producto::class)->makePartial();
+        $productoMock->id = 1;
+        $productoMock->cantidad_fisica = 100;
+        $productoMock->en_pedidos = 85;
+        $productoMock->shouldReceive('toArray')->andReturn([
             "id" => 1,
             "cantidad_fisica" => 100,
-            "en_pedidos" => 85,
-            "toArray" => function() use (&$productoMock) { return (array)$productoMock; }
-        ];
+            "en_pedidos" => 85
+        ]);
 
         $repo->shouldReceive("findById")->with(1)->andReturn($productoMock);
 

@@ -30,9 +30,14 @@ class DescuentoServiceTest extends TestCase
         
         // Simular que el descuento individual es 10% y el global es 15%
         // Debido a que calcularDescuento llama a Descuento::where dos veces (una para individual y otra para global)
+        $descIndividual = new \App\Models\Descuento();
+        $descIndividual->porcentaje = 10;
+        $descGlobal = new \App\Models\Descuento();
+        $descGlobal->porcentaje = 15;
+
         $builderMock->shouldReceive('first')->andReturnValues([
-            (object)['porcentaje' => 10], // Individual
-            (object)['porcentaje' => 15]  // Global
+            $descIndividual, // Individual
+            $descGlobal  // Global
         ]);
 
         $descuentoMock = Mockery::mock('alias:App\Models\Descuento');

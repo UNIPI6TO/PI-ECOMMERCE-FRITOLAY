@@ -38,7 +38,9 @@ class InventarioServiceTest extends TestCase
         $prodRepo = Mockery::mock(ProductoRepositoryInterface::class);
         $bodegaRepo = Mockery::mock(BodegaRepositoryInterface::class);
 
-        $productoMock = (object)['id' => 1, 'en_pedidos' => 10];
+        $productoMock = Mockery::mock(\App\Models\Producto::class)->makePartial();
+        $productoMock->id = 1;
+        $productoMock->en_pedidos = 10;
         $prodRepo->shouldReceive('findById')->with(1)->andReturn($productoMock);
         
         // Verifica que se guarde el nuevo valor: 10 + 5.5 = 15.5
@@ -55,10 +57,12 @@ class InventarioServiceTest extends TestCase
 
         $bodegaRepo->shouldReceive('decrement')->with(99, 1, 10.0)->once();
 
-        $productoMock = (object)['id' => 1, 'en_pedidos' => 20];
+        $productoMock = Mockery::mock(\App\Models\Producto::class)->makePartial();
+        $productoMock->id = 1;
+        $productoMock->en_pedidos = 20;
         $prodRepo->shouldReceive('findById')->with(1)->andReturn($productoMock);
         
-        // El decrementar bajará de 20 a 10 (porque se restan 10)
+        // El decrementar bajarǭ de 20 a 10 (porque se restan 10)
         $prodRepo->shouldReceive('update')->with(1, ['en_pedidos' => 10.0])->once();
 
         $service = new InventarioService($prodRepo, $bodegaRepo);

@@ -37,13 +37,22 @@ class CierreServiceTest extends TestCase
         $inventarioSvc = Mockery::mock(InventarioService::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
-        $guiaMock = (object)['id' => 1, 'estado' => 'confirmacion_cierre', 'camion_id' => 5];
+        $guiaMock = Mockery::mock(\App\Models\GuiaRemision::class)->makePartial();
+        $guiaMock->id = 1;
+        $guiaMock->estado = 'confirmacion_cierre';
+        $guiaMock->camion_id = 5;
+
         $guiaRepo->shouldReceive('findByIdRemision')->with(1)->andReturn($guiaMock);
         
+        $guiaCerradaMock = Mockery::mock(\App\Models\GuiaRemision::class)->makePartial();
+        $guiaCerradaMock->id = 1;
+        $guiaCerradaMock->estado = 'cerrada';
+        $guiaCerradaMock->camion_id = 5;
+
         $guiaRepo->shouldReceive('updateRemision')->with(1, [
             'estado' => 'cerrada',
             'efectivo_recibido' => 100.50
-        ])->andReturn((object)['id' => 1, 'estado' => 'cerrada', 'camion_id' => 5]);
+        ])->andReturn($guiaCerradaMock);
 
         $inventarioSvc->shouldReceive('encerarBodegaCamion')->with(5)->once();
         $auditoriaSvc->shouldReceive('log')->once();
