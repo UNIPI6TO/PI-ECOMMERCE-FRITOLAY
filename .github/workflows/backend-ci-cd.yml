@@ -19,7 +19,7 @@ jobs:
       - name: Copy .env
         run: cd backend && cp .env.example .env && php artisan key:generate
       - name: Run Backend Tests
-        run: cd backend && php artisan test
+        run: cd backend && ./vendor/bin/phpunit
         env:
           JWT_SECRET: test_jwt_secret_for_ci
 
