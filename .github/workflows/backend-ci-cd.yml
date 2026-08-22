@@ -17,8 +17,7 @@ jobs:
       - name: Install Backend Dependencies
         run: |
           cd backend
-          composer require --dev mockery/mockery --no-interaction
-          composer install --no-interaction --prefer-dist
+          composer update --no-interaction --prefer-dist
       - name: Copy .env
         run: cd backend && cp .env.example .env && php artisan key:generate
       - name: Run Backend Tests
