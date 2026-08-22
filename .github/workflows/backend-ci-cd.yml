@@ -56,5 +56,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --service-account="sa-backend@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
+            --add-cloudsql-instances="${{ secrets.GCP_PROJECT_ID }}:${{ secrets.GCP_REGION }}:fritolay-mysql" \
+            --set-env-vars="DB_SOCKET=/cloudsql/${{ secrets.GCP_PROJECT_ID }}:${{ secrets.GCP_REGION }}:fritolay-mysql" \
             --set-secrets="/secrets/.env=fritolay-backend-env:latest"
 
