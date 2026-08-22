@@ -36,6 +36,14 @@ COPY .env ./
 COPY --from=composer_stage /app/vendor ./vendor
 COPY --from=node_stage /app/public/build ./public/build
 
+RUN mkdir -p storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache
+
+RUN chmod -R 777 storage bootstrap/cache
+
 RUN php artisan config:clear || true \
     && php artisan view:clear || true
 
