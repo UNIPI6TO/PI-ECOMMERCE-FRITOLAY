@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '*');
         $middleware->append(SanitizeInputMiddleware::class);
         $middleware->alias([
             'jwt' => JwtMiddleware::class,
