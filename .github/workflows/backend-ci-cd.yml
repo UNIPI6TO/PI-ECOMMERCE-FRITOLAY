@@ -52,6 +52,7 @@ jobs:
             --image=$IMAGE_PATH:latest \
             --region=${{ secrets.GCP_REGION }} \
             --platform=managed \
-            --no-allow-unauthenticated \
+            --allow-unauthenticated \
+            --service-account="sa-backend@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
             --set-secrets="/secrets/.env=fritolay-backend-env:latest"
 
