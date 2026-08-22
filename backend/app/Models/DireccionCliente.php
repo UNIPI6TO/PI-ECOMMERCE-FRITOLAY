@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DireccionCliente extends Model
 {
     protected $table = 'direcciones_cliente';
-    protected $fillable = ['cliente_id', 'descripcion', 'latitud', 'longitud', 'es_por_defecto'];
+    protected $fillable = ['cliente_id', 'descripcion', 'latitud', 'longitud', 'es_por_defecto', 'referencia'];
     
     protected $casts = [
         'latitud' => 'decimal:8',

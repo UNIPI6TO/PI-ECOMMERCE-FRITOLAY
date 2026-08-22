@@ -16,16 +16,21 @@ class ClienteController extends Controller
         return response()->json(['data' => $cliente], 201);
     }
 
-    public function me(): JsonResponse
+    public function me(\Illuminate\Http\Request $request): JsonResponse
     {
-        $cliente = auth()->user();
+        $cliente = Cliente::where('usuario_id', $request->input('user_id'))->first();
+        if (!$cliente) {
+            return response()->json(['data' => null]);
+        }
         return response()->json(['data' => $cliente]);
     }
 
     public function update(ClienteRequest $request): JsonResponse
     {
-        $cliente = auth()->user();
-        $cliente->update($request->validated());
+        $cliente = Cliente::updateOrCreate(
+            ['usuario_id' => $request->input('user_id')],
+            $request->validated()
+        );
         return response()->json(['data' => $cliente]);
     }
 }

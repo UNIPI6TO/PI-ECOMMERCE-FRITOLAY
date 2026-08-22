@@ -20,6 +20,7 @@ class DireccionClienteRequest extends FormRequest
             'latitud' => ['required', 'numeric', 'between:-90,90'],
             'longitud' => ['required', 'numeric', 'between:-180,180'],
             'es_por_defecto' => ['boolean'],
+            'referencia' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

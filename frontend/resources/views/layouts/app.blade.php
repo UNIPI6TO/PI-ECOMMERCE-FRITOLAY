@@ -34,8 +34,10 @@
          */
         window.api = async function(path, options = {}) {
             const token = localStorage.getItem('jwt_token');
+            const isFormData = options.body instanceof FormData;
             const headers = {
-                'Content-Type': 'application/json',
+                ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+                'Accept': 'application/json',
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                 ...(options.headers || {})
             };
@@ -53,6 +55,7 @@
             if (!response.ok) {
                 // Construye mensaje legible desde errores de validación (422) u otros
                 const message = data.message
+                    || data.error
                     || (data.errors ? Object.values(data.errors).flat().join(' ') : null)
                     || `Error ${response.status}`;
                 throw Object.assign(new Error(message), { status: response.status, data });

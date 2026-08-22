@@ -21,19 +21,22 @@ class PedidoService
     ) {
     }
 
-    public function crearPedido(array $data, int $usuarioId): array
+    public function crearPedido(array $data, int $clienteId, int $usuarioId): array
     {
-        return DB::transaction(function () use ($data, $usuarioId) {
+        return DB::transaction(function () use ($data, $clienteId, $usuarioId) {
             $subtotal = 0;
             
             foreach ($data['items'] as $item) {
-                $producto = $this->productoRepository->findById($item['producto_id']);
+                $productoId = (int) $item['producto_id'];
+                $cantidad = (float) $item['cantidad'];
+
+                $producto = $this->productoRepository->findById($productoId);
                 $disponible = $producto->cantidad_fisica - $producto->en_pedidos;
                 
-                if ($disponible < $item['cantidad']) {
-                    throw new Exception("Stock insuficiente para el producto ID: {$item['producto_id']}");
+                if ($disponible < $cantidad) {
+                    throw new Exception("Stock insuficiente para el producto ID: {$productoId}");
                 }
-                $subtotal += $producto->precio * $item['cantidad'];
+                $subtotal += $producto->precio * $cantidad;
             }
 
             $descuento = $this->descuentoService->calcularDescuento($usuarioId, $data['metodo_pago'], $subtotal);
@@ -44,7 +47,7 @@ class PedidoService
             $estado = in_array($data['metodo_pago'], ['deposito', 'de_una']) ? 'en_espera_aprobacion' : 'en_espera_asignacion';
 
             $pedidoData = [
-                'cliente_id' => $usuarioId,
+                'cliente_id' => $clienteId,
                 'direccion_id' => $data['direccion_id'],
                 'metodo_pago' => $data['metodo_pago'],
                 'subtotal' => $subtotal,
@@ -58,20 +61,24 @@ class PedidoService
             $items = [];
 
             foreach ($data['items'] as $item) {
-                $producto = $this->productoRepository->findById($item['producto_id']);
+                $productoId = (int) $item['producto_id'];
+                $cantidad = (float) $item['cantidad'];
+
+                $producto = $this->productoRepository->findById($productoId);
                 $itemData = [
                     'pedido_id' => $pedido->id,
-                    'producto_id' => $item['producto_id'],
-                    'cantidad' => $item['cantidad'],
+                    'producto_id' => $productoId,
+                    'cantidad_solicitada' => $cantidad,
+                    'cantidad_entregada' => 0,
                     'precio_unitario' => $producto->precio,
-                    'subtotal' => $producto->precio * $item['cantidad'],
+                    'descuento_aplicado' => 0,
                 ];
                 
-                $items[] = $this->pedidoRepository->createItem($itemData);
-                $this->inventarioService->incrementarEnPedidos($item['producto_id'], (float)$item['cantidad']);
+                $items[] = $pedido->items()->create($itemData);
+                $this->inventarioService->incrementarEnPedidos($productoId, $cantidad);
             }
 
-            $this->auditoriaService->log('pedido_creado', $usuarioId, "Pedido {$pedido->id} creado exitosamente.");
+            $this->auditoriaService->log($usuarioId, 'pedido_creado', 'pedidos', $pedido->id);
 
             return ['pedido' => $pedido, 'items' => $items];
         });
@@ -88,6 +95,9 @@ class PedidoService
 
     public function getHistorial(int $clienteId): Collection
     {
-        return $this->pedidoRepository->getByCliente($clienteId);
+        return \App\Models\Pedido::where('cliente_id', $clienteId)
+            ->with(['items'])
+            ->orderBy('id', 'desc')
+            ->get();
     }
 }

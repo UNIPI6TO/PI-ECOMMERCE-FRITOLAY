@@ -2168,6 +2168,7 @@ Almacena los datos del perfil comercial de los usuarios con rol de cliente.
 | `usuario_id` | INT | FK (USUARIOS.id) | Referencia a la cuenta de usuario. |
 | `ruc_cedula` | VARCHAR(20) | UNIQUE, NOT NULL | Identificación comercial o personal. |
 | `razon_social` | VARCHAR(255) | NOT NULL | Nombre del negocio o persona. |
+| `nombre_cliente` | VARCHAR(255) | NULL | Nombre de la persona o cliente. |
 | `telefono` | VARCHAR(20) | NOT NULL | Número de contacto. |
 
 **Tabla: `DIRECCIONES_CLIENTE`**
@@ -2178,6 +2179,7 @@ Almacena los puntos de entrega asociados a cada cliente.
 | `id` | INT | PK, Auto Increment | Identificador de la dirección. |
 | `cliente_id` | INT | FK (CLIENTES.id) | Cliente propietario de la dirección. |
 | `descripcion` | TEXT | NOT NULL | Detalle de la dirección. |
+| `referencia` | TEXT | NULL | Referencia de la dirección. |
 | `latitud` | DECIMAL(10,8) | NOT NULL | Coordenada GPS latitud. |
 | `longitud` | DECIMAL(11,8) | NOT NULL | Coordenada GPS longitud. |
 | `es_por_defecto`| BOOLEAN | DEFAULT FALSE | Dirección principal de entrega. |

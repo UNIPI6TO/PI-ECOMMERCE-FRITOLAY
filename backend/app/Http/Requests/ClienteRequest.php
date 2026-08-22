@@ -19,6 +19,7 @@ class ClienteRequest extends FormRequest
             'ruc_cedula' => ['required', 'string', 'max:20'],
             'razon_social' => ['required', 'string', 'max:255'],
             'telefono' => ['required', 'string', 'max:20'],
+            'nombre_cliente' => ['nullable', 'string', 'max:255'],
         ];
     }
 }
