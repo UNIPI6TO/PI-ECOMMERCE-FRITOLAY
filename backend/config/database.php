@@ -7,6 +7,7 @@ return [
             'driver' => 'mysql',
             'host' => env('DB_HOST', 'mysql'),
             'port' => env('DB_PORT', '3306'),
+            'unix_socket' => env('DB_SOCKET', ''),
             'database' => env('DB_DATABASE', 'fritolay_db'),
             'username' => env('DB_USERNAME', 'fritolay'),
             'password' => env('DB_PASSWORD', ''),
