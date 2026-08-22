@@ -11,13 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('clientes', function (Blueprint $table) {
-            $table->string('nombre_cliente')->after('ruc_cedula')->nullable();
-        });
+        if (!Schema::hasColumn('clientes', 'nombre_cliente')) {
+            Schema::table('clientes', function (Blueprint $table) {
+                $table->string('nombre_cliente')->after('ruc_cedula')->nullable();
+            });
+        }
 
-        Schema::table('direcciones_cliente', function (Blueprint $table) {
-            $table->text('referencia')->after('descripcion')->nullable();
-        });
+        if (!Schema::hasColumn('direcciones_cliente', 'referencia')) {
+            Schema::table('direcciones_cliente', function (Blueprint $table) {
+                $table->text('referencia')->after('descripcion')->nullable();
+            });
+        }
     }
 
     /**

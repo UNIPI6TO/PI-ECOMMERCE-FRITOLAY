@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('direcciones_cliente', function (Blueprint $table) {
-            $table->boolean('estado')->default(true)->after('es_por_defecto');
-        });
+        if (!Schema::hasColumn('direcciones_cliente', 'estado')) {
+            Schema::table('direcciones_cliente', function (Blueprint $table) {
+                $table->boolean('estado')->default(true)->after('es_por_defecto');
+            });
+        }
     }
 
     /**
