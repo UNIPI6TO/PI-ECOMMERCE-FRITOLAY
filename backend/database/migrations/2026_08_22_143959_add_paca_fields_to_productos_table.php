@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('productos', function (Blueprint $table) {
-            $table->integer('unidades_por_paca')->default(1)->after('precio');
-        });
+        if (!Schema::hasColumn('productos', 'unidades_por_paca')) {
+            Schema::table('productos', function (Blueprint $table) {
+                $table->integer('unidades_por_paca')->default(1)->after('precio');
+            });
+        }
     }
 
     /**
