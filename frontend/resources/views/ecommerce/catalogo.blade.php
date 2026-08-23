@@ -19,9 +19,12 @@
         </div>
 
         <!-- Filtro: Marca -->
-        <div class="mb-4">
-            <label class="block font-medium mb-1">Marca</label>
-            <div class="space-y-2 max-h-48 overflow-y-auto">
+        <div class="mb-4 border-b pb-2" x-data="{ expanded: true }">
+            <button @click="expanded = !expanded" class="flex justify-between items-center w-full font-medium mb-2 focus:outline-none">
+                <span>Marca</span>
+                <svg :class="{'rotate-180': expanded}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div x-show="expanded" class="space-y-2 mt-2">
                 <template x-for="marca in getUniqueMarcas()" :key="marca">
                     <label class="flex items-center">
                         <input type="checkbox" :value="marca" x-model="filters.marcas" @change="applyFilters" 
@@ -33,9 +36,12 @@ class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
         </div>
 
         <!-- Filtro: Categoría -->
-        <div>
-            <label class="block font-medium mb-1">Categoría</label>
-            <div class="space-y-2 max-h-48 overflow-y-auto">
+        <div class="mb-4" x-data="{ expanded: true }">
+            <button @click="expanded = !expanded" class="flex justify-between items-center w-full font-medium mb-2 focus:outline-none">
+                <span>Categoría</span>
+                <svg :class="{'rotate-180': expanded}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div x-show="expanded" class="space-y-2 mt-2">
                 <template x-for="cat in getUniqueCategorias()" :key="cat">
                     <label class="flex items-center">
                         <input type="checkbox" :value="cat" x-model="filters.categorias" @change="applyFilters" 
