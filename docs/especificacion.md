@@ -1760,7 +1760,8 @@ erDiagram
     PRODUCTOS {
         int id PK
         string nombre
-        string tipo
+        string marca
+        string categoria
         string descripcion
         decimal precio
         string imagen_gcs_path

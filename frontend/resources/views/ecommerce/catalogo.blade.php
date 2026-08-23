@@ -18,17 +18,31 @@
             </select>
         </div>
 
+        <!-- Filtro: Marca -->
+        <div class="mb-4">
+            <label class="block font-medium mb-1">Marca</label>
+            <div class="space-y-2 max-h-48 overflow-y-auto">
+                <template x-for="marca in getUniqueMarcas()" :key="marca">
+                    <label class="flex items-center">
+                        <input type="checkbox" :value="marca" x-model="filters.marcas" @change="applyFilters" 
+class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
+                        <span class="ml-2 text-sm" x-text="marca"></span>
+                    </label>
+                </template>
+            </div>
+        </div>
+
+        <!-- Filtro: Categoría -->
         <div>
-            <label class="block font-medium mb-1">Tipo de Producto</label>
-            <div class="space-y-2">
-                <label class="flex items-center">
-                    <input type="checkbox" value="Snack" x-model="filters.types" @change="applyFilters" class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
-                    <span class="ml-2 text-sm">Snacks (Papas, Tortillas)</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="checkbox" value="Dips" x-model="filters.types" @change="applyFilters" class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
-                    <span class="ml-2 text-sm">Dips y Salsas</span>
-                </label>
+            <label class="block font-medium mb-1">Categoría</label>
+            <div class="space-y-2 max-h-48 overflow-y-auto">
+                <template x-for="cat in getUniqueCategorias()" :key="cat">
+                    <label class="flex items-center">
+                        <input type="checkbox" :value="cat" x-model="filters.categorias" @change="applyFilters" 
+class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
+                        <span class="ml-2 text-sm" x-text="cat"></span>
+                    </label>
+                </template>
             </div>
         </div>
     </aside>
@@ -60,7 +74,9 @@
                     
                     <div class="p-4 flex-grow flex flex-col">
                         <h3 class="font-bold text-lg text-neutral-dark" x-text="product.nombre"></h3>
-                        <p class="text-sm text-gray-500 mb-2" x-text="product.tipo"></p>
+                        <p class="text-xs text-gray-500 mb-1">
+                            <span class="font-semibold" x-text="product.marca"></span> | <span x-text="product.categoria"></span>
+                        </p>
                         <p class="text-xl font-bold text-primary mb-4" x-text="'$' + parseFloat(product.precio).toFixed(2)"></p>
                         
                         <div class="mt-auto flex flex-col space-y-2" x-data="{ qty: 1, tipoCompra: 'unidad' }">
@@ -105,16 +121,30 @@ function catalogo() {
         sortBy: 'name_asc',
         loading: true,
         filters: {
-            types: []
+            marcas: [],
+            categorias: []
         },
         init() {
             this.fetchProducts();
+        },
+        getUniqueMarcas() {
+            const marcas = this.allProducts.map(p => p.marca).filter(Boolean);
+            return [...new Set(marcas)].sort();
+        },
+        getUniqueCategorias() {
+            // Some categories might be comma separated strings, so we split them and flatten
+            let categorias = [];
+            this.allProducts.forEach(p => {
+                if(p.categoria) {
+                    p.categoria.split(',').forEach(c => categorias.push(c.trim()));
+                }
+            });
+            return [...new Set(categorias)].sort();
         },
         async fetchProducts() {
             this.loading = true;
             try {
                 const data = await window.api('/api/productos');
-                // La respuesta viene como { data: [...] }
                 this.allProducts = Array.isArray(data) ? data : (data.data || []);
                 this.applyFilters();
             } catch (error) {
@@ -126,9 +156,20 @@ function catalogo() {
         },
         applyFilters() {
             let filtered = this.allProducts;
-            if (this.filters.types.length > 0) {
-                filtered = filtered.filter(p => this.filters.types.includes(p.tipo));
+            
+            if (this.filters.marcas.length > 0) {
+                filtered = filtered.filter(p => this.filters.marcas.includes(p.marca));
             }
+            
+            if (this.filters.categorias.length > 0) {
+                filtered = filtered.filter(p => {
+                    if(!p.categoria) return false;
+                    const prodCats = p.categoria.split(',').map(c => c.trim());
+                    // Return true if the product has at least one of the selected categories
+                    return this.filters.categorias.some(c => prodCats.includes(c));
+                });
+            }
+            
             this.displayedProducts = filtered;
             this.sortLocalProducts();
         },
