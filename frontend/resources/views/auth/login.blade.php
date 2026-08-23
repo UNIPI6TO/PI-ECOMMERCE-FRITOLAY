@@ -30,8 +30,9 @@
         </button>
     </form>
 
-    <div class="mt-4 text-center">
-        <a href="/recover" class="text-sm text-primary hover:underline">¿Olvidaste tu contraseña?</a>
+    <div class="mt-4 text-center flex flex-col space-y-2">
+        <a href="/auth/recover" class="text-sm text-primary hover:underline">¿Olvidaste tu contraseña?</a>
+        <a href="/auth/registro" class="text-sm font-medium text-gray-600 hover:text-primary hover:underline">¿No tienes cuenta? Quiero ser cliente</a>
     </div>
 </div>
 
