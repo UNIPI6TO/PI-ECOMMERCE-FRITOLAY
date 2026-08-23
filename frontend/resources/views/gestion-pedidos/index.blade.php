@@ -4,7 +4,9 @@
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="gestionPedidos()">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Gestión de Pedidos</h1>
-        <input type="text" placeholder="Filtro (ej: last 24h)" class="border px-4 py-2 rounded w-64">
+        <div class="flex space-x-2">
+            <input type="text" placeholder="Filtro (ej: last 24h)" class="border px-4 py-2 rounded w-64">
+        </div>
     </div>
 
     <!-- KPI Cards -->
@@ -33,7 +35,7 @@
     <div class="flex justify-between items-center mb-4">
         <h2 class="font-semibold text-lg">Listado de Pedidos</h2>
         <div class="flex items-center space-x-4">
-            <button @click="autoAprobarMasivo" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md text-sm font-semibold shadow transition-colors flex items-center">
+            <button x-show="hayPedidosParaAutoAprobar()" @click="autoAprobarMasivo" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md text-sm font-semibold shadow transition-colors flex items-center">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Auto Aprobar Efectivo/TC/Débito
             </button>
@@ -411,7 +413,7 @@ document.addEventListener('alpine:init', () => {
             this.selectedPedido = null;
             this.comprobanteUrl = null;
         },
-        
+
         abrirAsignarRuta(p) {
             this.selectedPedido = p;
             this.selectedCamionId = '';
@@ -495,6 +497,16 @@ document.addEventListener('alpine:init', () => {
                     Swal.fire('Error', e.message || 'No se pudo aprobar masivamente', 'error');
                 }
             }
+        },
+
+        hayPedidosParaAutoAprobar() {
+            const pagosValidos = ['efectivo', 'tc', 'td', 'tarjeta', 'debito', 'de_una'];
+            // Convert everything to uppercase strings or safely check lowercase
+            return this.pedidos.some(p => {
+                if (p.estado !== 'PENDIENTE' || !p.pago) return false;
+                const metodo = p.pago.toLowerCase();
+                return pagosValidos.some(pv => metodo.includes(pv));
+            });
         },
 
         get filteredPedidos() {

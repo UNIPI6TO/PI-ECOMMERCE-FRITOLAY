@@ -129,7 +129,7 @@ Route::middleware('jwt')->group(function () {
             ->middleware('role:operador,administrador');
         Route::post('/', [CamionController::class, 'store'])
             ->middleware('role:administrador');
-        Route::patch('/{id}/estado', [CamionController::class, 'cambiarEstado'])
+        Route::patch('/{id}/estado', [CamionController::class, 'updateEstado'])
             ->middleware('role:administrador,operador');
         Route::patch('/{id}/chofer', [CamionController::class, 'asignarChofer'])
             ->middleware('role:administrador');

@@ -35,7 +35,7 @@ class GcsService
                 fopen($file->getRealPath(), 'r'),
                 ['name' => $filename]
             );
-            return $filename;
+            return "https://storage.googleapis.com/{$bucketName}/{$filename}";
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error uploading to GCS: ' . $e->getMessage());
             // Fallback local en caso de no tener credenciales de GCP configuradas
@@ -45,23 +45,16 @@ class GcsService
 
     public function getUrlFirmada(string $path, int $minutesTTL = 15): string
     {
-        try {
-            $bucketName = config('fritolay.gcs_bucket_comprobantes');
-            if (empty($bucketName)) {
-                $bucketName = 'fritolay-images-project-3e1faa58-1e7d-4e8d-933';
-            }
-            $storage = new \Google\Cloud\Storage\StorageClient();
-            $bucket = $storage->bucket($bucketName);
-            $object = $bucket->object($path);
-            
-            if ($object->exists()) {
-                return $object->signedUrl(now()->addMinutes($minutesTTL));
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error generating signed URL: ' . $e->getMessage());
+        if (empty($path)) {
+            return '';
         }
         
-        return Storage::disk('local')->url($path);
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        $bucketName = config('fritolay.gcs_bucket_comprobantes', 'fritolay-images-project-3e1faa58-1e7d-4e8d-933');
+        return "https://storage.googleapis.com/{$bucketName}/{$path}";
     }
 
     public function subirImagen(UploadedFile $file, string $nombre): string

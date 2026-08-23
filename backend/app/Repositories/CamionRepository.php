@@ -23,6 +23,13 @@ class CamionRepository implements CamionRepositoryInterface
         return Camion::create($data);
     }
 
+    public function update(int $id, array $data): Camion
+    {
+        $camion = Camion::findOrFail($id);
+        $camion->update($data);
+        return $camion->fresh(['chofer', 'bodega.producto']);
+    }
+
     public function updateEstado(int $id, string $estado): bool
     {
         return (bool) Camion::where('id', $id)->update(['estado' => $estado]);
