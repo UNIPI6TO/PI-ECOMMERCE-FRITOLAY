@@ -28,6 +28,8 @@ Route::get('/info', function () {
         'api_name' => config('app.name', 'Fritolay Backend API'),
         'environment' => config('app.env'),
         'timestamp' => now()->toIso8601String(),
+        'db_socket' => env('DB_SOCKET', 'MISSING'),
+        'db_host' => env('DB_HOST', 'MISSING'),
     ]);
 });
 
