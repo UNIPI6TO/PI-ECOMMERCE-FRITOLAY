@@ -98,7 +98,7 @@ class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
                                     if(tipoCompra === 'paca') finalQty = qty * product.unidades_por_paca;
                                     window.CarritoManager.agregarItem(product.id, product.nombre, finalQty, parseFloat(product.precio), product.unidades_por_paca); 
                                     $dispatch('cart-updated');
-                                    if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: 'Agregado al carrito', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000});
+                                    if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: 'Agregado al carrito', toast: true, position: 'bottom', showConfirmButton: false, timer: 2000});
                                 " 
                                         class="flex-grow bg-primary text-white py-1 px-3 rounded hover:bg-red-700 disabled:opacity-50"
                                         :disabled="product.cantidad_fisica <= 0 || (tipoCompra === 'paca' && product.cantidad_fisica < product.unidades_por_paca)">

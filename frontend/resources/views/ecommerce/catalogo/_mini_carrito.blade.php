@@ -133,7 +133,7 @@ function miniCart() {
             if (!result.isConfirmed) return;
             await window.CarritoManager.abandonarCarrito('Carrito vaciado manualmente por el usuario');
             this.updateCart();
-            Swal.fire({ icon: 'info', title: 'Carrito vaciado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+            Swal.fire({ icon: 'info', title: 'Carrito vaciado', toast: true, position: 'bottom', showConfirmButton: false, timer: 2500 });
         }
     }
 }
