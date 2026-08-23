@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Producto extends Model
 {
     protected $table = 'productos';
-    protected $fillable = ['nombre', 'descripcion', 'precio', 'cantidad_fisica', 'tipo', 'estado', 'imagen_gcs_path', 'unidades_por_paca', 'en_pedidos'];
+    protected $fillable = ['nombre', 'descripcion', 'marca', 'categoria', 'precio', 'cantidad_fisica', 'estado', 'imagen_gcs_path', 'unidades_por_paca', 'en_pedidos'];
     
     protected $casts = [
         'precio' => 'decimal:2',

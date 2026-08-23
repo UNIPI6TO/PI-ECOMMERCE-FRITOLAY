@@ -167,7 +167,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 await window.api(`/api/clientes/${this.clienteId}/direcciones/${id}`, { method: 'DELETE' });
                 await this.loadDirecciones();
-                Swal.fire({ icon: 'success', title: 'Eliminada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                Swal.fire({ icon: 'success', title: 'Eliminada', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             } catch (e) {
                 Swal.fire('Error', 'No se pudo eliminar la dirección', 'error');
             }
@@ -199,7 +199,7 @@ document.addEventListener('alpine:init', () => {
                 await this.loadDirecciones();
                 this.showAddressModal = false;
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'success', title: 'Dirección guardada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                    Swal.fire({ icon: 'success', title: 'Dirección guardada', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
                 }
             } catch (e) {
                 if (typeof Swal !== 'undefined') {

@@ -67,17 +67,23 @@
 </head>
 <body class="bg-gray-50 text-neutral-dark min-h-screen flex flex-col font-sans">
     
-       <nav class="bg-white text-gray-700 shadow-sm border-b border-gray-100">
+           <nav class="bg-white text-gray-700 shadow-sm border-b border-gray-100" x-data="{ mobileMenuOpen: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
+                    <!-- Mobile menu button -->
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 mr-2 text-gray-600 hover:text-primary focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                     <a href="/" class="flex-shrink-0 flex items-center font-bold text-2xl tracking-tight">
                         <span class="text-primary">Frito</span><span class="text-secondary">lay</span>
                     </a>
                 </div>
                 
-                <div class="flex items-center space-x-4">
-                    <!-- Nav links condition based on roles -->
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <!-- Desktop Nav links -->
                     <div x-data="{ role: localStorage.getItem('role') || 'guest' }" class="hidden md:flex space-x-4">
                         <template x-if="role === 'guest' || role === 'cliente'">
                             <a href="/" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Catálogo</a>
@@ -117,7 +123,8 @@
                         </template>
                     </div>
 
-                    <div x-data="{ token: localStorage.getItem('jwt_token'), dropdownOpen: false }" class="relative ml-4">
+                    <!-- User Dropdown -->
+                    <div x-data="{ token: localStorage.getItem('jwt_token'), dropdownOpen: false }" class="relative ml-2 md:ml-4">
                         <template x-if="!token">
                             <a href="/auth/login" class="bg-primary hover:bg-red-800 text-white px-4 py-2 rounded-md font-medium transition-colors">Login</a>
                         </template>
@@ -129,7 +136,6 @@
                                     </svg>
                                 </button>
                                 
-                                <!-- Dropdown menu -->
                                 <div x-show="dropdownOpen" x-transition.opacity style="display: none;"
                                      class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
                                     <a href="/perfil" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors">
@@ -150,6 +156,33 @@
                         </template>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div x-show="mobileMenuOpen" class="md:hidden border-t border-gray-100" style="display: none;">
+            <div x-data="{ role: localStorage.getItem('role') || 'guest' }" class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <template x-if="role === 'guest' || role === 'cliente'">
+                    <a href="/" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Catálogo</a>
+                </template>
+                <template x-if="role === 'cliente'">
+                    <a href="/ecommerce/historial" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Mis Pedidos</a>
+                </template>
+                <template x-if="role === 'chofer'">
+                    <a href="/entregas" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Mis Rutas</a>
+                </template>
+                <template x-if="role === 'admin' || role === 'administrador' || role === 'operador'">
+                    <div>
+                        <a href="/dashboard" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Dashboard</a>
+                        <a href="/gestion-pedidos" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Gestión Pedidos</a>
+                    </div>
+                </template>
+                <template x-if="role === 'admin' || role === 'administrador'">
+                    <div>
+                        <a href="/admin/usuarios" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Usuarios</a>
+                        <a href="/admin/camiones" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Camiones</a>
+                    </div>
+                </template>
             </div>
         </div>
     </nav>
