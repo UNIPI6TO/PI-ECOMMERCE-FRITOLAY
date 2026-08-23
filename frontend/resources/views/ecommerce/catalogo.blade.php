@@ -19,7 +19,7 @@
         </div>
 
         <!-- Filtro: Marca -->
-        <div class="mb-4 border-b pb-2" x-data="{ expanded: true }">
+        <div class="mb-4 border-b pb-2" x-data="{ expanded: window.innerWidth >= 768 }">
             <button @click="expanded = !expanded" class="flex justify-between items-center w-full font-medium mb-2 focus:outline-none">
                 <span>Marca</span>
                 <svg :class="{'rotate-180': expanded}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -36,7 +36,7 @@ class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
         </div>
 
         <!-- Filtro: Categoría -->
-        <div class="mb-4" x-data="{ expanded: true }">
+        <div class="mb-4" x-data="{ expanded: window.innerWidth >= 768 }">
             <button @click="expanded = !expanded" class="flex justify-between items-center w-full font-medium mb-2 focus:outline-none">
                 <span>Categoría</span>
                 <svg :class="{'rotate-180': expanded}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
