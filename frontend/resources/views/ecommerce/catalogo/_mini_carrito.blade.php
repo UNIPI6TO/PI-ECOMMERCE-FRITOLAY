@@ -98,6 +98,22 @@ function miniCart() {
             return res.join(' y ') || '0 unds';
         },
         checkout() {
+            if (!localStorage.getItem('jwt_token')) {
+                Swal.fire({
+                    title: 'Inicia sesión',
+                    text: 'Debes iniciar sesión para realizar tu pedido.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#E3001B',
+                    confirmButtonText: 'Ir al Login',
+                    cancelButtonText: 'Seguir comprando'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/auth/login';
+                    }
+                });
+                return;
+            }
             Swal.fire({title: 'Procesando...', text: 'Redirigiendo a pasarela de pago / confirmación de pedido...', icon: 'info', timer: 1000, showConfirmButton: false});
             setTimeout(() => {
                 window.location.href = '/ecommerce/checkout';
