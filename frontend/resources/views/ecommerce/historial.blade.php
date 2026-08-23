@@ -45,7 +45,7 @@
                                 }"
                                 x-text="pedido.estado.replace(/_/g, ' ')"></span>
                         </td>
-                        <td class="p-4" x-text="`$${Number(pedido.total).toFixed(2)}`"></td>
+                        <td class="p-4" x-text="formatMoney(pedido.total)"></td>
                         <td class="p-4 text-center space-x-2">
                             <button @click="verDetalle(pedido)" class="text-sm bg-gray-200 text-gray-800 px-3 py-1 rounded font-medium hover:bg-gray-300">Detalles</button>
                             <button @click="verPdf(pedido)" class="text-sm bg-[#E3001B] text-white px-3 py-1 rounded font-medium hover:bg-red-700">Factura PDF</button>
@@ -72,10 +72,10 @@
                 <div><span class="font-bold">Fecha:</span> <span x-text="pedidoSeleccionado ? new Date(pedidoSeleccionado.creado_en || pedidoSeleccionado.created_at).toLocaleString() : ''"></span></div>
                 <div><span class="font-bold">Estado:</span> <span class="uppercase" x-text="pedidoSeleccionado?.estado.replace(/_/g, ' ')"></span></div>
                 <div><span class="font-bold">Método de Pago:</span> <span class="uppercase" x-text="pedidoSeleccionado?.metodo_pago.replace(/_/g, ' ')"></span></div>
-                <div><span class="font-bold">Subtotal:</span> $<span x-text="Number(pedidoSeleccionado?.subtotal).toFixed(2)"></span></div>
-                <div><span class="font-bold">IVA:</span> $<span x-text="Number(pedidoSeleccionado?.iva).toFixed(2)"></span></div>
-                <div><span class="font-bold">Descuento:</span> $<span x-text="Number(pedidoSeleccionado?.descuento).toFixed(2)"></span></div>
-                <div class="col-span-2 text-lg font-bold text-[#E3001B]">Total: $<span x-text="Number(pedidoSeleccionado?.total).toFixed(2)"></span></div>
+                <div><span class="font-bold">Subtotal:</span> <span x-text="formatMoney(pedidoSeleccionado?.subtotal)"></span></div>
+                <div><span class="font-bold">IVA:</span> <span x-text="formatMoney(pedidoSeleccionado?.iva)"></span></div>
+                <div><span class="font-bold">Descuento:</span> <span x-text="formatMoney(pedidoSeleccionado?.descuento)"></span></div>
+                <div class="col-span-2 text-lg font-bold text-[#E3001B]">Total: <span x-text="formatMoney(pedidoSeleccionado?.total)"></span></div>
             </div>
 
             <h3 class="font-bold text-lg mb-2 border-b pb-2">Productos</h3>
@@ -87,8 +87,8 @@
                             <div class="text-sm text-gray-500">Cantidad Solicitada: <span x-text="item.cantidad_solicitada"></span></div>
                         </div>
                         <div class="text-right">
-                            <div class="font-bold">$<span x-text="Number(item.precio_unitario * item.cantidad_solicitada).toFixed(2)"></span></div>
-                            <div class="text-xs text-gray-400">($<span x-text="Number(item.precio_unitario).toFixed(2)"></span> c/u)</div>
+                            <div class="font-bold"><span x-text="formatMoney(item.precio_unitario * item.cantidad_solicitada)"></span></div>
+                            <div class="text-xs text-gray-400">(<span x-text="formatMoney(item.precio_unitario)"></span> c/u)</div>
                         </div>
                     </li>
                 </template>

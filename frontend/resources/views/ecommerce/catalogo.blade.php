@@ -19,7 +19,7 @@
         </div>
 
         <!-- Filtro: Marca -->
-        <div class="mb-4 border-b pb-2" x-data="{ expanded: true }">
+        <div class="mb-4 border-b pb-2" x-data="{ expanded: false }">
             <button @click="expanded = !expanded" class="flex justify-between items-center w-full font-medium mb-2 focus:outline-none">
                 <span>Marca</span>
                 <svg :class="{'rotate-180': expanded}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -36,7 +36,7 @@ class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
         </div>
 
         <!-- Filtro: Categoría -->
-        <div class="mb-4" x-data="{ expanded: true }">
+        <div class="mb-4" x-data="{ expanded: false }">
             <button @click="expanded = !expanded" class="flex justify-between items-center w-full font-medium mb-2 focus:outline-none">
                 <span>Categoría</span>
                 <svg :class="{'rotate-180': expanded}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -83,13 +83,13 @@ class="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300">
                         <p class="text-xs text-gray-500 mb-1">
                             <span class="font-semibold" x-text="product.marca"></span> | <span x-text="product.categoria"></span>
                         </p>
-                        <p class="text-xl font-bold text-primary mb-4" x-text="'$' + parseFloat(product.precio).toFixed(2)"></p>
+                        <p class="text-xl font-bold text-primary mb-4" x-text="formatMoney(product.precio)"></p>
                         
                         <div class="mt-auto flex flex-col space-y-2" x-data="{ qty: 1, tipoCompra: 'unidad' }">
                             <template x-if="product.unidades_por_paca > 1">
                                 <select x-model="tipoCompra" class="w-full border rounded p-1 text-sm bg-gray-50">
                                     <option value="unidad">Por Unidad</option>
-                                    <option value="paca" x-text="`Por Paca (${product.unidades_por_paca} unds) - $${(parseFloat(product.precio) * product.unidades_por_paca).toFixed(2)}`"></option>
+                                    <option value="paca" x-text="`Por Paca (${product.unidades_por_paca} unds) - ${formatMoney(product.precio * product.unidades_por_paca)}`"></option>
                                 </select>
                             </template>
                             

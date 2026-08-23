@@ -23,8 +23,8 @@
                             <tr class="border-b">
                                 <td class="py-4" x-text="item.nombre"></td>
                                 <td class="py-4 text-center" x-text="formatQty(item)"></td>
-                                <td class="py-4 text-right" x-text="`$${item.precioUnitario.toFixed(2)}`"></td>
-                                <td class="py-4 text-right" x-text="`$${(item.precioUnitario * item.cantidad).toFixed(2)}`"></td>
+                                <td class="py-4 text-right" x-text="formatMoney(item.precioUnitario)"></td>
+                                <td class="py-4 text-right" x-text="formatMoney(item.precioUnitario * item.cantidad)"></td>
                             </tr>
                         </template>
                     </tbody>
@@ -85,23 +85,23 @@
             <div class="space-y-3 text-sm">
                 <div class="flex justify-between">
                     <span>Subtotal</span>
-                    <span x-text="`$${subtotal.toFixed(2)}`"></span>
+                    <span x-text="formatMoney(subtotal)"></span>
                 </div>
                 <div class="flex justify-between text-green-600">
                     <span>Descuento</span>
-                    <span x-text="`-$${descuento.toFixed(2)}`"></span>
+                    <span x-text="'-' + formatMoney(descuento)"></span>
                 </div>
                 <div class="flex justify-between">
                     <span>IVA (15%)</span>
-                    <span x-text="`$${iva.toFixed(2)}`"></span>
+                    <span x-text="formatMoney(iva)"></span>
                 </div>
                 <hr>
                 <div class="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span x-text="`$${total.toFixed(2)}`"></span>
+                    <span x-text="formatMoney(total)"></span>
                 </div>
                 <div x-show="descuento > 0" class="text-xs text-center text-green-600 mt-2">
-                    ¡Ahorraste $<span x-text="descuento.toFixed(2)"></span>!
+                    ¡Ahorraste <span x-text="formatMoney(descuento)"></span>!
                 </div>
             </div>
             <button 

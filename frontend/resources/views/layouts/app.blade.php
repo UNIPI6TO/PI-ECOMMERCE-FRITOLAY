@@ -63,6 +63,12 @@
 
             return data;
         };
+
+        window.formatMoney = function(value) {
+            let num = Number(value);
+            if (isNaN(num)) return '$0.00';
+            return '$' + num.toFixed(2);
+        };
     </script>
 </head>
 <body class="bg-gray-50 text-neutral-dark min-h-screen flex flex-col font-sans">
@@ -118,7 +124,7 @@
                                     </svg>
                                     <span x-show="count > 0" x-text="count" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-primary rounded-full" id="cart-count" style="display: none;"></span>
                                 </div>
-                                <span x-show="total > 0" x-text="`$${total.toFixed(2)}`" class="font-bold text-sm text-gray-700 hidden sm:inline-block" style="display: none;"></span>
+                                <span x-show="total > 0" x-text="formatMoney(total)" class="font-bold text-sm text-gray-700 hidden sm:inline-block" style="display: none;"></span>
                             </button>
                         </template>
                     </div>
