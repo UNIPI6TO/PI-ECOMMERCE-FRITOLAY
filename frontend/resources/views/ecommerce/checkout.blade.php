@@ -146,6 +146,10 @@ document.addEventListener('alpine:init', () => {
         selectedMarker: null,
 
         async init() {
+            if (!localStorage.getItem('jwt_token')) {
+                window.location.href = '/auth/login';
+                return;
+            }
             if(window.CarritoManager) {
                 this.items = window.CarritoManager.getItems();
             }

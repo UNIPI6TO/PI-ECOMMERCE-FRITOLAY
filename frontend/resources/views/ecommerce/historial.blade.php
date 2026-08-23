@@ -110,6 +110,10 @@ document.addEventListener('alpine:init', () => {
         pedidosOriginales: [],
         pedidoSeleccionado: null,
         async init() {
+            if (!localStorage.getItem('jwt_token')) {
+                window.location.href = '/auth/login';
+                return;
+            }
             try {
                 // Get current client info to get clienteId
                 let clienteData = await window.api('/api/clientes/me');
