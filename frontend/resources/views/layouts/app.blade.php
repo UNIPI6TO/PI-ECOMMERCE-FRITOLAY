@@ -69,6 +69,40 @@
             if (isNaN(num)) return '$0.00';
             return '$' + num.toFixed(2);
         };
+
+        // Guardian de rutas basado en roles
+        (function() {
+            const role = localStorage.getItem('role') || 'guest';
+            const path = window.location.pathname;
+
+            const adminPaths = [
+                '/gestion-pedidos',
+                '/entregas',
+                '/dashboard',
+                '/admin'
+            ];
+
+            const clientPaths = [
+                '/ecommerce'
+            ];
+            
+            const isPathInArray = (p, arr) => arr.some(prefix => p.startsWith(prefix) || p === prefix);
+
+            if (role === 'cliente' || role === 'guest') {
+                if (isPathInArray(path, adminPaths)) {
+                    window.location.replace('/ecommerce/catalogo');
+                }
+            } else {
+                // Roles administrativos: admin, operador, despachador
+                if (isPathInArray(path, clientPaths) || path === '/') {
+                    if (role === 'operador') {
+                        window.location.replace('/gestion-pedidos');
+                    } else {
+                        window.location.replace('/dashboard');
+                    }
+                }
+            }
+        })();
     </script>
 </head>
 <body class="bg-gray-50 text-neutral-dark min-h-screen flex flex-col font-sans">

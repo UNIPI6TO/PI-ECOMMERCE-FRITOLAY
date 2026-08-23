@@ -84,7 +84,7 @@ document.addEventListener('alpine:init', () => {
                 await window.api(`/api/pedidos/${id}/aprobar`, { method: 'PATCH' });
                 this.pedidos = this.pedidos.filter(p => p.id !== id);
                 this.selected = null;
-                Swal.fire('Éxito', 'Pedido aprobado', 'success');
+                Swal.fire({ icon: 'success', title: 'Éxito', text: 'Pedido aprobado', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
             }
@@ -100,7 +100,7 @@ document.addEventListener('alpine:init', () => {
                 this.rechazarModal = false;
                 this.selected = null;
                 this.motivo = '';
-                Swal.fire('Éxito', 'Pedido rechazado', 'success');
+                Swal.fire({ icon: 'success', title: 'Éxito', text: 'Pedido rechazado', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
             }

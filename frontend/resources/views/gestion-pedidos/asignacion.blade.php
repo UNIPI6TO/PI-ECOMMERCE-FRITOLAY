@@ -85,7 +85,7 @@ document.addEventListener('alpine:init', () => {
                 window.pdfGenerator.generateGuiaRemision();
                 window.pdfGenerator.generateGuiaRuta();
             }
-            Swal.fire('Éxito', 'Ruta asignada con éxito', 'success');
+            Swal.fire({ icon: 'success', title: 'Éxito', text: 'Ruta asignada con éxito', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             this.asignados = [];
         }
     }));

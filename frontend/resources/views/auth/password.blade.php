@@ -62,7 +62,7 @@ document.addEventListener('alpine:init', () => {
                         title: 'Éxito',
                         text: 'Contraseña actualizada correctamente',
                         icon: 'success',
-                        confirmButtonColor: '#C8102E'
+                        toast: true, position: 'bottom', showConfirmButton: false, timer: 3000
                     }).then(() => {
                         window.location.href = '/dashboard';
                     });

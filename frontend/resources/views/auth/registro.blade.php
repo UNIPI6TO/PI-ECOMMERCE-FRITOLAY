@@ -87,7 +87,7 @@ function registroForm() {
                     icon: 'success',
                     title: '¡Registro Exitoso!',
                     text: 'Bienvenido a Fritolay',
-                    confirmButtonColor: '#E3001B'
+                    toast: true, position: 'bottom', showConfirmButton: false, timer: 3000
                 }).then(() => {
                     window.location.href = '/';
                 });

@@ -85,7 +85,7 @@ document.addEventListener('alpine:init', () => {
         async confirmarEntrega() {
             // POST /api/entregas
             if(window.pdfGenerator) window.pdfGenerator.generateFactura();
-            Swal.fire('Éxito', 'Entrega registrada', 'success');
+            Swal.fire({ icon: 'success', title: 'Éxito', text: 'Entrega registrada', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             window.location.href = '/entregas/mapa/1'; // redirect a mapa ruta
         }
     }));

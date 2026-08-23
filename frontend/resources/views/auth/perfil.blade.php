@@ -241,7 +241,7 @@ document.addEventListener('alpine:init', () => {
                         title: 'Éxito',
                         text: 'Perfil actualizado correctamente',
                         icon: 'success',
-                        confirmButtonColor: '#C8102E'
+                        toast: true, position: 'bottom', showConfirmButton: false, timer: 3000
                     });
                 }
             } catch (e) {

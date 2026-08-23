@@ -57,7 +57,7 @@ document.addEventListener('alpine:init', () => {
 
         async confirmarCierre() {
             // PATCH /api/guias-remision/{id}/cerrar
-            Swal.fire('Éxito', 'Guía cerrada exitosamente', 'success');
+            Swal.fire({ icon: 'success', title: 'Éxito', text: 'Guía cerrada exitosamente', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             window.location.href = '/gestion-pedidos';
         }
     }));

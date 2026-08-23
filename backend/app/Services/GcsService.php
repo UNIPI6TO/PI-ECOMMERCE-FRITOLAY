@@ -17,25 +17,51 @@ class GcsService
         $this->bucket = config('fritolay.gcs_bucket_comprobantes', 'default-bucket');
     }
 
-    public function subirComprobante(UploadedFile $file, int $pedidoId): string
+    public function subirComprobante(UploadedFile $file, int $pedidoId, int $clienteId, string $mesPedido): string
     {
-        $filename = "comprobantes/pedido_{$pedidoId}_" . time() . '.' . $file->getClientOriginalExtension();
+        $prefix = "comprobantes/{$clienteId}/{$mesPedido}";
+        $filename = "{$prefix}/pedido_{$pedidoId}_" . time() . '.' . $file->getClientOriginalExtension();
         
-        if (App::environment('local')) {
-            return $file->storeAs('comprobantes', basename($filename), 'local');
+        $bucketName = config('fritolay.gcs_bucket_comprobantes');
+        if (empty($bucketName)) {
+            $bucketName = 'fritolay-images-project-3e1faa58-1e7d-4e8d-933';
         }
-
-        // Simulación GCS en producción
-        return Storage::disk('gcs')->putFileAs('comprobantes', $file, basename($filename));
+        
+        try {
+            $storage = new \Google\Cloud\Storage\StorageClient();
+            $bucket = $storage->bucket($bucketName);
+            
+            $bucket->upload(
+                fopen($file->getRealPath(), 'r'),
+                ['name' => $filename]
+            );
+            return $filename;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error uploading to GCS: ' . $e->getMessage());
+            // Fallback local en caso de no tener credenciales de GCP configuradas
+            return $file->storeAs($prefix, basename($filename), 'local');
+        }
     }
 
     public function getUrlFirmada(string $path, int $minutesTTL = 15): string
     {
-        if (App::environment('local')) {
-            return Storage::disk('local')->url($path);
+        try {
+            $bucketName = config('fritolay.gcs_bucket_comprobantes');
+            if (empty($bucketName)) {
+                $bucketName = 'fritolay-images-project-3e1faa58-1e7d-4e8d-933';
+            }
+            $storage = new \Google\Cloud\Storage\StorageClient();
+            $bucket = $storage->bucket($bucketName);
+            $object = $bucket->object($path);
+            
+            if ($object->exists()) {
+                return $object->signedUrl(now()->addMinutes($minutesTTL));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error generating signed URL: ' . $e->getMessage());
         }
-
-        return Storage::disk('gcs')->temporaryUrl($path, now()->addMinutes($minutesTTL));
+        
+        return Storage::disk('local')->url($path);
     }
 
     public function subirImagen(UploadedFile $file, string $nombre): string

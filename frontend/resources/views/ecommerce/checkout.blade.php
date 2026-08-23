@@ -19,7 +19,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="item in items" :key="item.id">
+                        <template x-for="item in items" :key="item.productoId">
                             <tr class="border-b">
                                 <td class="py-4" x-text="item.nombre"></td>
                                 <td class="py-4 text-center" x-text="formatQty(item)"></td>
@@ -73,8 +73,9 @@
                     </template>
                 </div>
                 <div x-show="selectedPago === 'DEPOSITO' || selectedPago === 'DE_UNA'" class="mt-4 p-4 border rounded bg-gray-50">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Subir Comprobante</label>
-                    <input type="file" @change="handleFile" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#E3001B] file:text-white hover:file:bg-red-700">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Subir Comprobante (Obligatorio)</label>
+                    <input type="file" @change="handleFile" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#E3001B] file:text-white hover:file:bg-red-700">
+                    <p class="text-xs text-gray-500 mt-2">Formatos aceptados: PDF, JPG, PNG. Peso máximo: 2 MB.</p>
                 </div>
             </section>
         </div>
@@ -152,6 +153,15 @@ document.addEventListener('alpine:init', () => {
             }
             if(window.CarritoManager) {
                 this.items = window.CarritoManager.getItems();
+            }
+            if (this.items.length === 0) {
+                if(typeof Swal !== 'undefined') {
+                    Swal.fire({icon: 'info', title: 'Sin productos en el carrito', toast: true, position: 'bottom', showConfirmButton: false, timer: 1500});
+                }
+                setTimeout(() => {
+                    window.location.replace('/ecommerce/catalogo');
+                }, 1500);
+                return;
             }
             try {
                 this.clienteData = await window.api('/api/clientes/me');
@@ -240,7 +250,16 @@ document.addEventListener('alpine:init', () => {
         get total() { return this.subtotal - this.descuento + this.iva; },
 
         handleFile(e) {
-            this.comprobante = e.target.files[0];
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) { // 2MB
+                    Swal.fire('Error', 'El archivo excede el tamaño máximo de 2 MB.', 'error');
+                    e.target.value = ''; // clear input
+                    this.comprobante = null;
+                    return;
+                }
+                this.comprobante = file;
+            }
         },
 
         formatQty(item) {
@@ -309,7 +328,7 @@ document.addEventListener('alpine:init', () => {
                     };
                     window.generateFactura(pedidoParaFactura);
                 }
-                Swal.fire({ icon: 'success', title: '¡Pedido realizado!', text: 'Tu pedido fue registrado exitosamente.', confirmButtonColor: '#E3001B' })
+                Swal.fire({ icon: 'success', title: '¡Pedido realizado!', text: 'Tu pedido fue registrado exitosamente.', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 })
                     .then(() => {
                         window.CarritoManager.vaciar();
                         window.location.href = '/ecommerce/confirmacion';

@@ -27,7 +27,7 @@ class CheckoutRequest extends FormRequest
                 'nullable',
                 'file',
                 'mimes:jpg,jpeg,png,pdf',
-                'max:5120'
+                'max:2048'
             ],
         ];
     }

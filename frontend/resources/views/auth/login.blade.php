@@ -50,8 +50,16 @@ function loginForm() {
                     body: JSON.stringify({ email: this.email, password: this.password })
                 });
                 localStorage.setItem('jwt_token', data.token);
-                localStorage.setItem('role', data.user?.rol || data.role || 'cliente');
-                window.location.href = '/';
+                let role = data.user?.rol || data.role || 'cliente';
+                localStorage.setItem('role', role);
+                
+                if (role === 'cliente') {
+                    window.location.href = '/ecommerce/catalogo';
+                } else if (role === 'operador') {
+                    window.location.href = '/gestion-pedidos';
+                } else {
+                    window.location.href = '/dashboard';
+                }
             } catch (e) {
                 Swal.fire({
                     icon: 'error',

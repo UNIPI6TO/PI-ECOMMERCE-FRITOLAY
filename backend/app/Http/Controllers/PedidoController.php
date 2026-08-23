@@ -57,9 +57,9 @@ class PedidoController extends Controller
             $resultado = $this->pedidoService->crearPedido($data, $cliente->id, $usuarioId);
             
             if ($request->hasFile('comprobante')) {
-                $path = $this->gcsService->subirComprobante($request->file('comprobante'), $resultado['pedido']->id);
-                // Aquí se debería actualizar el pedido con el path del comprobante.
-                // $resultado['pedido']->update(['comprobante_path' => $path]);
+                $mesPedido = $resultado['pedido']->created_at ? $resultado['pedido']->created_at->format('Y-m') : date('Y-m');
+                $path = $this->gcsService->subirComprobante($request->file('comprobante'), $resultado['pedido']->id, $cliente->id, $mesPedido);
+                $resultado['pedido']->update(['comprobante_path' => $path]);
             }
 
             return response()->json(['data' => $resultado], 201);

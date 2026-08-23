@@ -150,7 +150,7 @@ document.addEventListener('alpine:init', () => {
                 this.modal = false;
                 this.nuevo = {placa: '', descripcion: ''};
                 await this.fetchCamiones();
-                Swal.fire('Éxito', 'Camión registrado', 'success');
+                Swal.fire({ icon: 'success', title: 'Éxito', text: 'Camión registrado', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
             }

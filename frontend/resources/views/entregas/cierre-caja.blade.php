@@ -70,7 +70,7 @@ document.addEventListener('alpine:init', () => {
 
         async declarar() {
             // POST /api/guias-ruta/{id}/arqueo
-            Swal.fire('¡Buen trabajo!', 'Arqueo registrado.', 'success');
+            Swal.fire({ icon: 'success', title: '¡Buen trabajo!', text: 'Arqueo registrado.', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             window.location.href = '/entregas';
         }
     }));

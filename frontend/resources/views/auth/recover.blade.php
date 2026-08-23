@@ -72,7 +72,7 @@ function recoverForm() {
         async resetPassword() {
             this.error = '';
             // Mock api call
-            Swal.fire('Éxito', 'Contraseña restablecida exitosamente', 'success');
+            Swal.fire({ icon: 'success', title: 'Éxito', text: 'Contraseña restablecida exitosamente', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             window.location.href = '/login';
         }
     }
