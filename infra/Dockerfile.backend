@@ -41,4 +41,5 @@ RUN php artisan config:clear || true \
 
 # Run migrations + serve
 EXPOSE 8080
-CMD ["sh", "-c", "cat /secrets/.env > /var/www/backend/.env && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+ENV PHP_CLI_SERVER_WORKERS=8
+CMD ["sh", "-c", "cat /secrets/.env > /var/www/backend/.env && echo \"\nDB_SOCKET=${DB_SOCKET}\" >> /var/www/backend/.env && php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public/"]
