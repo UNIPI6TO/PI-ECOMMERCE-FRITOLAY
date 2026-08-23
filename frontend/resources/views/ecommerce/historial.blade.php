@@ -173,7 +173,7 @@ document.addEventListener('alpine:init', () => {
             if (confirmacion.isConfirmed) {
                 try {
                     await window.api(`/api/pedidos/${pedido.id}/cancelar`, { method: 'PATCH' });
-                    Swal.fire('Cancelado', 'El pedido ha sido cancelado.', 'success');
+                    Swal.fire({ icon: 'success', title: 'Cancelado', text: 'El pedido ha sido cancelado.', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
                     this.init(); // Recargar historial
                 } catch (e) {
                     Swal.fire('Error', e.message, 'error');
