@@ -42,15 +42,20 @@ class RutaService
         $asignaciones = [];
         $orden = 1;
         foreach ($pedidoIds as $pedidoId) {
-            $asignaciones[] = $this->pedidoRepository->asignarCamion($pedidoId, $camionId, $orden++);
+            $asignaciones[] = \App\Models\AsignacionPedidoCamion::create([
+                'pedido_id' => $pedidoId,
+                'guia_ruta_id' => $guiaRuta->id,
+                'orden' => $orden++,
+                'estado' => \App\Models\AsignacionPedidoCamion::ESTADO_ASIGNADO
+            ]);
             $pedido = $this->pedidoRepository->update($pedidoId, ['estado' => 'listo_para_entregar']);
             
             foreach ($pedido->items as $item) {
-                $this->inventarioService->ingresoFisicoCamion($camionId, $item->producto_id, $item->cantidad);
+                $this->inventarioService->ingresoFisicoCamion($camionId, $item->producto_id, (float)$item->cantidad_solicitada);
             }
         }
 
-        $this->auditoriaService->log('asignacion_ruta', 'Se asignaron pedidos al camión ' . $camionId, $operadorId);
+        $this->auditoriaService->logSimple('asignacion_ruta', 'Se asignaron pedidos al camión ' . $camionId, $operadorId);
 
         return [
             'guia_remision' => $guiaRemision,

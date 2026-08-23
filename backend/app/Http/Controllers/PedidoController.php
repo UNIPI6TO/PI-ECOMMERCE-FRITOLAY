@@ -19,25 +19,30 @@ class PedidoController extends Controller
 
     public function index(\Illuminate\Http\Request $request): JsonResponse
     {
-        $pedidos = \App\Models\Pedido::with(['cliente.usuario'])->orderBy('id', 'desc')->get();
+        $pedidos = \App\Models\Pedido::with(['cliente.usuario', 'direccion'])->orderBy('id', 'desc')->get();
         
         $data = $pedidos->map(function($p) {
             $estadoStr = strtoupper($p->estado);
-            if (in_array($estadoStr, ['EN_ESPERA_APROBACION', 'EN_ESPERA_ASIGNACION'])) {
+            
+            if ($estadoStr === 'EN_ESPERA_APROBACION') {
                 $estadoStr = 'PENDIENTE';
-            } elseif ($estadoStr === 'LISTO_PARA_ENTREGAR') {
+            } elseif (in_array($estadoStr, ['EN_ESPERA_ASIGNACION', 'LISTO_PARA_ENTREGAR'])) {
                 $estadoStr = 'APROBADO';
-            } elseif ($estadoStr === 'ENTREGADO_PARCIALMENTE') {
+            } elseif (in_array($estadoStr, ['ENTREGADO', 'ENTREGADO_PARCIALMENTE'])) {
                 $estadoStr = 'ENTREGADO';
             }
 
             return [
                 'id' => $p->id,
-                'cliente' => $p->cliente ? ($p->cliente->nombre_compania ?: ($p->cliente->usuario->nombre ?? 'Sin Cliente')) : 'Desconocido',
+                'cliente' => $p->cliente ? ($p->cliente->razon_social ?: ($p->cliente->nombre_cliente ?: ($p->cliente->usuario->nombre ?? 'Sin Cliente'))) : 'Desconocido',
+                'nombre_persona' => $p->cliente ? ($p->cliente->nombre_cliente ?: ($p->cliente->usuario->nombre ?? 'Desconocido')) : 'Desconocido',
                 'pago' => strtoupper($p->metodo_pago),
                 'total' => $p->total,
                 'estado' => $estadoStr,
-                'fecha' => $p->creado_en ? $p->creado_en->format('Y-m-d H:i') : ''
+                'fecha' => $p->creado_en ? $p->creado_en->format('Y-m-d H:i') : '',
+                'raw_fecha' => $p->creado_en ? $p->creado_en->timestamp : 0,
+                'lat' => $p->direccion ? $p->direccion->latitud : null,
+                'lng' => $p->direccion ? $p->direccion->longitud : null,
             ];
         });
 
@@ -81,8 +86,7 @@ class PedidoController extends Controller
     public function comprobante(int $id, \Illuminate\Http\Request $request): JsonResponse
     {
         try {
-            // Se asume que getPedido() sin $clienteId en caso de ser admin
-            $pedido = $this->pedidoService->getPedido($id, (int) $request->input('user_id')); // Ajustar lógica según roles si es necesario
+            $pedido = \App\Models\Pedido::findOrFail($id);
             $url = $this->gcsService->getUrlFirmada($pedido->comprobante_path ?? '');
             return response()->json(['data' => ['url' => $url]]);
         } catch (\Exception $e) {

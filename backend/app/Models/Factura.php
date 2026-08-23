@@ -30,4 +30,9 @@ class Factura extends Model
     {
         return $this->belongsTo(Pedido::class, 'pedido_id');
     }
+
+    public function notaCredito()
+    {
+        return $this->hasOne(NotaCredito::class);
+    }
 }

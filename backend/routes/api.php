@@ -99,6 +99,10 @@ Route::middleware('jwt')->group(function () {
             ->middleware('role:operador,administrador');
 
         // Aprobación/Rechazo de pagos (operador/admin)
+        Route::get('/pendientes-aprobacion', [PedidoController::class, 'pendientesAprobacion'])
+            ->middleware('role:operador,administrador');
+        Route::post('/bulk-aprobar-directos', [PagoController::class, 'autoAprobarMasivo'])
+            ->middleware('role:operador,administrador');
         Route::patch('/{id}/aprobar',   [PagoController::class, 'aprobar'])
             ->middleware('role:operador,administrador');
         Route::patch('/{id}/rechazar',  [PagoController::class, 'rechazar'])

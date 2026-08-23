@@ -20,28 +20,28 @@ class UsuarioAdminService
         // En lugar de bcrypt aquí, pasamos el password limpio para que el repositorio lo hashee
         $data['password'] = $data['email']; 
         $empleado = $this->userRepository->create($data);
-        $this->auditoriaService->log('creacion_empleado', 'Se creó el empleado ' . $empleado->id, $adminId);
+        $this->auditoriaService->logSimple('creacion_empleado', 'Se creó el empleado ' . $empleado->id, $adminId);
         return $empleado;
     }
 
     public function actualizarEmpleado(int $id, array $data, int $adminId): object
     {
         $this->userRepository->update($id, $data);
-        $this->auditoriaService->log('actualizacion_empleado', 'Se actualizó el empleado ' . $id, $adminId);
+        $this->auditoriaService->logSimple('actualizacion_empleado', 'Se actualizó el empleado ' . $id, $adminId);
         return $this->userRepository->findById($id);
     }
 
     public function inactivar(int $id, int $adminId): bool
     {
         $res = $this->userRepository->update($id, ['activo' => false]);
-        $this->auditoriaService->log('inactivar_empleado', 'Se inactivó el empleado ' . $id, $adminId);
+        $this->auditoriaService->logSimple('inactivar_empleado', 'Se inactivó el empleado ' . $id, $adminId);
         return (bool)$res;
     }
 
     public function activar(int $id, int $adminId): bool
     {
         $res = $this->userRepository->update($id, ['activo' => true]);
-        $this->auditoriaService->log('activar_empleado', 'Se activó el empleado ' . $id, $adminId);
+        $this->auditoriaService->logSimple('activar_empleado', 'Se activó el empleado ' . $id, $adminId);
         return (bool)$res;
     }
 
@@ -49,7 +49,7 @@ class UsuarioAdminService
     {
         $newPassword = Str::random(8);
         $this->userRepository->update($id, ['password' => bcrypt($newPassword)]);
-        $this->auditoriaService->log('reset_password', 'Se reseteó el password del empleado ' . $id, $adminId);
+        $this->auditoriaService->logSimple('reset_password', 'Se reseteó el password del empleado ' . $id, $adminId);
         return $newPassword;
     }
 

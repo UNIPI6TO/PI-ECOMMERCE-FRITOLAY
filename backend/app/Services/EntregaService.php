@@ -74,7 +74,7 @@ class EntregaService
             'updated_at' => now()
         ]);
 
-        $this->auditoriaService->log('entrega_registrada', 'Entrega de pedido ' . $pedido->id, $choferId);
+        $this->auditoriaService->logSimple('entrega_registrada', 'Entrega de pedido ' . $pedido->id, $choferId);
 
         return [
             'pedido' => $pedido,

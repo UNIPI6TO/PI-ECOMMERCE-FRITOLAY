@@ -20,7 +20,7 @@ class AsignacionController extends Controller
             $resultado = $this->rutaService->crearAsignacion(
                 $request->input('pedido_ids'),
                 $request->input('camion_id'),
-                auth()->id()
+                (int)request('user_id')
             );
             return response()->json(['message' => 'Asignación creada', 'data' => $resultado], 201);
         } catch (Exception $e) {

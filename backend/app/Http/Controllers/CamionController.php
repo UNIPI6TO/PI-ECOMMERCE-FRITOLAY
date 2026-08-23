@@ -25,7 +25,7 @@ class CamionController extends Controller
     public function store(CamionRequest $request)
     {
         try {
-            $camion = $this->camionService->crearCamion($request->validated(), auth()->id());
+            $camion = $this->camionService->crearCamion($request->validated(), (int)request('user_id'));
             return response()->json(['message' => 'Camión creado', 'data' => $camion], 201);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -35,7 +35,7 @@ class CamionController extends Controller
     public function updateEstado(int $id, CamionEstadoRequest $request)
     {
         try {
-            $camion = $this->camionService->cambiarEstado($id, $request->input('estado'), auth()->id());
+            $camion = $this->camionService->cambiarEstado($id, $request->input('estado'), (int)request('user_id'));
             return response()->json(['message' => 'Estado actualizado', 'data' => $camion]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -45,7 +45,7 @@ class CamionController extends Controller
     public function asignarChofer(int $id, CamionChoferRequest $request)
     {
         try {
-            $camion = $this->camionService->asignarChofer($id, (int)$request->input('chofer_id'), auth()->id());
+            $camion = $this->camionService->asignarChofer($id, (int)$request->input('chofer_id'), (int)request('user_id'));
             return response()->json(['message' => 'Chofer asignado', 'data' => $camion]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);

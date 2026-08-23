@@ -107,7 +107,7 @@ class PedidoService
     public function getHistorial(int $clienteId): Collection
     {
         return \App\Models\Pedido::where('cliente_id', $clienteId)
-            ->with(['items.producto', 'cliente', 'factura', 'direccion'])
+            ->with(['items.producto', 'cliente', 'factura.notaCredito', 'direccion'])
             ->orderBy('id', 'desc')
             ->get();
     }
@@ -128,9 +128,20 @@ class PedidoService
             $pedido->motivo_cancelacion = 'Cancelado por el cliente';
             $pedido->save();
 
+            // Generar Nota de Crédito (Formato SRI)
+            $factura = \App\Models\Factura::where('pedido_id', $pedidoId)->first();
+            if ($factura) {
+                \App\Models\NotaCredito::create([
+                    'factura_id' => $factura->id,
+                    'numero_nota' => \App\Models\NotaCredito::generarNumero($factura->id),
+                    'fecha_emision' => now(),
+                    'valor_total' => $factura->total,
+                    'motivo' => 'Devolución/Cancelación: Cancelado por el cliente'
+                ]);
+            }
+
             // Liberar inventario
-            $items = $pedido->items;
-            foreach ($items as $item) {
+            foreach ($pedido->items as $item) {
                 $this->inventarioService->decrementarEnPedidos($item->producto_id, $item->cantidad_solicitada);
             }
 

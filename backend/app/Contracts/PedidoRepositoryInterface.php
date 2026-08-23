@@ -8,6 +8,7 @@ interface PedidoRepositoryInterface
 {
     public function create(array $data): Pedido;
     public function findById(int $id): ?Pedido;
+    public function update(int $id, array $data): Pedido;
     public function findByCliente(int $clienteId): Collection;
     public function updateEstado(int $id, string $estado): bool;
     public function getByEstado(string $estado, array $filtrosFecha = []): Collection;

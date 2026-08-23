@@ -66,7 +66,7 @@ class CierreService
 
         $this->inventarioService->encerarBodegaCamion($guia->camion_id);
 
-        $this->auditoriaService->log('cierre_guia', 'Se cerró la guía de remisión ' . $guiaRemisionId, $operadorId);
+        $this->auditoriaService->logSimple('cierre_guia', 'Se cerró la guía de remisión ' . $guiaRemisionId, $operadorId);
 
         return $guia;
     }

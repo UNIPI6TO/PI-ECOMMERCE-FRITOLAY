@@ -26,7 +26,7 @@ class CierreController extends Controller
     public function arqueo(int $id, ArqueoRequest $request)
     {
         try {
-            $guia = $this->cierreService->declararArqueo($id, (float) $request->input('efectivo_declarado'), auth()->id());
+            $guia = $this->cierreService->declararArqueo($id, (float) $request->input('efectivo_declarado'), (int)request('user_id'));
             return response()->json(['message' => 'Arqueo declarado exitosamente', 'data' => $guia]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -55,14 +55,14 @@ class CierreController extends Controller
                 'estado' => 'mal_estado'
             ]
         ];
-        $this->cierreService->procesarMercaderiaDevuelta($request->input('guia_ruta_id'), $mercaderias, auth()->id());
+        $this->cierreService->procesarMercaderiaDevuelta($request->input('guia_ruta_id'), $mercaderias, (int)request('user_id'));
         return response()->json(['message' => 'Mercadería en mal estado registrada']);
     }
 
     public function cerrar(int $id, CierreRequest $request)
     {
         try {
-            $guia = $this->cierreService->cerrarGuia($id, (float) $request->input('efectivo_recibido'), auth()->id());
+            $guia = $this->cierreService->cerrarGuia($id, (float) $request->input('efectivo_recibido'), (int)request('user_id'));
             return response()->json(['message' => 'Guía cerrada', 'data' => $guia]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
