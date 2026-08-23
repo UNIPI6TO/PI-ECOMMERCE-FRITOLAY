@@ -20,14 +20,14 @@ class CamionService
     public function crearCamion(array $data, int $adminId): object
     {
         $camion = $this->camionRepository->create(array_merge($data, ['estado' => 'activo']));
-        $this->auditoriaService->log('creacion_camion', 'Se creó el camión ' . $camion->placa, $adminId);
+        $this->auditoriaService->logSimple('creacion_camion', 'Se creó el camión ' . $camion->placa, $adminId);
         return $camion;
     }
 
     public function cambiarEstado(int $camionId, string $nuevoEstado, int $adminId): object
     {
         $camion = $this->camionRepository->update($camionId, ['estado' => $nuevoEstado]);
-        $this->auditoriaService->log('cambio_estado_camion', 'Camión ' . $camionId . ' cambió a ' . $nuevoEstado, $adminId);
+        $this->auditoriaService->logSimple('cambio_estado_camion', 'Camión ' . $camionId . ' cambió a ' . $nuevoEstado, $adminId);
         return $camion;
     }
 
@@ -39,7 +39,7 @@ class CamionService
         }
         
         $camion = $this->camionRepository->update($camionId, ['chofer_id' => $choferId]);
-        $this->auditoriaService->log('asignacion_chofer', 'Se asignó el chofer ' . $choferId . ' al camión ' . $camionId, $adminId);
+        $this->auditoriaService->logSimple('asignacion_chofer', 'Se asignó el chofer ' . $choferId . ' al camión ' . $camionId, $adminId);
         return $camion;
     }
 

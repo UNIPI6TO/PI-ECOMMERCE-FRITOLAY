@@ -28,7 +28,7 @@ class AprobacionService
             'estado' => 'en_espera_asignacion'
         ]);
 
-        $this->auditoriaService->log('pedido_aprobado', 'Se aprobó el pedido ' . $pedidoId, $operadorId);
+        $this->auditoriaService->log($operadorId, 'pedido_aprobado', 'pedidos', $pedidoId, null, ['estado' => 'en_espera_asignacion']);
 
         return $pedido->toArray();
     }
@@ -46,12 +46,24 @@ class AprobacionService
             'motivo_cancelacion' => $motivo
         ]);
 
-        // Libera en_pedidos
-        foreach ($pedido->items as $item) {
-            $this->productoRepository->liberarEnPedidos($item->producto_id, $item->cantidad);
+        // Generar Nota de Crédito (Formato SRI)
+        $factura = \App\Models\Factura::where('pedido_id', $pedidoId)->first();
+        if ($factura) {
+            \App\Models\NotaCredito::create([
+                'factura_id' => $factura->id,
+                'numero_nota' => \App\Models\NotaCredito::generarNumero($factura->id),
+                'fecha_emision' => now(),
+                'valor_total' => $factura->total,
+                'motivo' => 'Devolución/Cancelación: ' . $motivo
+            ]);
         }
 
-        $this->auditoriaService->log('pedido_rechazado', 'Se rechazó el pedido ' . $pedidoId . '. Motivo: ' . $motivo, $operadorId);
+        // Libera en_pedidos
+        foreach ($pedido->items as $item) {
+            $this->productoRepository->decrementarEnPedidos($item->producto_id, (float) $item->cantidad_solicitada);
+        }
+
+        $this->auditoriaService->log($operadorId, 'pedido_rechazado', 'pedidos', $pedidoId, null, ['estado' => 'cancelado', 'motivo' => $motivo]);
 
         return $pedido->toArray();
     }

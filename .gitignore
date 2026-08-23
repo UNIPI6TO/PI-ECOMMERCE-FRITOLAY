@@ -80,3 +80,9 @@ seed_*.php
 .gemini/
 brain/
 scratch/
+
+# Extra temporary scripts
+fix_logs.php
+revert.php
+revert_3.php
+test_state.php

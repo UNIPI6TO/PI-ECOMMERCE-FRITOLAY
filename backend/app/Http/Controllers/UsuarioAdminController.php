@@ -21,31 +21,31 @@ class UsuarioAdminController extends Controller
 
     public function store(UsuarioAdminRequest $request)
     {
-        $empleado = $this->usuarioAdminService->crearEmpleado($request->validated(), auth()->id());
+        $empleado = $this->usuarioAdminService->crearEmpleado($request->validated(), (int)request('user_id'));
         return response()->json(['message' => 'Empleado creado', 'data' => $empleado], 201);
     }
 
     public function update(UsuarioAdminRequest $request, int $id)
     {
-        $empleado = $this->usuarioAdminService->actualizarEmpleado($id, $request->validated(), auth()->id());
+        $empleado = $this->usuarioAdminService->actualizarEmpleado($id, $request->validated(), (int)request('user_id'));
         return response()->json(['message' => 'Empleado actualizado', 'data' => $empleado]);
     }
 
     public function inactivar(int $id)
     {
-        $this->usuarioAdminService->inactivar($id, auth()->id());
+        $this->usuarioAdminService->inactivar($id, (int)request('user_id'));
         return response()->json(['message' => 'Empleado inactivado']);
     }
 
     public function activar(int $id)
     {
-        $this->usuarioAdminService->activar($id, auth()->id());
+        $this->usuarioAdminService->activar($id, (int)request('user_id'));
         return response()->json(['message' => 'Empleado activado']);
     }
 
     public function resetearPassword(int $id)
     {
-        $newPassword = $this->usuarioAdminService->resetearPassword($id, auth()->id());
+        $newPassword = $this->usuarioAdminService->resetearPassword($id, (int)request('user_id'));
         return response()->json(['message' => 'Password reseteado', 'data' => ['password' => $newPassword]]);
     }
 }

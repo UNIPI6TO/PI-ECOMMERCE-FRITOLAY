@@ -131,7 +131,7 @@ document.addEventListener('alpine:init', () => {
 
         async fetchCamiones() {
             try {
-                const data = await window.api('/api/admin/camiones');
+                const data = await window.api('/api/camiones');
                 this.listado = data;
                 // Also fetch choferes (usuarios con rol chofer)
                 const users = await window.api('/api/admin/usuarios');
@@ -143,7 +143,7 @@ document.addEventListener('alpine:init', () => {
 
         async crear() {
             try {
-                await window.api('/api/admin/camiones', {
+                await window.api('/api/camiones', {
                     method: 'POST',
                     body: JSON.stringify(this.nuevo)
                 });
@@ -158,11 +158,11 @@ document.addEventListener('alpine:init', () => {
 
         async guardarCambios(camion) {
             try {
-                await window.api(`/api/admin/camiones/${camion.id}/chofer`, {
+                await window.api(`/api/camiones/${camion.id}/chofer`, {
                     method: 'PATCH',
                     body: JSON.stringify({ chofer_id: camion.chofer_id })
                 });
-                await window.api(`/api/admin/camiones/${camion.id}/estado`, {
+                await window.api(`/api/camiones/${camion.id}/estado`, {
                     method: 'PATCH',
                     body: JSON.stringify({ estado: camion.estado })
                 });

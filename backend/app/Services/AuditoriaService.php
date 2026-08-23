@@ -23,4 +23,17 @@ class AuditoriaService
             'fecha_accion' => now(),
         ]);
     }
+
+    public function logSimple(string $accion, string $detalle, int $usuarioId): void
+    {
+        BitacoraAuditoria::create([
+            'usuario_id' => $usuarioId,
+            'accion' => $accion,
+            'tabla_afectada' => 'sistema',
+            'registro_id' => 0,
+            'datos_anteriores' => null,
+            'datos_nuevos' => ['detalle' => $detalle],
+            'fecha_accion' => now(),
+        ]);
+    }
 }

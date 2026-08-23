@@ -17,7 +17,7 @@ class GpsController extends Controller
     {
         $this->gpsService->escribirUbicacion(
             (int)$request->input('camion_id'),
-            auth()->id(),
+            (int)request('user_id'),
             (int)$request->input('guia_ruta_id'),
             (float)$request->input('latitud'),
             (float)$request->input('longitud'),

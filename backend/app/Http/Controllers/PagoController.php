@@ -14,13 +14,31 @@ class PagoController extends Controller
         private readonly AprobacionService $aprobacionService
     ) {}
 
-    public function aprobar(int $id)
+    public function aprobar(int $id, Request $request)
     {
         try {
-            $pedido = $this->aprobacionService->aprobar($id, auth()->id());
+            $pedido = $this->aprobacionService->aprobar($id, (int) $request->input('user_id'));
             return response()->json(['message' => 'Pedido aprobado', 'data' => $pedido]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function autoAprobarMasivo(Request $request)
+    {
+        try {
+            $pedidos = \App\Models\Pedido::where('estado', 'en_espera_aprobacion')
+                ->whereIn('metodo_pago', ['efectivo', 'tc', 'td'])
+                ->get();
+            
+            $count = 0;
+            foreach ($pedidos as $p) {
+                $this->aprobacionService->aprobar($p->id, (int) $request->input('user_id'));
+                $count++;
+            }
+            return response()->json(['message' => "Se aprobaron $count pedidos automáticamente.", 'count' => $count]);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -31,7 +49,7 @@ class PagoController extends Controller
         ]);
 
         try {
-            $pedido = $this->aprobacionService->rechazar($id, auth()->id(), $request->input('motivo'));
+            $pedido = $this->aprobacionService->rechazar($id, (int) $request->input('user_id'), $request->input('motivo'));
             return response()->json(['message' => 'Pedido rechazado', 'data' => $pedido]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);

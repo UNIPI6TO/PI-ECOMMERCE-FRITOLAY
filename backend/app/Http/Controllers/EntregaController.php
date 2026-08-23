@@ -17,7 +17,7 @@ class EntregaController extends Controller
 
     public function misGuias(Request $request)
     {
-        return response()->json($this->entregaService->getGuiasChofer(auth()->id()));
+        return response()->json($this->entregaService->getGuiasChofer((int)request('user_id')));
     }
 
     public function inventarioCamion(int $id)
@@ -28,7 +28,7 @@ class EntregaController extends Controller
     public function seleccionarPedido(int $id)
     {
         try {
-            $pedido = $this->entregaService->seleccionarPedido($id, auth()->id());
+            $pedido = $this->entregaService->seleccionarPedido($id, (int)request('user_id'));
             return response()->json(['message' => 'Pedido seleccionado', 'data' => $pedido]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -38,7 +38,7 @@ class EntregaController extends Controller
     public function registrarEntrega(EntregaRequest $request)
     {
         try {
-            $resultado = $this->entregaService->registrarEntrega($request->validated(), auth()->id());
+            $resultado = $this->entregaService->registrarEntrega($request->validated(), (int)request('user_id'));
             return response()->json(['message' => 'Entrega registrada', 'data' => $resultado], 201);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);

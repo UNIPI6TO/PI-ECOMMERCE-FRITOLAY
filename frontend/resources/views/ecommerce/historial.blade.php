@@ -93,6 +93,18 @@
                     </li>
                 </template>
             </ul>
+
+            <template x-if="pedidoSeleccionado?.factura?.nota_credito">
+                <div class="mt-4 mb-4 bg-red-50 p-4 rounded border border-red-200">
+                    <h4 class="font-bold text-red-800 mb-2">Nota de Crédito Generada (SRI)</h4>
+                    <div class="grid grid-cols-2 gap-2 text-sm text-red-700">
+                        <div><span class="font-bold">N° de Nota:</span> <span x-text="pedidoSeleccionado.factura.nota_credito.numero_nota"></span></div>
+                        <div><span class="font-bold">Fecha:</span> <span x-text="new Date(pedidoSeleccionado.factura.nota_credito.fecha_emision).toLocaleDateString()"></span></div>
+                        <div><span class="font-bold">Valor:</span> $<span x-text="Number(pedidoSeleccionado.factura.nota_credito.valor_total).toFixed(2)"></span></div>
+                        <div class="col-span-2"><span class="font-bold">Información Adicional (Motivo):</span> <span x-text="pedidoSeleccionado.factura.nota_credito.motivo"></span></div>
+                    </div>
+                </div>
+            </template>
             
             <div class="flex justify-end">
                 <button @click="pedidoSeleccionado = null" class="bg-gray-200 px-4 py-2 rounded font-semibold">Cerrar</button>

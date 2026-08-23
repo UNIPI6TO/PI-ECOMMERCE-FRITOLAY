@@ -18,6 +18,13 @@ class PedidoRepository implements PedidoRepositoryInterface
         return Pedido::with(['items', 'cliente', 'direccion'])->find($id);
     }
 
+    public function update(int $id, array $data): Pedido
+    {
+        $pedido = Pedido::findOrFail($id);
+        $pedido->update($data);
+        return $pedido;
+    }
+
     public function findByCliente(int $clienteId): Collection
     {
         return Pedido::where('cliente_id', $clienteId)
