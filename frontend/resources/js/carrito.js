@@ -58,7 +58,7 @@ export const CarritoManager = {
 
     calcularSubtotal() {
         let cart = this._getCookie();
-        return cart.reduce((total, item) => total + (item.cantidad * item.precioUnitario), 0).toFixed(2);
+        return cart.reduce((total, item) => total + (item.cantidad * item.precioUnitario), 0);
     },
 
     getItems() {
