@@ -20,6 +20,7 @@ Route::prefix('ecommerce')->group(function () {
 
 Route::prefix('auth')->group(function () {
     Route::get('/login', [AuthFrontController::class, 'login']);
+    Route::get('/registro', [AuthFrontController::class, 'registro']);
     Route::get('/recover', [AuthFrontController::class, 'recover']);
 });
 

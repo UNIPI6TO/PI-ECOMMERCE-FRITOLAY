@@ -21,7 +21,7 @@
                     </label>
                 </template>
             </div>
-            <button @click="moverADerecha" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Añadir a Ruta â†’</button>
+            <button @click="moverADerecha" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Añadir a Ruta →</button>
         </div>
 
         <!-- Panel Derecho: Camion y Asignados -->

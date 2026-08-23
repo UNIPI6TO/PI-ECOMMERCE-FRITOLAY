@@ -36,6 +36,7 @@ Route::get('/info', function () {
 // ─── AUTENTICACIÓN (pública) ─────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
     Route::post('/login',          [AuthController::class, 'login']);
+    Route::post('/registro',       [AuthController::class, 'registro']);
     Route::post('/recover',        [AuthController::class, 'recover']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 

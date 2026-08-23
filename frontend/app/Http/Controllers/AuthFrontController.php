@@ -12,6 +12,11 @@ class AuthFrontController extends Controller
         return view('auth.login');
     }
 
+    public function registro(): View
+    {
+        return view('auth.registro');
+    }
+
     public function recover(): View
     {
         return view('auth.recover');
