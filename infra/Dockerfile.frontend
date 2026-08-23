@@ -13,6 +13,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY resources/ ./resources/
 COPY vite.config.js ./
+COPY tailwind.config.js postcss.config.js ./
 COPY .env ./
 RUN npm run build
 
