@@ -1,4 +1,4 @@
-## Sistema E-commerce y Gestión de Pedidos "Fritolay Ambato" 1. Objetivos del Proyecto Objetivo General
+﻿## Sistema E-commerce y Gestión de Pedidos "Fritolay Ambato" 1. Objetivos del Proyecto Objetivo General
 
 - Construir una aplicación que debe ser web y compatible con PWA.
 
@@ -2394,3 +2394,74 @@ Esta colección almacena el punto geográfico más reciente emitido por la aplic
 | `estado_ruta` | `String` | Ej: "en_movimiento", "detenido", "entregando". |
 
 **Nota técnica:** Para historial o trazabilidad (si se requiriera), Firestore permite crear una subcolección `historial` dentro de `ubicaciones_camion/{camion_id}`, guardando puntos de manera inmutable. Actualmente se usa escritura/actualización sobre el mismo documento para abaratar costos de lectura.
+
+
+## 7. Actualizaciones Recientes (Iteración Actual)
+
+# Especificación del Sistema - E-commerce Fritolay Ambato
+
+Este documento mantiene un registro de las especificaciones técnicas y funcionales añadidas y modificadas en las iteraciones más recientes del sistema Fritolay Ambato.
+
+## 1. Módulo de Aprobación de Pedidos
+
+### 1.1 Modal de Revisión Inmersivo
+- Se abandonó la redirección a una página separada para revisión de comprobantes de pago. En su lugar, cuando un pedido se encuentra en estado `PENDIENTE`, el botón de la tabla cambia dinámicamente a **"Revisión"**.
+- Al hacer clic, se despliega un **Modal Inmersivo** que renderiza:
+  - Información comercial y de contacto.
+  - La imagen del comprobante (Cargada **directamente desde GCS** como URL pública, omitiendo firmas electrónicas temporales para evitar bloqueos por credenciales de entorno) si el pago es *Depósito* o *De Una*. Si es pago directo, indica que no se requiere comprobante.
+  - Opciones de Aprobación, Cancelación y Mantener en Pendiente.
+
+### 1.2 Auto-Aprobación Masiva e Inteligente
+- Agregado el endpoint `/api/pedidos/bulk-aprobar-directos` y un botón flotante en el panel de control.
+- **Visibilidad Dinámica:** El botón de Auto Aprobar cuenta con lógica AlpineJS (`hayPedidosParaAutoAprobar()`) para permanecer oculto de la interfaz a menos que existan pedidos en estado `PENDIENTE` pagados con *Efectivo, Tarjeta de Crédito, Tarjeta de Débito o De Una*.
+- Permite la auto-aprobación con un solo clic de todos los pedidos válidos en pantalla.
+
+### 1.3 Mapeo Geográfico y Ordenamiento Dinámico (Distancia)
+- Se inyectó una columna de **Distancia** interactiva.
+- El frontend calcula la distancia ortodrómica (Fórmula Haversine) entre la ubicación actual del operador (obtenida por `navigator.geolocation`) y las coordenadas de entrega del cliente.
+- Permite al operador ordenar la tabla de pedidos ascendente o descendentemente por proximidad geográfica.
+- Adicionalmente, el marcador en el mapa unifica ("agrupa") las alertas de pedidos de un mismo local comercial si comparten coordenadas, mostrando un popup unificado.
+
+## 2. Gestión de Cancelaciones y Notas de Crédito (SRI)
+
+Para cumplir con normativas fiscales (SRI) relativas a inventarios y facturación, los pedidos anulados ya no quedan huérfanos si ya generaron factura. 
+
+### 2.1 Nueva Estructura de Datos (`notas_credito`)
+Se creó una tabla y modelo de base de datos (`NotaCredito`) atado por relación 1 a 1 a la factura (`Factura::class`).
+
+**Campos de la Tabla:**
+- `id` (PK)
+- `factura_id` (FK a `facturas`)
+- `numero_nota` (String, Unique). Formato: `NC-{YYYY}-{ID_Padded}`.
+- `fecha_emision` (Date)
+- `valor_total` (Decimal 10,2)
+- `motivo` (String)
+
+### 2.2 Reglas de Negocio en Anulación
+Tanto el cliente como el operador (desde el modal de revisión) pueden cancelar un pedido. 
+- **Inventario:** Se llama inmediatamente a `productoRepository->liberarEnPedidos()` para descontar el producto del estado reservado y devolverlo al stock físico disponible.
+- **Facturación:** Si el sistema generó un registro de Factura inicial para el pedido (el pedido fue previamente aprobado), se genera de forma concurrente el registro `NotaCredito` correspondiente.
+- El motivo provisto por el operador (o "Cancelado por el cliente" por defecto) se inserta en el campo `motivo` (Información Adicional de la Nota de Crédito).
+
+### 2.3 Visibilidad en el Historial del Cliente
+- Al entrar a `/ecommerce/pedidos`, el endpoint `getHistorial` carga la relación anidada `factura.notaCredito`.
+- Si el pedido está anulado y cuenta con una nota de crédito, el usuario verá una caja de alerta roja detallando los montos legales (SRI), número de nota, fecha de emisión y el motivo específico (Información Adicional) por el cual el operador anuló su pedido.
+
+## 3. Arquitectura y Correcciones de Sistema Core
+
+### 3.1 Middleware de Autenticación JWT Stateless
+- Se migró toda la lógica de autorización desde los métodos genéricos de sesión de Laravel (`auth()->id()`) hacia un Middleware basado estrictamente en JSON Web Tokens (JWT).
+- El Payload decodificado inyecta explícitamente `$request->user_id`, solucionando de raíz los errores `500 Internal Server Error` que surgían por variables de sesión nulas en peticiones asíncronas de la API.
+
+### 3.2 Servicio de Auditoría Tipado (Strict Types)
+- La capa de registro de logs (`AuditoriaService`) cuenta con métodos `logSimple()` adaptados para soportar tipos estrictos (`declare(strict_types=1)`), evitando errores fatales al pasar variables string en parámetros tipados como `int` (común en endpoints como cambios de estado en camiones o cierres de caja).
+
+### 3.3 Almacenamiento GCS para Comprobantes
+- Los comprobantes cargados por el cliente ya no intentan ser servidos mediante "Signed URLs" dependientes de credenciales de servicio local.
+- Se ha actualizado la infraestructura para guardar y devolver **URLs públicas absolutas** de la plataforma Google Cloud Storage (ej: `https://storage.googleapis.com/{bucket}/...`), asegurando la carga instantánea de comprobantes tanto en modo desarrollo como producción sin problemas de políticas IAM.
+- Se implementaron migraciones masivas en base de datos para convertir rutas relativas heredadas al formato URL público.
+
+## 4. Gestión de Flota y Rutas (Módulo Camiones)
+
+- **Asignación a Camiones:** Solucionado el flujo de endpoints RESTful. El controlador `CamionController` y su interfaz en repositorio (`CamionRepositoryInterface`) soportan correctamente el cambio de estados y la asignación paramétrica de Choferes a Camiones utilizando métodos `update()`.
+- **Enrutamiento Frontend:** Corrección en el mapeo `window.api()` donde la ruta apuntaba a recursos inexistentes (`/api/admin/camiones` vs `/api/camiones`), restaurando la capacidad de cargar y asignar choferes a la flota desde la interfaz administrativa de forma transparente.
