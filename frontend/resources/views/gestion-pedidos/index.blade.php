@@ -499,6 +499,9 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        hayPedidosParaAsignar() {
+            return this.pedidos.some(p => p.estado === 'en_espera_asignacion');
+        },
         hayPedidosParaAutoAprobar() {
             const pagosValidos = ['efectivo', 'tc', 'td', 'tarjeta', 'debito', 'de_una'];
             // Convert everything to uppercase strings or safely check lowercase

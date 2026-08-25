@@ -138,6 +138,7 @@
                             <div class="flex space-x-4">
                                 <a href="/dashboard" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Dashboard</a>
                                 <a href="/gestion-pedidos" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Gestión Pedidos</a>
+                                <a href="/gestion-rutas" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Asignación de Rutas</a>
                             </div>
                         </template>
                         <template x-if="role === 'admin' || role === 'administrador'">

@@ -19,9 +19,20 @@ class PedidoController extends Controller
 
     public function index(\Illuminate\Http\Request $request): JsonResponse
     {
+        // Build camion assignment map: pedido_id => [camion_id, camion_placa]
+        $asignaciones = \Illuminate\Support\Facades\DB::table('asignacion_pedido_camion as apc')
+            ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
+            ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
+            ->join('camiones as c', 'c.id', '=', 'grem.camion_id')
+            ->whereIn('apc.estado', ['asignado', 'en_ruta'])
+            ->select('apc.pedido_id', 'c.id as camion_id', 'c.placa as camion_placa')
+            ->get()
+            ->keyBy('pedido_id');
+
         $pedidos = \App\Models\Pedido::with(['cliente.usuario', 'direccion'])->orderBy('id', 'desc')->get();
         
-        $data = $pedidos->map(function($p) {
+        $data = $pedidos->map(function($p) use ($asignaciones) {
+            $rawEstado = strtolower($p->estado);
             $estadoStr = strtoupper($p->estado);
             
             if ($estadoStr === 'EN_ESPERA_APROBACION') {
@@ -32,6 +43,8 @@ class PedidoController extends Controller
                 $estadoStr = 'ENTREGADO';
             }
 
+            $asignacion = $asignaciones->get($p->id);
+
             return [
                 'id' => $p->id,
                 'cliente' => $p->cliente ? ($p->cliente->razon_social ?: ($p->cliente->nombre_cliente ?: ($p->cliente->usuario->nombre ?? 'Sin Cliente'))) : 'Desconocido',
@@ -39,6 +52,9 @@ class PedidoController extends Controller
                 'pago' => strtoupper($p->metodo_pago),
                 'total' => $p->total,
                 'estado' => $estadoStr,
+                'raw_estado' => $rawEstado,
+                'camion_id' => $asignacion ? $asignacion->camion_id : null,
+                'camion_placa' => $asignacion ? $asignacion->camion_placa : null,
                 'fecha' => $p->creado_en ? $p->creado_en->format('Y-m-d H:i') : '',
                 'raw_fecha' => $p->creado_en ? $p->creado_en->timestamp : 0,
                 'lat' => $p->direccion ? $p->direccion->latitud : null,

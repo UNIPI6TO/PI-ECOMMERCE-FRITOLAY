@@ -33,10 +33,11 @@ class InventarioService
     public function egresoFisicoCamion(int $camionId, int $productoId, float $cantidad): void
     {
         DB::transaction(function () use ($camionId, $productoId, $cantidad) {
-            $this->bodegaRepository->decrement($camionId, $productoId, $cantidad);
+            $this->bodegaRepository->decrementar($camionId, $productoId, $cantidad);
             $this->decrementarEnPedidos($productoId, $cantidad);
             
-            DB::table('transacciones')->insert([
+            DB::table('transacciones_inventario')->insert([
+                'motivo' => 'Movimiento de ruta',
                 'tipo' => 'EGRESO',
                 'camion_id' => $camionId,
                 'producto_id' => $productoId,
@@ -50,9 +51,10 @@ class InventarioService
     public function ingresoFisicoCamion(int $camionId, int $productoId, float $cantidad): void
     {
         DB::transaction(function () use ($camionId, $productoId, $cantidad) {
-            $this->bodegaRepository->increment($camionId, $productoId, $cantidad);
+            $this->bodegaRepository->incrementar($camionId, $productoId, $cantidad);
             
-            DB::table('transacciones')->insert([
+            DB::table('transacciones_inventario')->insert([
+                'motivo' => 'Movimiento de ruta',
                 'tipo' => 'INGRESO',
                 'camion_id' => $camionId,
                 'producto_id' => $productoId,
@@ -70,7 +72,8 @@ class InventarioService
             $producto->cantidad_fisica += $cantidad;
             $producto->save();
             
-            DB::table('transacciones')->insert([
+            DB::table('transacciones_inventario')->insert([
+                'motivo' => 'Movimiento de ruta',
                 'tipo' => 'INGRESO',
                 'producto_id' => $productoId,
                 'cantidad' => $cantidad,
