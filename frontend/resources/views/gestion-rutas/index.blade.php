@@ -421,7 +421,7 @@ document.addEventListener('alpine:init', () => {
                     
                     Swal.fire({
                         toast: true,
-                        position: 'top-end',
+                        position: 'bottom',
                         icon: 'success',
                         title: 'Asignación eliminada',
                         showConfirmButton: false,
@@ -454,7 +454,7 @@ document.addEventListener('alpine:init', () => {
                     
                     Swal.fire({
                         toast: true,
-                        position: 'top-end',
+                        position: 'bottom',
                         icon: 'success',
                         title: 'Ruta cerrada con éxito',
                         showConfirmButton: false,
@@ -486,7 +486,7 @@ document.addEventListener('alpine:init', () => {
                 
                 Swal.fire({
                     toast: true,
-                    position: 'top-end',
+                    position: 'bottom',
                     icon: 'success',
                     title: 'Ruta asignada con éxito',
                     showConfirmButton: false,
