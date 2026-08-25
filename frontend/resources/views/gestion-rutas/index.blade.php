@@ -99,10 +99,9 @@
                     <th class="p-3 w-10 text-center"><input type="checkbox" x-model="allSelected" @change="toggleAll(); renderMarkers();" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"></th>
                     <th class="p-3 cursor-pointer hover:bg-gray-200" @click="sort('id')">ID ⇕</th>
                     <th class="p-3 cursor-pointer hover:bg-gray-200" @click="sort('cliente')">Nombre Comercial ⇕</th>
-                    <th class="p-3">Método Pago</th>
                     <th class="p-3 cursor-pointer hover:bg-gray-200" @click="sort('distancia')">Distancia ⇕</th>
                     <th class="p-3">Total</th>
-                    <th class="p-3">Estado</th>
+                    <th class="p-3">Ubicación</th>
                     <th class="p-3 cursor-pointer hover:bg-gray-200" @click="sort('raw_fecha')">Tiempo Transcurrido ⇕</th>
                     <th class="p-3">Ruta/Camión</th>
                 </tr>
@@ -116,10 +115,9 @@
                         <td class="p-3 text-center"><input type="checkbox" :value="p.id" x-model="selectedIds" @change="renderMarkers()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"></td>
                         <td class="p-3" x-text="p.id"></td>
                         <td class="p-3 font-semibold text-gray-800" x-text="p.cliente"></td>
-                        <td class="p-3" x-text="p.pago"></td>
                         <td class="p-3 text-sm font-medium text-blue-600" x-text="(p.distancia && p.distancia !== 999999) ? p.distancia + ' km' : '-'"></td>
                         <td class="p-3 font-medium" x-text="`$${Number(p.total).toFixed(2)}`"></td>
-                        <td class="p-3"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700" x-text="p.estado"></span></td>
+                        <td class="p-3 cursor-help text-sm" x-init="fetchLocation(p)" :title="p.locationFull || 'Cargando...'" x-text="p.locationDisplay || 'Cargando...'"></td>
                         <td class="p-3 text-sm text-gray-500" x-text="timeAgo(p.fecha)"></td>
                         <td class="p-3">
                                 <template x-if="p.camion_id">
@@ -197,8 +195,8 @@ document.addEventListener('alpine:init', () => {
         // Paginación
         currentPage: 1,
         perPage: 10,
-        sortCol: 'raw_fecha',
-        sortDesc: true,
+        sortCol: 'distancia',
+        sortAsc: true,
 
         // Variables del Modal de Revisión
         revisarModal: false,
@@ -238,8 +236,15 @@ document.addEventListener('alpine:init', () => {
                     window.api('/api/camiones')
                 ]);
                 
-                // Handle paginated or direct array response
-                this.pedidos = Array.isArray(pedidosRes) ? pedidosRes : (pedidosRes.data || []);
+                const rawPedidos = Array.isArray(pedidosRes) ? pedidosRes : (pedidosRes.data || []);
+                this.pedidos = rawPedidos.map(p => ({
+                    ...p,
+                    lat: p.lat ? parseFloat(p.lat) : null,
+                    lng: p.lng ? parseFloat(p.lng) : null,
+                    distancia: 999999, // default before geolocation
+                    raw_fecha: p.raw_fecha || 0
+                }));
+                
                 this.camiones = Array.isArray(camionesRes) ? camionesRes : (camionesRes.data || []);
                 console.log('[GestionRutas] Pedidos cargados:', this.pedidos.length, 'Camiones:', this.camiones.length);
                 
@@ -253,13 +258,11 @@ document.addEventListener('alpine:init', () => {
                     this.currentLat = pos.coords.latitude;
                     this.currentLng = pos.coords.longitude;
                     
-                    // Inyectar la distancia en el array para poder ordenar la tabla
-                    this.pedidos.forEach(p => {
+                    this.pedidos = this.pedidos.map(p => {
                         if (p.lat && p.lng) {
                             p.distancia = parseFloat(this.getDist(this.currentLat, this.currentLng, p.lat, p.lng));
-                        } else {
-                            p.distancia = 999999; // Fallback para que salgan al fondo al ordenar
                         }
+                        return p;
                     });
 
                     this.renderMarkers();
@@ -466,6 +469,34 @@ document.addEventListener('alpine:init', () => {
                 } catch(e) {
                     Swal.fire('Error', e.message || 'Error al cerrar la ruta', 'error');
                 }
+            }
+        },
+
+        
+        async fetchLocation(p) {
+            if (p.locationDisplay !== undefined) return;
+            p.locationDisplay = 'Cargando...';
+            p.locationFull = 'Cargando...';
+            if (!p.lat || !p.lng) {
+                p.locationDisplay = 'Sin coords';
+                p.locationFull = 'Sin coordenadas';
+                return;
+            }
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.lat}&lon=${p.lng}`, {
+                    headers: { 'Accept-Language': 'es' }
+                });
+                const data = await res.json();
+                const iso = data.address['ISO3166-2-lvl4'] || data.address.state || 'N/A';
+                const parroquia = data.address.suburb || data.address.village || data.address.town || data.address.neighbourhood || data.address.county || 'Desconocida';
+                
+                let full = `[${iso}] - ${parroquia}`;
+                p.locationFull = full;
+                p.locationDisplay = full.length > 15 ? full.substring(0, 15) + '...' : full;
+                
+            } catch(e) {
+                p.locationDisplay = 'Error';
+                p.locationFull = 'Error de conexión';
             }
         },
 
