@@ -65,6 +65,23 @@ class InventarioService
         });
     }
 
+    public function revertirIngresoFisicoCamion(int $camionId, int $productoId, float $cantidad): void
+    {
+        DB::transaction(function () use ($camionId, $productoId, $cantidad) {
+            $this->bodegaRepository->decrementar($camionId, $productoId, $cantidad);
+            
+            DB::table('transacciones_inventario')->insert([
+                'motivo' => 'Reversión de asignación de ruta',
+                'tipo' => 'EGRESO',
+                'camion_id' => $camionId,
+                'producto_id' => $productoId,
+                'cantidad' => $cantidad,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+    }
+
     public function ingresoMaestro(int $productoId, float $cantidad, string $motivo): void
     {
         DB::transaction(function () use ($productoId, $cantidad, $motivo) {

@@ -121,6 +121,8 @@ Route::middleware('jwt')->group(function () {
     Route::prefix('asignaciones')->middleware('role:operador,administrador')->group(function () {
         Route::post('/',    [AsignacionController::class, 'store']);
         Route::get('/{id}', [AsignacionController::class, 'show']);
+        Route::delete('/',  [AsignacionController::class, 'destroy']);
+        Route::post('/cerrar-ruta/{camionId}', [AsignacionController::class, 'cerrarRuta']);
     });
 
     // ── Camiones ─────────────────────────────────────────────────────────────
