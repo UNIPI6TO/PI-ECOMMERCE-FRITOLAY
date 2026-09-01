@@ -8,7 +8,7 @@ use App\Http\Controllers\EntregasFrontController;
 use App\Http\Controllers\DashboardFrontController;
 use App\Http\Controllers\AdminFrontController;
 
-Route::get('/', fn() => redirect('/ecommerce/catalogo'));
+Route::get('/', fn() => view('layouts.app'));
 
 Route::prefix('ecommerce')->group(function () {
     Route::get('/catalogo', [EcommerceController::class, 'catalogo']);

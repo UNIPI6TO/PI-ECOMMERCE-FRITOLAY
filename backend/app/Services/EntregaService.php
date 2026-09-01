@@ -144,11 +144,36 @@ class EntregaService
         ->withCount('asignaciones as pedidos_count')
         ->get();
         
+        $guiasRuta->load('asignaciones.pedido');
         return $guiasRuta->map(function ($guia) {
+            $efectivo = 0;
+            $tarjeta = 0;
+            $transferencia = 0;
+            $total = 0;
+            
+            foreach ($guia->asignaciones as $asignacion) {
+                if ($asignacion->pedido) {
+                    $monto = (float) $asignacion->pedido->total;
+                    $metodo = strtoupper($asignacion->pedido->metodo_pago);
+                    
+                    if ($metodo === 'EFECTIVO') $efectivo += $monto;
+                    elseif (in_array($metodo, ['TC', 'TD'])) $tarjeta += $monto;
+                    elseif (in_array($metodo, ['DEPOSITO', 'DE_UNA'])) $transferencia += $monto;
+                    
+                    $total += $monto;
+                }
+            }
+            
             return [
                 'id' => $guia->id,
                 'pedidos_count' => $guia->pedidos_count,
-                'fecha' => $guia->fecha_creacion->format('Y-m-d H:i')
+                'fecha' => $guia->fecha_creacion->format('Y-m-d H:i'),
+                'recaudacion_esperada' => [
+                    'efectivo' => $efectivo,
+                    'tarjeta' => $tarjeta,
+                    'transferencia' => $transferencia,
+                    'total' => $total
+                ]
             ];
         });
     }
@@ -157,7 +182,7 @@ class EntregaService
     {
         $guiaRuta = \App\Models\GuiaRuta::with(['asignaciones' => function($q) {
             $q->orderBy('orden', 'asc');
-        }, 'asignaciones.pedido.cliente', 'asignaciones.pedido.direccion'])->find($guiaId);
+        }, 'asignaciones.pedido.cliente', 'asignaciones.pedido.direccion', 'asignaciones.pedido.items.producto', 'asignaciones.pedido.cliente.usuario'])->find($guiaId);
         
         if (!$guiaRuta) return collect([]);
         
@@ -168,14 +193,30 @@ class EntregaService
                 $nombre = $p->cliente->usuario->nombre;
             }
             
-            return [
+                        return [
                 'id' => $p->id,
+                'numero_pedido' => $p->numero_pedido,
+                'fecha_emision' => $p->created_at ? $p->created_at->format('Y-m-d') : date('Y-m-d'),
                 'cliente' => $nombre ?? 'Sin Cliente',
+                'identificacion' => $p->cliente->ruc ?? $p->cliente->cedula ?? '9999999999',
+                'telefono' => $p->cliente->telefono ?? ($p->cliente->usuario->telefono ?? ''),
                 'direccion' => $p->direccion->descripcion ?? 'Ubicación Desconocida',
                 'lat' => $p->direccion->latitud,
                 'lng' => $p->direccion->longitud,
-                'estado' => $asig->estado, // EN_RUTA, ENTREGADO, etc
-                'orden' => $asig->orden
+                'estado' => $asig->estado,
+                'orden' => $asig->orden,
+                'subtotal' => $p->subtotal,
+                'iva' => $p->iva,
+                'total' => $p->total,
+                'metodo_pago' => $p->metodo_pago,
+                'items' => $p->items->map(function($item) {
+                    return [
+                        'producto' => $item->producto->nombre ?? 'Producto',
+                        'cantidad' => $item->cantidad,
+                        'precio_unitario' => $item->precio_unitario,
+                        'subtotal' => $item->subtotal
+                    ];
+                })->toArray()
             ];
         });
     }

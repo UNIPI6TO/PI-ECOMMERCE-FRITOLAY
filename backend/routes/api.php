@@ -163,7 +163,7 @@ Route::middleware('jwt')->group(function () {
             ->middleware('role:chofer');
         // Operador: resumen de caja para cierre
         Route::get('/{id}/resumen-caja', [CierreController::class, 'resumenCaja'])
-            ->middleware('role:operador,administrador');
+            ->middleware('role:chofer,operador,administrador');
     });
 
     // ── Entregas ─────────────────────────────────────────────────────────────

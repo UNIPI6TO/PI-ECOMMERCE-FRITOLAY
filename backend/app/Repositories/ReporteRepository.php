@@ -55,7 +55,11 @@ class ReporteRepository
 
     public function getStockMaestro(): Collection
     {
-        return DB::table('productos')->get();
+        return DB::table('productos')
+            ->select('id', 'nombre', 'cantidad_fisica', 'en_pedidos',
+                DB::raw('(cantidad_fisica - en_pedidos) as disponible'))
+            ->orderBy('disponible', 'asc')
+            ->get();
     }
 
     public function getStockPorCamion(): Collection
@@ -63,7 +67,10 @@ class ReporteRepository
         return DB::table('bodega_camion')
             ->join('camiones', 'bodega_camion.camion_id', '=', 'camiones.id')
             ->join('productos', 'bodega_camion.producto_id', '=', 'productos.id')
-            ->select('camiones.placa', 'productos.nombre', 'bodega_camion.cantidad_fisica')
+            ->select('camiones.placa', 'productos.nombre', 'bodega_camion.cantidad_actual')
+            ->where('bodega_camion.cantidad_actual', '>', 0)
+            ->orderBy('camiones.placa')
+            ->orderBy('productos.nombre')
             ->get();
     }
 }

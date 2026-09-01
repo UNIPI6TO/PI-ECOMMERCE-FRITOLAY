@@ -74,9 +74,74 @@
 
     <!-- Stock -->
     <div class="bg-white p-4 rounded shadow">
-        <h3 class="font-bold mb-4">Control de Stock en Ruta</h3>
-        <!-- Implementación de tabs Alpine para ver inventario de bodega vs camiones -->
-        <div class="text-gray-500 text-sm p-4 border rounded text-center">Vista de stock detallada</div>
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold">Control de Stock en Ruta</h3>
+            <div class="flex gap-2">
+                <button @click="stockTab = 'maestro'" :class="stockTab === 'maestro' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700'" class="text-xs px-3 py-1 rounded font-semibold transition-colors">Bodega Central</button>
+                <button @click="stockTab = 'camiones'" :class="stockTab === 'camiones' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700'" class="text-xs px-3 py-1 rounded font-semibold transition-colors">Por Camión</button>
+            </div>
+        </div>
+
+        <!-- Tab Bodega Central -->
+        <div x-show="stockTab === 'maestro'">
+            <template x-if="stock.maestro && stock.maestro.length === 0">
+                <p class="text-gray-400 text-sm text-center py-4">Sin productos registrados.</p>
+            </template>
+            <div class="overflow-x-auto" x-show="stock.maestro && stock.maestro.length > 0">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-xs text-gray-500 border-b uppercase">
+                            <th class="text-left py-2">Producto</th>
+                            <th class="text-right py-2">Disponible</th>
+                            <th class="text-right py-2">En Pedidos</th>
+                            <th class="text-right py-2">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="p in stock.maestro" :key="p.id">
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-2 font-medium" x-text="p.nombre"></td>
+                                <td class="py-2 text-right" x-text="parseFloat(p.disponible || p.cantidad_fisica || 0).toFixed(0)"></td>
+                                <td class="py-2 text-right text-blue-600" x-text="parseFloat(p.en_pedidos || 0).toFixed(0)"></td>
+                                <td class="py-2 text-right">
+                                    <span class="text-xs px-2 py-0.5 rounded font-semibold"
+                                          :class="parseFloat(p.disponible || p.cantidad_fisica || 0) < 10 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                                          x-text="parseFloat(p.disponible || p.cantidad_fisica || 0) < 10 ? 'BAJO' : 'OK'">
+                                    </span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab Por Camión -->
+        <div x-show="stockTab === 'camiones'">
+            <template x-if="stock.por_camion && stock.por_camion.length === 0">
+                <p class="text-gray-400 text-sm text-center py-4">No hay camiones con stock cargado actualmente.</p>
+            </template>
+            <div class="overflow-x-auto" x-show="stock.por_camion && stock.por_camion.length > 0">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-xs text-gray-500 border-b uppercase">
+                            <th class="text-left py-2">Camión</th>
+                            <th class="text-left py-2">Producto</th>
+                            <th class="text-right py-2">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(r, idx) in stock.por_camion" :key="idx">
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-2 font-bold text-gray-600" x-text="r.placa"></td>
+                                <td class="py-2" x-text="r.nombre"></td>
+                                <td class="py-2 text-right font-semibold" x-text="parseFloat(r.cantidad_actual || r.cantidad_fisica || 0).toFixed(0)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -92,16 +157,26 @@ document.addEventListener('alpine:init', () => {
             productos_bajo_stock: 0
         },
         carritos: [],
+        stock: { maestro: [], por_camion: [] },
+        stockTab: 'maestro',
 
         async init() {
             try {
                 // Obtener datos
-                const kpisData = await window.api('/api/dashboard/kpis').catch(() => null);
+                const kpisData = await window.api('/api/dashboard/kpis').catch(e => {
+                    if (e.message === 'Forbidden' || e.message === 'Unauthorized' || e.message.includes('permisos')) {
+                        Swal.fire('Acceso Denegado', 'Tu rol actual no tiene permisos para ver el Dashboard Administrativo. Redirigiendo...', 'error');
+                        setTimeout(() => window.location.href = '/', 2000);
+                    }
+                    return null;
+                });
                 const ventasData = await window.api('/api/dashboard/ventas').catch(() => null);
                 const recData = await window.api('/api/dashboard/recaudacion').catch(() => null);
                 const carritosData = await window.api('/api/dashboard/carritos-abandonados').catch(() => []);
+                const stockData = await window.api('/api/dashboard/stock').catch(() => ({ maestro: [], por_camion: [] }));
                 
                 this.carritos = carritosData || [];
+                this.stock = stockData || { maestro: [], por_camion: [] };
 
                 // Mapear KPIs
                 let ventasTotales = '0.00';

@@ -18,4 +18,6 @@ interface GuiaRepositoryInterface
     public function updateEstadoRuta(int $id, string $estado): bool;
     public function getPendientesCierre(): Collection;
     public function getRutasByChofer(int $choferId): Collection;
+
+    public function getResumenCaja(int $guiaRutaId): array;
 }

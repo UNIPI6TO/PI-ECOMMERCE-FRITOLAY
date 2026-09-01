@@ -30,7 +30,7 @@
                 </template>
             </div>
             
-            <a href="/entregas/cierre-caja" class="mt-4 w-full bg-[#E3001B] text-white py-3 rounded font-bold text-center block">
+            <a :href="`/entregas/cierre-caja?guia=${guiaId}`" class="mt-4 w-full bg-[#E3001B] text-white py-3 rounded font-bold text-center block">
                 Terminar Ruta
             </a>
         </div>

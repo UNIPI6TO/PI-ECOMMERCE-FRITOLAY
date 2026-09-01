@@ -53,6 +53,28 @@
             const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
+                // HTTP Interceptor 401/403
+                if (response.status === 401) {
+                    localStorage.removeItem('jwt_token');
+                    localStorage.removeItem('role');
+                    window.location.replace('/auth/login');
+                    throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
+                }
+                
+                if (response.status === 403) {
+                    const role = localStorage.getItem('role') || 'guest';
+                    const homePages = {
+                        'admin': '/dashboard',
+                        'administrador': '/dashboard',
+                        'operador': '/dashboard',
+                        'chofer': '/entregas',
+                        'cliente': '/ecommerce/catalogo',
+                        'guest': '/ecommerce/catalogo'
+                    };
+                    window.location.replace(homePages[role] || '/ecommerce/catalogo');
+                    throw new Error('Acceso denegado a este recurso.');
+                }
+
                 // Construye mensaje legible desde errores de validación (422) u otros
                 const message = data.message
                     || data.error
@@ -70,36 +92,58 @@
             return '$' + num.toFixed(2);
         };
 
-        // Guardian de rutas basado en roles
+        // Guardian de rutas basado en roles (Role-Based Routing)
         (function() {
             const role = localStorage.getItem('role') || 'guest';
             const path = window.location.pathname;
 
-            const adminPaths = [
-                '/gestion-pedidos',
-                '/entregas',
-                '/dashboard',
-                '/admin'
-            ];
+            const homePages = {
+                'admin': '/dashboard',
+                'administrador': '/dashboard',
+                'operador': '/dashboard',
+                'chofer': '/entregas',
+                'cliente': '/ecommerce/catalogo',
+                'guest': '/ecommerce/catalogo'
+            };
 
-            const clientPaths = [
-                '/ecommerce'
-            ];
+            // 1. Redirección por Defecto (Root)
+            if (path === '/') {
+                window.location.replace(homePages[role] || '/ecommerce/catalogo');
+                return;
+            }
+
+            // 2. Guest Mode y Rutas Públicas
+            const publicPaths = ['/ecommerce/catalogo', '/auth/login', '/auth/registro', '/auth/recover'];
+            const isPublic = publicPaths.some(p => path === p || path.startsWith(p));
             
+            if (role === 'guest' && !isPublic) {
+                window.location.replace('/auth/login');
+                return;
+            }
+
+            // Evitar que usuarios logueados vean pantallas de login/registro
+            if (role !== 'guest' && path.startsWith('/auth/')) {
+                window.location.replace(homePages[role]);
+                return;
+            }
+
+            // 3. Protección de Roles (Strict Auth Guards)
+            const adminPaths = ['/dashboard', '/gestion-pedidos', '/gestion-rutas', '/admin', '/entregas'];
             const isPathInArray = (p, arr) => arr.some(prefix => p.startsWith(prefix) || p === prefix);
 
-            if (role === 'cliente' || role === 'guest') {
+            if (role === 'cliente') {
                 if (isPathInArray(path, adminPaths)) {
-                    window.location.replace('/ecommerce/catalogo');
+                    window.location.replace(homePages['cliente']);
                 }
-            } else {
-                // Roles administrativos: admin, operador, despachador
-                if (isPathInArray(path, clientPaths) || path === '/') {
-                    if (role === 'operador') {
-                        window.location.replace('/gestion-pedidos');
-                    } else {
-                        window.location.replace('/dashboard');
-                    }
+            } else if (role === 'chofer') {
+                const allowedForChofer = ['/entregas', '/perfil'];
+                if (!allowedForChofer.some(prefix => path.startsWith(prefix))) {
+                    window.location.replace(homePages['chofer']);
+                }
+            } else if (role === 'operador') {
+                const allowedForOperador = ['/dashboard', '/gestion-pedidos', '/gestion-rutas', '/perfil'];
+                if (!allowedForOperador.some(prefix => path.startsWith(prefix))) {
+                    window.location.replace(homePages['operador']);
                 }
             }
         })();

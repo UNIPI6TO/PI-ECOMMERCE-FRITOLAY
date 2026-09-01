@@ -93,7 +93,6 @@ class PedidoController extends Controller
     {
         try {
             $rol = strtolower($request->input('user_rol', ''));
-            // Choferes, operadores y admins pueden ver cualquier pedido sin restricción de propiedad
             if (in_array($rol, ['chofer', 'operador', 'admin', 'administrador'])) {
                 $pedido = app(\App\Contracts\PedidoRepositoryInterface::class)->findById($id);
                 if (!$pedido) throw new \Exception("Pedido no encontrado.");
@@ -126,6 +125,25 @@ class PedidoController extends Controller
         
         $pedidos = $this->pedidoService->getHistorial($clienteId);
         return response()->json(['data' => $pedidos]);
+    }
+
+    public function pendientesAprobacion(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $pedidos = \App\Models\Pedido::with(['cliente.usuario'])
+            ->where('estado', \App\Models\Pedido::ESTADO_EN_ESPERA_APROBACION)
+            ->get();
+
+        $data = $pedidos->map(function($p) {
+            return [
+                'id' => $p->id,
+                'cliente' => $p->cliente ? ($p->cliente->razon_social ?: ($p->cliente->usuario->nombre ?? 'Sin Cliente')) : 'Desconocido',
+                'metodo' => strtoupper($p->metodo_pago),
+                'total' => $p->total,
+                'fecha' => $p->creado_en ? $p->creado_en->format('Y-m-d H:i') : ''
+            ];
+        });
+
+        return response()->json($data);
     }
 
     public function cancelar(int $id, \Illuminate\Http\Request $request): JsonResponse
