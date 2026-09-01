@@ -197,6 +197,9 @@ document.addEventListener('alpine:init', () => {
         perPage: 10,
         sortCol: 'distancia',
         sortAsc: true,
+        
+        locationQueue: [],
+        isProcessingQueue: false,
 
         // Variables del Modal de Revisión
         revisarModal: false,
@@ -482,22 +485,41 @@ document.addEventListener('alpine:init', () => {
                 p.locationFull = 'Sin coordenadas';
                 return;
             }
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.lat}&lon=${p.lng}`, {
-                    headers: { 'Accept-Language': 'es' }
-                });
-                const data = await res.json();
-                const iso = data.address['ISO3166-2-lvl4'] || data.address.state || 'N/A';
-                const parroquia = data.address.suburb || data.address.village || data.address.town || data.address.neighbourhood || data.address.county || 'Desconocida';
+            this.locationQueue.push(p);
+            this.processLocationQueue();
+        },
+        
+        async processLocationQueue() {
+            if (this.isProcessingQueue) return;
+            this.isProcessingQueue = true;
+            
+            while (this.locationQueue.length > 0) {
+                const p = this.locationQueue.shift();
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.lat}&lon=${p.lng}`, {
+                        headers: { 'Accept-Language': 'es' }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const iso = data.address['ISO3166-2-lvl4'] || data.address.state || 'N/A';
+                        const parroquia = data.address.suburb || data.address.village || data.address.town || data.address.neighbourhood || data.address.county || 'Desconocida';
+                        
+                        let full = `[${iso}] - ${parroquia}`;
+                        p.locationFull = full;
+                        p.locationDisplay = full.length > 15 ? full.substring(0, 15) + '...' : full;
+                    } else {
+                        p.locationDisplay = 'Err ' + res.status;
+                        p.locationFull = 'Error HTTP ' + res.status;
+                    }
+                } catch(e) {
+                    p.locationDisplay = 'Error';
+                    p.locationFull = 'Error de conexión';
+                }
                 
-                let full = `[${iso}] - ${parroquia}`;
-                p.locationFull = full;
-                p.locationDisplay = full.length > 15 ? full.substring(0, 15) + '...' : full;
-                
-            } catch(e) {
-                p.locationDisplay = 'Error';
-                p.locationFull = 'Error de conexión';
+                // Rate limit (1.5 seconds) to respect Nominatim policy
+                await new Promise(r => setTimeout(r, 1500));
             }
+            this.isProcessingQueue = false;
         },
 
         async confirmarAsignacion() {
@@ -576,8 +598,8 @@ document.addEventListener('alpine:init', () => {
                 // Support filtering by raw_estado or display estado
                 filtered = filtered.filter(p => p.raw_estado === this.filtroEstado || p.estado === this.filtroEstado);
             } else {
-                // En gestion-rutas: mostrar pedidos aprobados (en_espera_asignacion) - usa raw_estado
-                filtered = filtered.filter(p => p.raw_estado === 'en_espera_asignacion' || !!p.camion_id);
+                // En gestion-rutas: mostrar pedidos pendientes de asignacion o listos para entregar (asignados pero no despachados)
+                filtered = filtered.filter(p => p.raw_estado === 'en_espera_asignacion' || p.raw_estado === 'listo_para_entregar');
             }
             
             return filtered.sort((a, b) => {

@@ -46,6 +46,7 @@ class EntregaController extends Controller
             $resultado = $this->entregaService->registrarEntrega($request->validated(), (int)request('user_id'));
             return response()->json(['message' => 'Entrega registrada', 'data' => $resultado], 201);
         } catch (Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error registrando entrega: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
             return response()->json(['message' => $e->getMessage()], 422);
         }
     }

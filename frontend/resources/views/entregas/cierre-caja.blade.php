@@ -34,7 +34,10 @@
         
         <div class="flex items-center justify-center">
             <span class="text-3xl font-bold text-gray-400 mr-2">$</span>
-            <input type="number" x-model.number="declarado" class="text-4xl w-48 text-center border-b-2 border-gray-300 focus:border-green-500 focus:outline-none py-2 font-bold text-green-700">
+            <input type="tel" 
+                   class="text-4xl w-48 text-center border-b-2 border-gray-300 focus:border-green-500 focus:outline-none py-2 font-bold text-green-700" 
+                   x-on:input="handleInput($event)"
+                   :value="displayValue">
         </div>
 
         <div class="mt-6 p-4 rounded" :class="diferencia === 0 ? 'bg-green-100 text-green-800' : (diferencia < 0 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800')">
@@ -50,30 +53,67 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('cierreCaja', () => ({
-        sistema: {
-            efectivo: 450.50,
-            bancos: 120.00,
-            de_una: 55.00
-        },
-        declarado: 0,
+    Alpine.data('cierreCaja', () => {
+        const params = new URLSearchParams(window.location.search);
+        const guiaId = params.get('guia') || 1; 
 
-        get diferencia() {
-            return this.declarado - this.sistema.efectivo;
-        },
+        return {
+            guiaId: guiaId,
+            sistema: {
+                efectivo: 450.50, 
+                bancos: 120.00,
+                de_una: 55.00
+            },
+            declaradoStr: '0',
+            loading: false,
 
-        get mensajeDiferencia() {
-            if(this.diferencia === 0) return 'Caja cuadrada perfectamente.';
-            if(this.diferencia < 0) return 'Faltante de caja. Se reportará al administrador.';
-            return 'Sobrante de caja. Se reportará al administrador.';
-        },
+            get declarado() {
+                return (parseInt(this.declaradoStr, 10) / 100) || 0;
+            },
 
-        async declarar() {
-            // POST /api/guias-ruta/{id}/arqueo
-            Swal.fire({ icon: 'success', title: '¡Buen trabajo!', text: 'Arqueo registrado.', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
-            window.location.href = '/entregas';
-        }
-    }));
+            get displayValue() {
+                return this.declarado.toFixed(2);
+            },
+
+            handleInput(e) {
+                let val = e.target.value.replace(/\D/g, '');
+                val = val.replace(/^0+/, '');
+                if (val === '') val = '0';
+                this.declaradoStr = val;
+                
+                e.target.value = this.displayValue;
+            },
+
+            get diferencia() {
+                return this.declarado - this.sistema.efectivo;
+            },
+
+            get mensajeDiferencia() {
+                if(this.diferencia === 0) return 'Caja cuadrada perfectamente.';
+                if(this.diferencia < 0) return 'Faltante de caja. Se reportará al administrador.';
+                return 'Sobrante de caja. Se reportará al administrador.';
+            },
+
+            async declarar() {
+                if(this.loading) return;
+                this.loading = true;
+                
+                try {
+                    await window.api(`/api/guias-ruta/${this.guiaId}/arqueo`, {
+                        method: 'POST',
+                        body: JSON.stringify({ efectivo_declarado: this.declarado })
+                    });
+                    
+                    Swal.fire({ icon: 'success', title: '¡Buen trabajo!', text: 'Arqueo registrado exitosamente.', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
+                    setTimeout(() => window.location.href = '/entregas', 1500);
+                } catch(e) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Error al declarar arqueo', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
+                } finally {
+                    this.loading = false;
+                }
+            }
+        };
+    });
 });
 </script>
 @endsection

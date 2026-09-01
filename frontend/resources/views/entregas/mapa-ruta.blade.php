@@ -14,17 +14,17 @@
 
             <div class="flex-1 overflow-y-auto space-y-3">
                 <template x-for="(p, index) in pedidosList" :key="p.id">
-                    <div class="border p-3 rounded" :class="{'border-blue-500 bg-blue-50': p.ui_estado === 'SELECCIONADO', 'opacity-50': p.estado === 'ENTREGADO'}">
+                    <div class="border p-3 rounded" :class="{'border-blue-500 bg-blue-50': p.ui_estado === 'SELECCIONADO', 'opacity-50': (p.estado === 'entregado' || p.estado === 'entregado_parcialmente')}">
                         <div class="flex justify-between items-start mb-2">
                             <div class="font-bold"><span x-text="index+1"></span>. <span x-text="p.cliente"></span></div>
-                            <span class="text-xs bg-gray-200 px-2 rounded" x-text="p.estado === 'EN_RUTA' ? 'En Camino' : p.estado"></span>
+                            <span class="text-xs bg-gray-200 px-2 rounded" x-text="p.estado === 'en_ruta' ? 'En Camino' : p.estado"></span>
                         </div>
                         <div class="text-sm text-gray-600 mb-2" x-text="p.direccion"></div>
                         
-                        <div class="flex space-x-2" x-show="p.estado !== 'ENTREGADO'">
+                        <div class="flex space-x-2" x-show="p.estado !== 'entregado'">
                             <button @click="seleccionar(p.id)" x-show="p.estado !== 'SELECCIONADO'" class="flex-1 bg-gray-800 text-white text-sm py-1 rounded">Seleccionar</button>
                             <button @click="navegar(p)" x-show="p.ui_estado === 'SELECCIONADO'" class="flex-1 bg-blue-600 text-white text-sm py-1 rounded">Navegar GPS</button>
-                            <a :href="`/entregas/entregar/${p.id}`" x-show="p.ui_estado === 'SELECCIONADO'" class="flex-1 bg-green-600 text-white text-sm py-1 rounded text-center block leading-loose">Entregar</a>
+                            <a :href="`/entregas/entregar/${p.id}?guia=${guiaId}`" x-show="p.ui_estado === 'SELECCIONADO'" class="flex-1 bg-green-600 text-white text-sm py-1 rounded text-center block leading-loose">Entregar</a>
                         </div>
                     </div>
                 </template>
@@ -61,7 +61,7 @@ document.addEventListener('alpine:init', () => {
                 this.pedidos = await window.api(`/api/guias-ruta/${this.guiaId}/pedidos`);
                 // By default the backend sorted them by proximidad (orden column)
                 // We'll set the first non-delivered as selected if none is.
-                let selected = this.pedidos.find(p => p.estado !== 'ENTREGADO');
+                let selected = this.pedidos.find(p => p.estado !== 'entregado' && p.estado !== 'entregado_parcialmente');
                 if (selected) {
                     this.pedidos.forEach(p => p.ui_estado = p.estado);
                     selected.ui_estado = 'SELECCIONADO';

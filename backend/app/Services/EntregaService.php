@@ -26,64 +26,109 @@ class EntregaService
 
     public function registrarEntrega(array $data, int $choferId): array
     {
-        $pedido = $this->pedidoRepository->findById((int)$data['pedido_id']);
-        
-        $tieneDevoluciones = false;
-        $totalDevuelto = 0;
-
-        foreach ($data['items'] as $itemData) {
-            if (isset($itemData['cantidad_devuelta']) && $itemData['cantidad_devuelta'] > 0) {
-                $tieneDevoluciones = true;
-                $totalDevuelto += $itemData['cantidad_devuelta'];
-            }
-        }
-
-        if ($pedido->metodo_pago !== 'efectivo' && $tieneDevoluciones) {
-            throw new Exception('No se permiten devoluciones en pedidos pagados con tarjeta.');
-        }
-
-        $camionId = DB::table('asignacion_pedido_camion')
-            ->where('pedido_id', $pedido->id)
-            ->value('camion_id');
-
-        $todosEntregados = true;
-        foreach ($data['items'] as $itemData) {
-            DB::table('items_pedido')
-                ->where('id', $itemData['item_pedido_id'])
-                ->update(['cantidad_entregada' => $itemData['cantidad_entregada']]);
-
-            $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($data, $choferId) {
+            $pedido = $this->pedidoRepository->findById((int)$data['pedido_id']);
             
-            if ($itemData['cantidad_entregada'] < $item->cantidad) {
-                $todosEntregados = false;
+            if (in_array($pedido->estado, ['entregado', 'entregado_parcialmente'])) {
+                throw new Exception('Este pedido ya ha sido entregado previamente.');
+            }
+            
+            $tieneDevoluciones = false;
+            $montoDevuelto = 0;
+
+            foreach ($data['items'] as $itemData) {
+                if (isset($itemData['cantidad_devuelta']) && $itemData['cantidad_devuelta'] > 0) {
+                    $tieneDevoluciones = true;
+                    $item = clone DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
+                    $montoDevuelto += ($itemData['cantidad_devuelta'] * $item->precio_unitario);
+                }
             }
 
-            if ($itemData['cantidad_entregada'] > 0) {
-                $this->inventarioService->egresoFisicoCamion($camionId, $item->producto_id, $itemData['cantidad_entregada']);
+            if ($pedido->metodo_pago !== 'efectivo' && $tieneDevoluciones) {
+                throw new Exception('No se permiten devoluciones en pedidos pagados con tarjeta.');
             }
-        }
 
-        $nuevoEstado = $todosEntregados ? 'entregado' : 'entregado_parcialmente';
-        $pedido = $this->pedidoRepository->update($pedido->id, ['estado' => $nuevoEstado]);
+            $asignacion = \App\Models\AsignacionPedidoCamion::with('guiaRuta.guiaRemision')
+                ->where('pedido_id', $pedido->id)
+                ->first();
+                
+            if (!$asignacion || !$asignacion->guiaRuta || !$asignacion->guiaRuta->guiaRemision) {
+                throw new Exception("No se encontró la ruta del pedido.");
+            }
+            
+            $camionId = $asignacion->guiaRuta->guiaRemision->camion_id;
 
-        $facturaId = DB::table('facturas')->insertGetId([
-            'pedido_id' => $pedido->id,
-            'numero' => 'FAC-' . time(), // Simplified
-            'total' => $pedido->total,
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+            $todosEntregados = true;
+            foreach ($data['items'] as $itemData) {
+                DB::table('items_pedido')
+                    ->where('id', $itemData['item_pedido_id'])
+                    ->update(['cantidad_entregada' => $itemData['cantidad_entregada']]);
 
-        $this->auditoriaService->logSimple('entrega_registrada', 'Entrega de pedido ' . $pedido->id, $choferId);
+                $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
+                
+                if ($itemData['cantidad_entregada'] < $item->cantidad_solicitada) {
+                    $todosEntregados = false;
+                    
+                    // Si se devuelve, registrar la mercaderia en mal estado si aplica
+                    if (!empty($itemData['estado_mercaderia']) && $itemData['estado_mercaderia'] === 'mal_estado') {
+                        DB::table('mercaderia_mal_estado')->insert([
+                            'guia_ruta_id' => $asignacion->guia_ruta_id,
+                            'producto_id' => $item->producto_id,
+                            'cantidad' => $item->cantidad_solicitada - $itemData['cantidad_entregada'],
+                            'motivo' => $itemData['motivo_devolucion'] ?? 'Rechazo',
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                    }
+                }
 
-        return [
-            'pedido' => $pedido,
-            'factura_data' => [
-                'numero' => 'FAC-' . time(),
+                if ($itemData['cantidad_entregada'] > 0) {
+                    $this->inventarioService->egresoFisicoCamion($camionId, $item->producto_id, $itemData['cantidad_entregada']);
+                }
+            }
+
+            $nuevoEstado = $todosEntregados ? 'entregado' : 'entregado_parcialmente';
+            $pedido = $this->pedidoRepository->update($pedido->id, ['estado' => $nuevoEstado]);
+            
+            \Illuminate\Support\Facades\DB::table('asignacion_pedido_camion')
+                ->where('pedido_id', $pedido->id)
+                ->update(['estado' => \App\Models\AsignacionPedidoCamion::ESTADO_ENTREGADO]);
+
+            $numeroFactura = 'FAC-' . date('Y') . '-' . str_pad((string)$pedido->id, 6, '0', STR_PAD_LEFT);
+            $facturaId = DB::table('facturas')->insertGetId([
+                'pedido_id' => $pedido->id,
+                'numero_factura' => $numeroFactura,
+                'subtotal' => $pedido->subtotal,
+                'iva' => $pedido->iva,
                 'total' => $pedido->total,
-                'items' => []
-            ]
-        ];
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+            
+            if ($tieneDevoluciones && $montoDevuelto > 0) {
+                $montoDevueltoConIva = $montoDevuelto * 1.15; // asumiendo 15% iva
+                DB::table('notas_credito')->insert([
+                    'factura_id' => $facturaId,
+                    'numero_nota' => 'NC-' . date('Y') . '-' . str_pad((string)$facturaId, 6, '0', STR_PAD_LEFT),
+                    'fecha_emision' => now()->toDateString(),
+                    'valor_total' => $montoDevueltoConIva,
+                    'motivo' => 'Devolución parcial en entrega - ' . ($data['items'][0]['motivo_devolucion'] ?? 'Rechazo parcial'),
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            $this->auditoriaService->logSimple('entrega_registrada', 'Entrega de pedido ' . $pedido->id, $choferId);
+
+            return [
+                'pedido' => $pedido,
+                'factura_data' => [
+                    'numero' => $numeroFactura,
+                    'total' => $pedido->total,
+                    'items' => []
+                ]
+            ];
+        });
     }
 
     public function getGuiasChofer(int $choferId): \Illuminate\Support\Collection

@@ -124,13 +124,18 @@ class RutaService
             $guiaRemision->update(['estado' => 'activa']);
             
             foreach ($guiaRemision->guiasRuta as $guiaRuta) {
-                $asignaciones = $guiaRuta->asignaciones()->with('pedido.direccion')->get();
+                $asignaciones = $guiaRuta->asignaciones()->with('pedido.direccion', 'pedido.items')->get();
                 $pendientes = [];
                 foreach ($asignaciones as $asignacion) {
                     if ($asignacion->estado === \App\Models\AsignacionPedidoCamion::ESTADO_ASIGNADO) {
                         $pendientes[] = $asignacion;
                         $asignacion->update(['estado' => \App\Models\AsignacionPedidoCamion::ESTADO_EN_RUTA]);
                         $this->pedidoRepository->update($asignacion->pedido_id, ['estado' => 'en_ruta']);
+                        
+                        // Mover inventario de la bodega principal a la bodega del camión
+                        foreach ($asignacion->pedido->items as $item) {
+                            $this->inventarioService->ingresoFisicoCamion($camionId, $item->producto_id, $item->cantidad_solicitada);
+                        }
                     }
                 }
                 

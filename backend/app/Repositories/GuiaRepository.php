@@ -40,6 +40,11 @@ class GuiaRepository implements GuiaRepositoryInterface
         return (bool) GuiaRemision::where('id', $id)->update(['estado' => $estado]);
     }
 
+    public function updateRemision(int $id, array $data): bool
+    {
+        return (bool) GuiaRemision::where('id', $id)->update($data);
+    }
+
     public function updateEstadoRuta(int $id, string $estado): bool
     {
         return (bool) GuiaRuta::where('id', $id)->update(['estado' => $estado]);

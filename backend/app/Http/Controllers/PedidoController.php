@@ -92,7 +92,14 @@ class PedidoController extends Controller
     public function show(int $id, \Illuminate\Http\Request $request): JsonResponse
     {
         try {
-            $pedido = $this->pedidoService->getPedido($id, (int) $request->input('user_id'));
+            $rol = strtolower($request->input('user_rol', ''));
+            // Choferes, operadores y admins pueden ver cualquier pedido sin restricción de propiedad
+            if (in_array($rol, ['chofer', 'operador', 'admin', 'administrador'])) {
+                $pedido = app(\App\Contracts\PedidoRepositoryInterface::class)->findById($id);
+                if (!$pedido) throw new \Exception("Pedido no encontrado.");
+            } else {
+                $pedido = $this->pedidoService->getPedido($id, (int) $request->input('user_id'));
+            }
             return response()->json(['data' => $pedido]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 404);

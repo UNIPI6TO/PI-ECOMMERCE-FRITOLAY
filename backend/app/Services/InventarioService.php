@@ -53,9 +53,14 @@ class InventarioService
         DB::transaction(function () use ($camionId, $productoId, $cantidad) {
             $this->bodegaRepository->incrementar($camionId, $productoId, $cantidad);
             
+            // Disminuir de la bodega principal
+            $producto = $this->productoRepository->findById($productoId);
+            $producto->cantidad_fisica -= $cantidad;
+            $producto->save();
+            
             DB::table('transacciones_inventario')->insert([
-                'motivo' => 'Movimiento de ruta',
-                'tipo' => 'INGRESO',
+                'motivo' => 'Carga a camión (Ruta)',
+                'tipo' => 'EGRESO', // Sale de la bodega principal, entra al camión
                 'camion_id' => $camionId,
                 'producto_id' => $productoId,
                 'cantidad' => $cantidad,
@@ -103,6 +108,25 @@ class InventarioService
 
     public function enceraBodegaCamion(int $camionId): void
     {
+        // Devolver todo el inventario sobrante del camión a la bodega principal
+        $sobrantes = $this->bodegaRepository->getByCamion($camionId);
+        foreach ($sobrantes as $sobrante) {
+            if ($sobrante->cantidad_actual > 0) {
+                $producto = $this->productoRepository->findById($sobrante->producto_id);
+                $producto->cantidad_fisica += $sobrante->cantidad_actual;
+                $producto->save();
+                
+                DB::table('transacciones_inventario')->insert([
+                    'motivo' => 'Retorno de camión (Cierre Ruta)',
+                    'tipo' => 'INGRESO',
+                    'camion_id' => $camionId,
+                    'producto_id' => $sobrante->producto_id,
+                    'cantidad' => $sobrante->cantidad_actual,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
         $this->bodegaRepository->encerar($camionId);
     }
 }

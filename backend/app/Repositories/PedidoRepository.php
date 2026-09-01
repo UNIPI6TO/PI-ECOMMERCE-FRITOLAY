@@ -15,7 +15,7 @@ class PedidoRepository implements PedidoRepositoryInterface
 
     public function findById(int $id): ?Pedido
     {
-        return Pedido::with(['items', 'cliente', 'direccion'])->find($id);
+        return Pedido::with(['items.producto', 'cliente', 'direccion'])->find($id);
     }
 
     public function update(int $id, array $data): Pedido
