@@ -127,9 +127,13 @@ Route::middleware('jwt')->group(function () {
 
     // ── Camiones ─────────────────────────────────────────────────────────────
     Route::prefix('camiones')->group(function () {
+        Route::get('/me', [CamionController::class, 'myCamion'])->middleware('role:chofer');
+
         Route::get('/', [CamionController::class, 'index'])
             ->middleware('role:operador,administrador');
         Route::post('/', [CamionController::class, 'store'])
+            ->middleware('role:administrador');
+        Route::put('/{id}', [CamionController::class, 'update'])
             ->middleware('role:administrador');
         Route::patch('/{id}/estado', [CamionController::class, 'updateEstado'])
             ->middleware('role:administrador,operador');

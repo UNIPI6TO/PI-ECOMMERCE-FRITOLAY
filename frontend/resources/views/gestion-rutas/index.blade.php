@@ -55,8 +55,8 @@
             Quitar Asignación
         </button>
 
-        <!-- Cerrar Ruta: uno por camión si hay pedidos asignados seleccionados -->
-        <template x-for="truck in selectedTrucks" :key="truck.id">
+        <!-- Cerrar Ruta: siempre visible por cada camión en ruta -->
+        <template x-for="truck in activeRoutes" :key="truck.id">
             <button @click="cerrarRuta(truck.id, truck.placa)"
                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow text-sm font-bold transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
@@ -547,6 +547,17 @@ document.addEventListener('alpine:init', () => {
             });
         },
         
+        
+        get activeRoutes() {
+            const trucks = new Map();
+            this.pedidos.forEach(p => {
+                if (p.camion_id && p.raw_estado === 'listo_para_entregar') {
+                    trucks.set(p.camion_id, { id: p.camion_id, placa: p.camion_placa || 'Desconocida' });
+                }
+            });
+            return Array.from(trucks.values());
+        },
+
         get selectedTrucks() {
             if(this.selectedIds.length === 0) return [];
             const trucks = new Map();

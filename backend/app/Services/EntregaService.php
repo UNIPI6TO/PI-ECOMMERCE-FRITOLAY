@@ -86,9 +86,26 @@ class EntregaService
         ];
     }
 
-    public function getGuiasChofer(int $choferId): Collection
+    public function getGuiasChofer(int $choferId): \Illuminate\Support\Collection
     {
-        return collect([]); // TODO: implement
+        $camion = \App\Models\Camion::where('chofer_id', $choferId)->first();
+        if (!$camion) return collect([]);
+        
+        $guiasRuta = \App\Models\GuiaRuta::whereHas('guiaRemision', function ($query) use ($camion) {
+            $query->where('camion_id', $camion->id);
+            // Mostrar si la remisión está abierta o cerrada (despachada)
+        })
+        ->where('estado', 'activa') // Solo guías de ruta que aún no se han terminado de entregar
+        ->withCount('asignaciones as pedidos_count')
+        ->get();
+        
+        return $guiasRuta->map(function ($guia) {
+            return [
+                'id' => $guia->id,
+                'pedidos_count' => $guia->pedidos_count,
+                'fecha' => $guia->fecha_creacion->format('Y-m-d H:i')
+            ];
+        });
     }
 
     public function getInventarioCamion(int $camionId): Collection

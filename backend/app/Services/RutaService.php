@@ -125,15 +125,9 @@ class RutaService
             
             foreach ($guiaRemision->guiasRuta as $guiaRuta) {
                 foreach ($guiaRuta->asignaciones as $asignacion) {
-                    if ($asignacion->estado !== \App\Models\AsignacionPedidoCamion::ESTADO_ENTREGADO) {
-                        $asignacion->update(['estado' => \App\Models\AsignacionPedidoCamion::ESTADO_ENTREGADO]);
-                        $this->pedidoRepository->update($asignacion->pedido_id, ['estado' => 'entregado']);
-                        
-                        // Decrement 'en_pedidos' and physical stock via egresoFisicoCamion
-                        $pedido = $this->pedidoRepository->findById($asignacion->pedido_id);
-                        foreach ($pedido->items as $item) {
-                            $this->inventarioService->egresoFisicoCamion($camionId, (int)$item->producto_id, (float)$item->cantidad_solicitada);
-                        }
+                    if ($asignacion->estado === \App\Models\AsignacionPedidoCamion::ESTADO_ASIGNADO) {
+                        $asignacion->update(['estado' => \App\Models\AsignacionPedidoCamion::ESTADO_EN_RUTA]);
+                        $this->pedidoRepository->update($asignacion->pedido_id, ['estado' => 'en_ruta']);
                     }
                 }
             }
