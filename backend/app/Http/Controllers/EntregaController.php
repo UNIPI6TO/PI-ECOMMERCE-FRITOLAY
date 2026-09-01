@@ -15,6 +15,11 @@ class EntregaController extends Controller
         private readonly EntregaService $entregaService
     ) {}
 
+        public function getPedidosGuia(int $id)
+    {
+        return response()->json($this->entregaService->getPedidosGuiaChofer($id));
+    }
+
     public function misGuias(Request $request)
     {
         return response()->json($this->entregaService->getGuiasChofer((int)request('user_id')));
@@ -41,6 +46,7 @@ class EntregaController extends Controller
             $resultado = $this->entregaService->registrarEntrega($request->validated(), (int)request('user_id'));
             return response()->json(['message' => 'Entrega registrada', 'data' => $resultado], 201);
         } catch (Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error registrando entrega: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
             return response()->json(['message' => $e->getMessage()], 422);
         }
     }

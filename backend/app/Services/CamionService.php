@@ -24,6 +24,14 @@ class CamionService
         return $camion;
     }
 
+    
+    public function actualizarCamion(int $camionId, array $data, int $adminId): object
+    {
+        $camion = $this->camionRepository->update($camionId, $data);
+        $this->auditoriaService->logSimple('actualizacion_camion', 'Se actualizó el camión ' . $camion->placa, $adminId);
+        return $camion;
+    }
+
     public function cambiarEstado(int $camionId, string $nuevoEstado, int $adminId): object
     {
         $camion = $this->camionRepository->update($camionId, ['estado' => $nuevoEstado]);

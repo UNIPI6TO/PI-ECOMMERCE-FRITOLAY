@@ -15,8 +15,9 @@ class CamionRequest extends FormRequest
 
     public function rules(): array
     {
+        $id = $this->route('id');
         return [
-            'placa' => 'required|string|max:20|unique:camiones,placa',
+            'placa' => 'required|string|max:20|unique:camiones,placa' . ($id ? ',' . $id : ''),
             'descripcion' => 'nullable|string|max:255'
         ];
     }

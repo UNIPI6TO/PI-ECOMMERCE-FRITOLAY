@@ -57,6 +57,8 @@ function loginForm() {
                     window.location.href = '/ecommerce/catalogo';
                 } else if (role === 'operador') {
                     window.location.href = '/gestion-pedidos';
+                } else if (role === 'chofer') {
+                    window.location.href = '/entregas';
                 } else {
                     window.location.href = '/dashboard';
                 }

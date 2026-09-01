@@ -23,7 +23,7 @@ class CierreController extends Controller
         return response()->json($this->cierreService->getResumenCaja($id));
     }
 
-    public function arqueo(int $id, ArqueoRequest $request)
+    public function declararArqueo(int $id, ArqueoRequest $request)
     {
         try {
             $guia = $this->cierreService->declararArqueo($id, (float) $request->input('efectivo_declarado'), (int)request('user_id'));

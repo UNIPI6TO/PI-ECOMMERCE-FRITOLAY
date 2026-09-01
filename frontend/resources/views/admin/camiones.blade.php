@@ -15,7 +15,7 @@
                 </select>
                 <span class="text-gray-600">registros</span>
             </div>
-            <button @click="modal = true" class="bg-gray-800 hover:bg-red-800 text-white px-4 py-2 rounded font-medium transition-colors shadow-sm">+ Nuevo Camión</button>
+            <button @click="abrirModal()" class="bg-gray-800 hover:bg-red-800 text-white px-4 py-2 rounded font-medium transition-colors shadow-sm">+ Nuevo Camión</button>
         </div>
     </div>
 
@@ -54,6 +54,7 @@
                             </select>
                         </td>
                         <td class="p-4 text-center">
+                            <button @click="abrirModal(c)" class="bg-yellow-500 text-white px-3 py-1 rounded text-sm mb-1 hover:bg-yellow-600 mr-2">Editar</button>
                             <button @click="guardarCambios(c)" class="bg-blue-600 text-white px-3 py-1 rounded text-sm mb-1 hover:bg-blue-700">Guardar</button>
                         </td>
                     </tr>
@@ -77,7 +78,7 @@
     <!-- Modal Crear -->
     <div x-show="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-96">
-            <h3 class="font-bold text-lg mb-4">Registrar Camión</h3>
+            <h3 class="font-bold text-lg mb-4" x-text="isEdit ? 'Editar Camión' : 'Registrar Camión'"></h3>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm mb-1">Placa</label>
@@ -90,7 +91,7 @@
             </div>
             <div class="flex justify-end space-x-2 mt-6">
                 <button @click="modal = false" class="px-4 py-2 border rounded">Cancelar</button>
-                <button @click="crear" class="px-4 py-2 bg-gray-800 text-white rounded">Registrar</button>
+                <button @click="guardarCamion" class="px-4 py-2 bg-gray-800 text-white rounded" x-text="isEdit ? 'Actualizar' : 'Registrar'"></button>
             </div>
         </div>
     </div>
@@ -100,9 +101,24 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('camiones', () => ({
         modal: false,
+        isEdit: false,
+        editId: null,
         choferes: [],
         listado: [],
         nuevo: {placa: '', descripcion: ''},
+        
+        abrirModal(camion = null) {
+            if (camion) {
+                this.isEdit = true;
+                this.editId = camion.id;
+                this.nuevo = { placa: camion.placa, descripcion: camion.descripcion };
+            } else {
+                this.isEdit = false;
+                this.editId = null;
+                this.nuevo = { placa: '', descripcion: '' };
+            }
+            this.modal = true;
+        },
         
         // Paginación
         currentPage: 1,
@@ -141,16 +157,26 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async crear() {
+        async guardarCamion() {
             try {
-                await window.api('/api/camiones', {
-                    method: 'POST',
-                    body: JSON.stringify(this.nuevo)
-                });
+                if (this.isEdit) {
+                    await window.api(`/api/camiones/${this.editId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(this.nuevo)
+                    });
+                    Swal.fire({ icon: 'success', title: 'Éxito', text: 'Camión actualizado', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
+                } else {
+                    await window.api('/api/camiones', {
+                        method: 'POST',
+                        body: JSON.stringify(this.nuevo)
+                    });
+                    Swal.fire({ icon: 'success', title: 'Éxito', text: 'Camión registrado', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
+                }
                 this.modal = false;
                 this.nuevo = {placa: '', descripcion: ''};
+                this.isEdit = false;
+                this.editId = null;
                 await this.fetchCamiones();
-                Swal.fire({ icon: 'success', title: 'Éxito', text: 'Camión registrado', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
             }

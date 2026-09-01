@@ -14,7 +14,10 @@ interface GuiaRepositoryInterface
     public function findRemisionById(int $id): ?GuiaRemision;
     public function findRutaById(int $id): ?GuiaRuta;
     public function updateEstadoRemision(int $id, string $estado): bool;
+    public function updateRemision(int $id, array $data): bool;
     public function updateEstadoRuta(int $id, string $estado): bool;
     public function getPendientesCierre(): Collection;
     public function getRutasByChofer(int $choferId): Collection;
+
+    public function getResumenCaja(int $guiaRutaId): array;
 }

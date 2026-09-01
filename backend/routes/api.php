@@ -121,13 +121,19 @@ Route::middleware('jwt')->group(function () {
     Route::prefix('asignaciones')->middleware('role:operador,administrador')->group(function () {
         Route::post('/',    [AsignacionController::class, 'store']);
         Route::get('/{id}', [AsignacionController::class, 'show']);
+        Route::delete('/',  [AsignacionController::class, 'destroy']);
+        Route::post('/cerrar-ruta/{camionId}', [AsignacionController::class, 'cerrarRuta']);
     });
 
     // ── Camiones ─────────────────────────────────────────────────────────────
     Route::prefix('camiones')->group(function () {
+        Route::get('/me', [CamionController::class, 'myCamion'])->middleware('role:chofer');
+
         Route::get('/', [CamionController::class, 'index'])
             ->middleware('role:operador,administrador');
         Route::post('/', [CamionController::class, 'store'])
+            ->middleware('role:administrador');
+        Route::put('/{id}', [CamionController::class, 'update'])
             ->middleware('role:administrador');
         Route::patch('/{id}/estado', [CamionController::class, 'updateEstado'])
             ->middleware('role:administrador,operador');
@@ -152,11 +158,12 @@ Route::middleware('jwt')->group(function () {
         Route::get('/', [EntregaController::class, 'misGuias'])
             ->middleware('role:chofer');
         // Chofer: arqueo de caja
+                Route::get('/{id}/pedidos', [EntregaController::class, 'getPedidosGuia'])->middleware('role:chofer');
         Route::post('/{id}/arqueo', [CierreController::class, 'declararArqueo'])
             ->middleware('role:chofer');
         // Operador: resumen de caja para cierre
         Route::get('/{id}/resumen-caja', [CierreController::class, 'resumenCaja'])
-            ->middleware('role:operador,administrador');
+            ->middleware('role:chofer,operador,administrador');
     });
 
     // ── Entregas ─────────────────────────────────────────────────────────────

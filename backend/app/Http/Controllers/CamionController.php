@@ -17,7 +17,16 @@ class CamionController extends Controller
         private readonly CamionService $camionService
     ) {}
 
-    public function index(Request $request)
+        public function myCamion(\Illuminate\Http\Request $request)
+    {
+        $camion = \App\Models\Camion::where('chofer_id', $request->user_id)->first();
+        if (!$camion) {
+            return response()->json(null, 404);
+        }
+        return response()->json($camion);
+    }
+
+public function index(Request $request)
     {
         return response()->json($this->camionService->getAll($request->all()));
     }
@@ -27,6 +36,17 @@ class CamionController extends Controller
         try {
             $camion = $this->camionService->crearCamion($request->validated(), (int)request('user_id'));
             return response()->json(['message' => 'Camión creado', 'data' => $camion], 201);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    
+    public function update(int $id, CamionRequest $request)
+    {
+        try {
+            $camion = $this->camionService->actualizarCamion($id, $request->validated(), (int)request('user_id'));
+            return response()->json(['message' => 'Camión actualizado', 'data' => $camion]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

@@ -283,12 +283,16 @@ document.addEventListener('alpine:init', () => {
                 });
             }
             
-            setTimeout(() => {
-                this.map = L.map('mapa-gestion').setView([-1.249, -78.616], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
-                this.markersLayer = L.layerGroup().addTo(this.map);
+            if (!this.map) {
+                setTimeout(() => {
+                    this.map = L.map('mapa-gestion').setView([-1.249, -78.616], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+                    this.markersLayer = L.layerGroup().addTo(this.map);
+                    this.renderMarkers();
+                }, 100);
+            } else {
                 this.renderMarkers();
-            }, 100);
+            }
 
             this.$watch('filtroEstado', () => {
                 this.currentPage = 1;
@@ -441,7 +445,7 @@ document.addEventListener('alpine:init', () => {
                 });
                 
                 this.asignarModal = false;
-                window.location.reload();
+                await this.init();
             } catch(e) {
                 Swal.fire('Error', e.message || 'Error al asignar la ruta', 'error');
             }
@@ -451,7 +455,8 @@ document.addEventListener('alpine:init', () => {
             try {
                 await window.api(`/api/pedidos/${this.selectedPedido.id}/aprobar`, { method: 'PATCH' });
                 await Swal.fire({ icon: 'success', title: 'Éxito', text: 'Pedido aprobado', toast: true, position: 'bottom', showConfirmButton: false, timer: 2000 });
-                window.location.reload();
+                this.revisarModal = false;
+                await this.init();
             } catch (e) {
                 Swal.fire('Error', e.message || 'Error al aprobar', 'error');
             }
@@ -468,7 +473,9 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify({ motivo: this.motivoRechazo })
                 });
                 await Swal.fire({ icon: 'success', title: 'Éxito', text: 'Pedido cancelado', toast: true, position: 'bottom', showConfirmButton: false, timer: 2000 });
-                window.location.reload();
+                this.revisarModal = false;
+                this.mostrarRechazo = false;
+                await this.init();
             } catch (e) {
                 Swal.fire('Error', e.message || 'Error al cancelar', 'error');
             }
@@ -491,14 +498,16 @@ document.addEventListener('alpine:init', () => {
                     const res = await window.api('/api/pedidos/bulk-aprobar-directos', { method: 'POST' });
                     await Swal.fire({ icon: 'success', title: '¡Aprobados!', text: res.message, toast: true, position: 'bottom', showConfirmButton: false, timer: 2000 });
                     
-                    // Recargar página completamente
-                    window.location.reload();
+                    await this.init();
                 } catch (e) {
                     Swal.fire('Error', e.message || 'No se pudo aprobar masivamente', 'error');
                 }
             }
         },
 
+        hayPedidosParaAsignar() {
+            return this.pedidos.some(p => p.estado === 'en_espera_asignacion');
+        },
         hayPedidosParaAutoAprobar() {
             const pagosValidos = ['efectivo', 'tc', 'td', 'tarjeta', 'debito', 'de_una'];
             // Convert everything to uppercase strings or safely check lowercase

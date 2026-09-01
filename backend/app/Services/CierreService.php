@@ -24,13 +24,32 @@ class CierreService
         return $this->guiaRepository->getResumenCaja($guiaRutaId);
     }
 
-    public function declararArqueo(int $guiaRemisionId, float $efectivoDeclarado, int $choferId): object
+            public function declararArqueo(int $guiaRutaId, float $efectivoDeclarado, int $choferId): object
     {
-        $guia = $this->guiaRepository->updateRemision($guiaRemisionId, [
-            'estado' => 'confirmacion_cierre',
-            'efectivo_declarado' => $efectivoDeclarado
-        ]);
-        return $guia;
+        return DB::transaction(function () use ($guiaRutaId, $efectivoDeclarado, $choferId) {
+            $ruta = \App\Models\GuiaRuta::find($guiaRutaId);
+            if (!$ruta) throw new \Exception('Guía de ruta no encontrada');
+            
+            $guiaRemisionId = $ruta->guia_remision_id;
+
+            // El requerimiento dice: "Únicamente el chofer podrá marcarla como 'Cerrada' desde su propia sesión/dispositivo."
+            $this->guiaRepository->updateRemision($guiaRemisionId, [
+                'estado' => 'cerrada',
+                'efectivo_declarado' => $efectivoDeclarado
+            ]);
+            
+            // Also close the related Guias Ruta
+            $g = \App\Models\GuiaRemision::with('guiasRuta')->find($guiaRemisionId);
+            if ($g) {
+                foreach ($g->guiasRuta as $r) {
+                    $r->update(['estado' => 'cerrada']);
+                }
+                // Devolver mercaderia no entregada a la bodega principal
+                $this->inventarioService->enceraBodegaCamion($g->camion_id);
+            }
+            
+            return $g;
+        });
     }
 
     public function procesarMercaderiaDevuelta(int $guiaRutaId, array $mercaderias, int $operadorId): void

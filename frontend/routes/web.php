@@ -3,11 +3,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EcommerceController;
 use App\Http\Controllers\AuthFrontController;
 use App\Http\Controllers\GestionPedidosController;
+use App\Http\Controllers\GestionRutasController;
 use App\Http\Controllers\EntregasFrontController;
 use App\Http\Controllers\DashboardFrontController;
 use App\Http\Controllers\AdminFrontController;
 
-Route::get('/', fn() => redirect('/ecommerce/catalogo'));
+Route::get('/', fn() => view('layouts.app'));
 
 Route::prefix('ecommerce')->group(function () {
     Route::get('/catalogo', [EcommerceController::class, 'catalogo']);
@@ -27,6 +28,10 @@ Route::prefix('auth')->group(function () {
 Route::prefix('perfil')->group(function () {
     Route::get('/', fn() => view('auth.perfil'));
     Route::get('/password', fn() => view('auth.password'));
+});
+
+Route::prefix('gestion-rutas')->group(function () {
+    Route::get('/', [GestionRutasController::class, 'index']);
 });
 
 Route::prefix('gestion-pedidos')->group(function () {

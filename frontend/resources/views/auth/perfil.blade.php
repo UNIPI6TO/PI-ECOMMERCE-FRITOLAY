@@ -72,6 +72,38 @@
                 </div>
             </template>
 
+            <template x-if="form.rol.toLowerCase() === 'chofer'">
+                <div class="space-y-4 pt-4 border-t">
+                    <h2 class="text-xl font-bold text-gray-800">Mi Camión Asignado</h2>
+                    <template x-if="miCamion">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-700">Placa:</span>
+                                <span class="text-gray-900 font-bold bg-white px-2 py-1 border rounded shadow-sm" x-text="miCamion.placa"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-700">Modelo/Descripción:</span>
+                                <span class="text-gray-900" x-text="miCamion.descripcion || 'N/A'"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-700">Estado del vehículo:</span>
+                                <span class="px-2 py-1 text-xs font-bold rounded"
+                                      :class="{
+                                        'bg-green-100 text-green-800': miCamion.estado === 'ACTIVO' || miCamion.estado === 'activo',
+                                        'bg-yellow-100 text-yellow-800': miCamion.estado === 'MANTENIMIENTO' || miCamion.estado === 'mantenimiento',
+                                        'bg-red-100 text-red-800': miCamion.estado === 'INACTIVO' || miCamion.estado === 'inactivo'
+                                      }" x-text="miCamion.estado"></span>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="!miCamion">
+                        <div class="bg-yellow-50 text-yellow-800 p-4 rounded-lg border border-yellow-200 text-sm">
+                            No tienes ningún camión asignado en este momento.
+                        </div>
+                    </template>
+                </div>
+            </template>
+
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Rol en el sistema</label>
                 <input type="text" x-model="form.rol" disabled class="w-full bg-gray-50 text-gray-500 border-gray-300 rounded-md px-3 py-2 border cursor-not-allowed uppercase text-sm font-semibold">
@@ -106,6 +138,7 @@ document.addEventListener('alpine:init', () => {
         form: { nombre: '', email: '', rol: '', nombre_cliente: '', razon_social: '', ruc_cedula: '', telefono: '' },
         direcciones: [],
         clienteId: null,
+        miCamion: null,
         showAddressModal: false,
         newAddressData: null,
         editingAddressId: null,
@@ -116,6 +149,14 @@ document.addEventListener('alpine:init', () => {
                 this.form.nombre = data.nombre;
                 this.form.email = data.email;
                 this.form.rol = data.rol;
+
+                if (this.form.rol.toLowerCase() === 'chofer' || this.form.rol.toLowerCase() === 'chofer') { // just in case uppercase
+                    try {
+                        this.miCamion = await window.api('/api/camiones/me');
+                    } catch (e) {
+                        this.miCamion = null;
+                    }
+                }
 
                 if (this.form.rol === 'cliente') {
                     const clienteData = await window.api('/api/clientes/me');
@@ -220,6 +261,14 @@ document.addEventListener('alpine:init', () => {
                         email: this.form.email
                     })
                 });
+
+                if (this.form.rol.toLowerCase() === 'chofer' || this.form.rol.toLowerCase() === 'chofer') { // just in case uppercase
+                    try {
+                        this.miCamion = await window.api('/api/camiones/me');
+                    } catch (e) {
+                        this.miCamion = null;
+                    }
+                }
 
                 if (this.form.rol === 'cliente') {
                     const res = await window.api('/api/clientes/me', {

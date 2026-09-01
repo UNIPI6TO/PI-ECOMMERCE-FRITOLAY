@@ -83,7 +83,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 await window.api(`/api/pedidos/${id}/aprobar`, { method: 'PATCH' });
                 await Swal.fire({ icon: 'success', title: 'Éxito', text: 'Pedido aprobado', toast: true, position: 'bottom', showConfirmButton: false, timer: 2000 });
-                window.location.reload();
+                await this.fetchPedidos(); this.selected = null;
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
             }
@@ -98,7 +98,7 @@ document.addEventListener('alpine:init', () => {
                 this.rechazarModal = false;
                 this.motivo = '';
                 await Swal.fire({ icon: 'success', title: 'Éxito', text: 'Pedido rechazado', toast: true, position: 'bottom', showConfirmButton: false, timer: 2000 });
-                window.location.reload();
+                await this.fetchPedidos(); this.selected = null;
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
             }

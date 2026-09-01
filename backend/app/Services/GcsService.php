@@ -53,6 +53,10 @@ class GcsService
             return $path;
         }
 
+        // Strip gs://bucket-name/ prefix if present
+        if (str_starts_with($path, 'gs://')) {
+            $path = preg_replace('#^gs://[^/]+/#', '', $path);
+        }
         $bucketName = config('fritolay.gcs_bucket_comprobantes', 'fritolay-images-project-3e1faa58-1e7d-4e8d-933');
         return "https://storage.googleapis.com/{$bucketName}/{$path}";
     }
