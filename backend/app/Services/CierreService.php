@@ -26,10 +26,20 @@ class CierreService
 
     public function declararArqueo(int $guiaRemisionId, float $efectivoDeclarado, int $choferId): object
     {
+        // El requerimiento dice: "únicamente el chofer podrá marcarla como 'Cerrada' desde su propia sesión/dispositivo."
         $guia = $this->guiaRepository->updateRemision($guiaRemisionId, [
-            'estado' => 'confirmacion_cierre',
+            'estado' => 'cerrada',
             'efectivo_declarado' => $efectivoDeclarado
         ]);
+        
+        // Also close the related Guias Ruta
+        $g = \App\Models\GuiaRemision::with('guiasRuta')->find($guiaRemisionId);
+        if ($g) {
+            foreach ($g->guiasRuta as $ruta) {
+                $ruta->update(['estado' => 'cerrada']);
+            }
+        }
+        
         return $guia;
     }
 

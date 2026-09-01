@@ -108,6 +108,33 @@ class EntregaService
         });
     }
 
+        public function getPedidosGuiaChofer(int $guiaId): \Illuminate\Support\Collection
+    {
+        $guiaRuta = \App\Models\GuiaRuta::with(['asignaciones' => function($q) {
+            $q->orderBy('orden', 'asc');
+        }, 'asignaciones.pedido.cliente', 'asignaciones.pedido.direccion'])->find($guiaId);
+        
+        if (!$guiaRuta) return collect([]);
+        
+        return $guiaRuta->asignaciones->map(function ($asig) {
+            $p = $asig->pedido;
+            $nombre = $p->cliente->razon_social ?: $p->cliente->nombre_cliente;
+            if (!$nombre && $p->cliente->usuario) {
+                $nombre = $p->cliente->usuario->nombre;
+            }
+            
+            return [
+                'id' => $p->id,
+                'cliente' => $nombre ?? 'Sin Cliente',
+                'direccion' => $p->direccion->descripcion ?? 'Ubicación Desconocida',
+                'lat' => $p->direccion->latitud,
+                'lng' => $p->direccion->longitud,
+                'estado' => $asig->estado, // EN_RUTA, ENTREGADO, etc
+                'orden' => $asig->orden
+            ];
+        });
+    }
+
     public function getInventarioCamion(int $camionId): Collection
     {
         return collect([]); // TODO: implement

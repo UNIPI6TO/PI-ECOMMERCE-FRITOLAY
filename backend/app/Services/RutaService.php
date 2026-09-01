@@ -112,7 +112,6 @@ class RutaService
     public function cerrarRuta(int $camionId): void
     {
         \Illuminate\Support\Facades\DB::transaction(function () use ($camionId) {
-            // Find active guia remision for truck
             $guiaRemision = \App\Models\GuiaRemision::where('camion_id', $camionId)
                 ->where('estado', 'abierta')
                 ->first();
@@ -121,14 +120,52 @@ class RutaService
                 throw new Exception('No hay ruta abierta para este camión.');
             }
             
-            $guiaRemision->update(['estado' => 'cerrada']);
+            // Requerimiento: "La Guía de Remisión se creará con estado 'Activo'"
+            $guiaRemision->update(['estado' => 'activa']);
             
             foreach ($guiaRemision->guiasRuta as $guiaRuta) {
-                foreach ($guiaRuta->asignaciones as $asignacion) {
+                $asignaciones = $guiaRuta->asignaciones()->with('pedido.direccion')->get();
+                $pendientes = [];
+                foreach ($asignaciones as $asignacion) {
                     if ($asignacion->estado === \App\Models\AsignacionPedidoCamion::ESTADO_ASIGNADO) {
+                        $pendientes[] = $asignacion;
                         $asignacion->update(['estado' => \App\Models\AsignacionPedidoCamion::ESTADO_EN_RUTA]);
                         $this->pedidoRepository->update($asignacion->pedido_id, ['estado' => 'en_ruta']);
                     }
+                }
+                
+                // Algoritmo de Ordenamiento Espacial (Greedy TSP)
+                // Punto de origen relativo (0,0): Ambato centro o fábrica
+                $currentLat = -1.249;
+                $currentLng = -78.616;
+                $orden = 1;
+                
+                while (count($pendientes) > 0) {
+                    $closestIndex = -1;
+                    $minDist = PHP_FLOAT_MAX;
+                    
+                    foreach ($pendientes as $index => $asig) {
+                        $lat = (float) $asig->pedido->direccion->latitud;
+                        $lng = (float) $asig->pedido->direccion->longitud;
+                        
+                        // Distancia euclidiana simple (suficiente para ordenamiento a nivel de ciudad)
+                        $dist = pow($lat - $currentLat, 2) + pow($lng - $currentLng, 2);
+                        
+                        if ($dist < $minDist) {
+                            $minDist = $dist;
+                            $closestIndex = $index;
+                        }
+                    }
+                    
+                    // Asignar orden
+                    $closestAsig = $pendientes[$closestIndex];
+                    $closestAsig->update(['orden' => $orden++]);
+                    
+                    // Actualizar punto actual al último visitado
+                    $currentLat = (float) $closestAsig->pedido->direccion->latitud;
+                    $currentLng = (float) $closestAsig->pedido->direccion->longitud;
+                    
+                    array_splice($pendientes, $closestIndex, 1);
                 }
             }
         });

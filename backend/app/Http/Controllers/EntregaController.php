@@ -15,6 +15,11 @@ class EntregaController extends Controller
         private readonly EntregaService $entregaService
     ) {}
 
+        public function getPedidosGuia(int $id)
+    {
+        return response()->json($this->entregaService->getPedidosGuiaChofer($id));
+    }
+
     public function misGuias(Request $request)
     {
         return response()->json($this->entregaService->getGuiasChofer((int)request('user_id')));

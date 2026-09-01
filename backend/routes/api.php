@@ -158,6 +158,7 @@ Route::middleware('jwt')->group(function () {
         Route::get('/', [EntregaController::class, 'misGuias'])
             ->middleware('role:chofer');
         // Chofer: arqueo de caja
+                Route::get('/{id}/pedidos', [EntregaController::class, 'getPedidosGuia'])->middleware('role:chofer');
         Route::post('/{id}/arqueo', [CierreController::class, 'declararArqueo'])
             ->middleware('role:chofer');
         // Operador: resumen de caja para cierre
