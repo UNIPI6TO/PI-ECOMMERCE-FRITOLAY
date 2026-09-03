@@ -208,33 +208,40 @@
                         </template>
                     </div>
 
-                    <!-- User Dropdown -->
-                    <div x-data="{ token: localStorage.getItem('jwt_token'), dropdownOpen: false }" class="relative ml-2 md:ml-4">
+                    <!-- User Dropdown (Solo Iniciales) -->
+                    <div x-data="userHeaderWidget()" class="relative ml-2 md:ml-4 flex items-center">
                         <template x-if="!token">
                             <a href="/auth/login" class="bg-primary hover:bg-red-800 text-white px-4 py-2 rounded-md font-medium transition-colors">Login</a>
                         </template>
                         <template x-if="token">
-                            <div>
-                                <button @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false" class="flex items-center space-x-2 focus:outline-none p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
+                            <div class="relative">
+                                <!-- Botón con Iniciales del Usuario -->
+                                <button @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false" 
+                                        class="w-9 h-9 rounded-full bg-[#E3001B] hover:bg-red-700 text-white font-bold flex items-center justify-center text-xs shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 uppercase tracking-wider border-2 border-white"
+                                        title="Opciones de cuenta">
+                                    <span x-text="userInitials"></span>
                                 </button>
                                 
                                 <div x-show="dropdownOpen" x-transition.opacity style="display: none;"
-                                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
-                                    <a href="/perfil" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                     class="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-xl py-2 z-50 border border-gray-100">
+                                    <div class="px-4 py-2 border-b border-gray-100">
+                                        <p class="text-xs text-gray-500">Conectado como</p>
+                                        <p class="text-sm font-bold text-gray-800 truncate" x-text="userNombre"></p>
+                                        <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 text-gray-700" x-text="roleLabel"></span>
+                                    </div>
+
+                                    <a href="/perfil" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                                         Mi Perfil
                                     </a>
-                                    <a href="/perfil/password" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                    <a href="/perfil/password" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
                                         Cambiar Contraseña
                                     </a>
                                     <div class="border-t border-gray-100 my-1"></div>
-                                    <button @click="logout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 font-medium flex items-center transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                                        Salir
+                                    <button @click="logout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium flex items-center transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                        Cerrar Sesión
                                     </button>
                                 </div>
                             </div>
@@ -272,6 +279,34 @@
         </div>
     </nav>
 
+    <!-- Banner de Bienvenida y Rol (Siempre Visible abajo de la Navbar) -->
+    <div x-data="userHeaderWidget()" x-show="token" class="bg-gray-100/90 border-b border-gray-200/80 py-2.5 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-sm font-medium text-gray-500">Bienvenido,</span>
+                    <span class="text-sm font-bold text-gray-900" x-text="userNombre || 'Usuario'"></span>
+                    <span class="text-gray-300 hidden sm:inline">•</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wide"
+                          :class="{
+                              'bg-purple-100 text-purple-800 border border-purple-200': role === 'administrador' || role === 'admin',
+                              'bg-blue-100 text-blue-800 border border-blue-200': role === 'operador',
+                              'bg-amber-100 text-amber-800 border border-amber-200': role === 'chofer',
+                              'bg-emerald-100 text-emerald-800 border border-emerald-200': role === 'cliente'
+                          }"
+                          x-text="roleLabel">
+                    </span>
+                </div>
+            </div>
+
+            <!-- Estado de Sesión -->
+            <div class="hidden md:flex items-center text-xs text-gray-500 font-semibold gap-1.5 bg-white px-2.5 py-1 rounded-full border border-gray-200 shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Sesión Activa</span>
+            </div>
+        </div>
+    </div>
+
     <main class="flex-grow container mx-auto px-4 py-8">
         @yield('content')
     </main>
@@ -284,6 +319,50 @@
 
     <script>
         document.addEventListener('alpine:init', () => {
+            Alpine.data('userHeaderWidget', () => ({
+                token: localStorage.getItem('jwt_token'),
+                role: localStorage.getItem('role') || 'guest',
+                userNombre: localStorage.getItem('user_nombre') || '',
+                dropdownOpen: false,
+
+                get userInitials() {
+                    if (!this.userNombre) return 'U';
+                    const parts = this.userNombre.trim().split(' ');
+                    if (parts.length >= 2) {
+                        return (parts[0][0] + parts[1][0]).toUpperCase();
+                    }
+                    return parts[0].substring(0, 2).toUpperCase();
+                },
+
+                get roleLabel() {
+                    const labels = {
+                        'admin': 'Administrador',
+                        'administrador': 'Administrador',
+                        'operador': 'Operador',
+                        'chofer': 'Chofer',
+                        'cliente': 'Cliente'
+                    };
+                    return labels[this.role] || this.role;
+                },
+
+                async init() {
+                    if (this.token && !this.userNombre) {
+                        try {
+                            const res = await window.api('/api/auth/me');
+                            if (res && (res.user || res.nombre)) {
+                                const userObj = res.user || res;
+                                this.userNombre = userObj.nombre || userObj.email || 'Usuario';
+                                this.role = userObj.rol || this.role;
+                                localStorage.setItem('user_nombre', this.userNombre);
+                                localStorage.setItem('role', this.role);
+                            }
+                        } catch (e) {
+                            console.warn("No se pudo obtener la información del usuario activo.");
+                        }
+                    }
+                }
+            }));
+
             Alpine.data('cartBadge', () => ({
                 count: 0,
                 total: 0,
@@ -303,6 +382,7 @@
         function logout() {
             localStorage.removeItem('jwt_token');
             localStorage.removeItem('role');
+            localStorage.removeItem('user_nombre');
             window.location.href = '/auth/login';
         }
 

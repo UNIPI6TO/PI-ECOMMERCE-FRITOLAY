@@ -117,8 +117,9 @@
         </div>
     </div>
 
-    <button @click="confirmarEntrega" class="w-full bg-[#83b735] hover:bg-green-700 text-white font-bold py-4 rounded-xl text-lg shadow-md transition-colors">
-        Confirmar Entrega
+    <button @click="confirmarEntrega" :disabled="submitting" class="w-full bg-[#83b735] hover:bg-green-700 text-white font-bold py-4 rounded-xl text-lg shadow-md transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+        <span x-show="!submitting">Confirmar Entrega</span>
+        <span x-show="submitting">Registrando Entrega...</span>
     </button>
 </div>
 
@@ -134,6 +135,7 @@ document.addEventListener('alpine:init', () => {
         direccionEntrega: '',
         factura: null,
         dataLoaded: false,
+        submitting: false,
         items: [],
 
         async init() {
@@ -197,6 +199,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         async confirmarEntrega() {
+            if (this.submitting) return;
+            this.submitting = true;
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const guiaId = urlParams.get('guia');
@@ -225,6 +229,7 @@ document.addEventListener('alpine:init', () => {
                     window.location.href = '/entregas';
                 }
             } catch (e) {
+                this.submitting = false;
                 Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'No se pudo registrar la entrega', toast: true, position: 'bottom', showConfirmButton: false, timer: 3000 });
             }
         }

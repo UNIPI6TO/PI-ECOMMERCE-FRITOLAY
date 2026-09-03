@@ -57,6 +57,7 @@ Route::prefix('productos')->group(function () {
 
 // Registro de carritos abandonados (sin JWT, puede ser invitado)
 Route::post('/carritos-abandonados', [CarritoAbandonadoController::class, 'store']);
+Route::get('/catalogo-motivos', [\App\Http\Controllers\CatalogoMotivoController::class, 'index']);
 
 // Configuración pública del emisor (para generar facturas en el frontend)
 Route::get('/empresa', [EmpresaConfigController::class, 'show']);
@@ -193,6 +194,7 @@ Route::middleware('jwt')->group(function () {
         Route::get('/kpis',                  [DashboardController::class, 'kpis']);
         Route::get('/ventas',                [DashboardController::class, 'ventas']);
         Route::get('/recaudacion',           [DashboardController::class, 'recaudacion']);
+        Route::get('/perdidas',              [DashboardController::class, 'perdidas']);
         Route::get('/carritos-abandonados',  [DashboardController::class, 'carritosAbandonados']);
         Route::get('/stock',                 [DashboardController::class, 'stock']);
     });

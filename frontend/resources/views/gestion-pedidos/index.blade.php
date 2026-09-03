@@ -2,12 +2,52 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="gestionPedidos()">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Gestión de Pedidos</h1>
-        <div class="flex space-x-2">
-            <input type="text" placeholder="Filtro (ej: last 24h)" class="border px-4 py-2 rounded w-64">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Gestión de Pedidos</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Control de órdenes, aprobaciones y geolocalización</p>
+        </div>
+        
+        <!-- Filtro de Rango de Fechas (Persistente en Sesión, Defecto 1 Semana, Máx. 1 Mes) -->
+        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Desde:</span>
+                <input type="date" 
+                       x-model="fechaInicio" 
+                       @change="onFechaInicioChange()" 
+                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs">
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Hasta:</span>
+                <input type="date" 
+                       x-model="fechaFin" 
+                       :min="fechaInicio"
+                       :max="maxFechaFin" 
+                       @change="onFechaFinChange()" 
+                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs">
+            </div>
+
+            <!-- Presets -->
+            <div class="flex items-center bg-gray-100 p-1 rounded-lg text-xs font-semibold">
+                <button @click="presetPeriodo('MES')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('MES') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Último Mes</button>
+                <button @click="presetPeriodo('SEMANA')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('SEMANA') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Última Semana</button>
+                <button @click="presetPeriodo('HOY')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('HOY') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Hoy</button>
+            </div>
         </div>
     </div>
+
+    <!-- Indicador de Carga (Spinner) -->
+    <div x-show="loading" class="flex flex-col items-center justify-center py-24 bg-white rounded-xl shadow-sm border border-gray-100 my-4">
+        <svg class="animate-spin h-12 w-12 text-[#E3001B] mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        <span class="text-base font-semibold text-gray-700">Cargando pedidos...</span>
+        <span class="text-xs text-gray-400 mt-1">Por favor espera un momento</span>
+    </div>
+
+    <!-- Contenido de Gestión de Pedidos -->
+    <div x-show="!loading" x-transition.opacity>
 
     <!-- KPI Cards -->
     <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
@@ -39,15 +79,15 @@
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Auto Aprobar Efectivo/TC/Débito
             </button>
-            <div class="flex items-center space-x-2 text-sm border-l pl-4">
-                <span class="text-gray-600">Mostrar:</span>
-                <select x-model="perPage" @change="currentPage = 1" class="border-gray-300 rounded-md text-sm py-1 pl-2 pr-8 focus:ring-primary focus:border-primary border">
-                    <option :value="5">5</option>
-                    <option :value="10">10</option>
-                    <option :value="20">20</option>
-                    <option :value="50">50</option>
+            <div class="flex items-center gap-2 border-l pl-3 border-gray-200">
+                <span class="text-xs font-semibold text-gray-500 hidden sm:inline">Mostrar:</span>
+                <select x-model.number="perPage" @change="currentPage = 1" class="border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm font-medium focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs bg-white cursor-pointer">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
                 </select>
-                <span class="text-gray-600">registros</span>
+                <span class="text-xs font-semibold text-gray-500 hidden sm:inline">registros</span>
             </div>
         </div>
     </div>
@@ -90,15 +130,27 @@
             </tbody>
         </table>
         
-        <!-- Paginador -->
-        <div class="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
-            <div class="text-sm text-gray-500">
-                Mostrando pág <span class="font-medium text-gray-800" x-text="currentPage"></span> de <span class="font-medium text-gray-800" x-text="totalPages"></span> 
-                (<span x-text="filteredPedidos.length"></span> registros totales)
+        <!-- Pagination Controls Footer Bar -->
+        <div x-show="!loading && filteredPedidos.length > 0" class="bg-gray-50/80 border-t border-gray-200 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-xs font-semibold text-gray-600">
+                Mostrando <span class="font-extrabold text-gray-900" x-text="startRecord"></span> a <span class="font-extrabold text-gray-900" x-text="endRecord"></span> de <span class="font-extrabold text-gray-900" x-text="filteredPedidos.length"></span> pedidos
             </div>
-            <div class="flex space-x-2">
-                <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
-                <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Siguiente</button>
+
+            <!-- Page Buttons -->
+            <div class="flex items-center gap-1">
+                <button @click="prevPage()" :disabled="currentPage === 1" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-gray-100 text-gray-700 border-gray-300">
+                    Anterior
+                </button>
+
+                <template x-for="p in totalPages" :key="p">
+                    <button @click="goToPage(p)" class="w-8 h-8 rounded-lg text-xs font-extrabold transition-all"
+                            :class="currentPage === p ? 'bg-slate-900 text-white shadow-xs' : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'"
+                            x-text="p"></button>
+                </template>
+
+                <button @click="nextPage()" :disabled="currentPage === totalPages" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-gray-100 text-gray-700 border-gray-300">
+                    Siguiente
+                </button>
             </div>
         </div>
     </div>
@@ -209,96 +261,217 @@
             </div>
         </div>
     </div>
+    </div>
 </div>
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('gestionPedidos', () => ({
-        filtroEstado: null,
-        estados: [
-            {nombre: 'TODOS', count: 0, color: 'border-gray-500'},
-            {nombre: 'CANCELADO', count: 0, color: 'border-red-500'},
-            {nombre: 'PENDIENTE', count: 0, color: 'border-yellow-500'},
-            {nombre: 'APROBADO', count: 0, color: 'border-blue-500'},
-            {nombre: 'EN_RUTA', count: 0, color: 'border-indigo-500'},
-            {nombre: 'ENTREGADO', count: 0, color: 'border-green-500'}
-        ],
-        pedidos: [],
-        camiones: [],
-        map: null,
-        markersLayer: null,
-        currentLat: null,
-        currentLng: null,
+    Alpine.data('gestionPedidos', () => {
+        const getFormattedDate = (dateObj) => {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const todayObj = new Date();
+        const todayStr = getFormattedDate(todayObj);
         
-        // Paginación
-        currentPage: 1,
-        perPage: 10,
-        sortCol: 'raw_fecha',
-        sortDesc: true,
+        // Defecto: 1 semana atrás (7 días)
+        const oneWeekAgoObj = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const oneWeekAgoStr = getFormattedDate(oneWeekAgoObj);
 
-        // Variables del Modal de Revisión
-        revisarModal: false,
-        selectedPedido: null,
-        comprobanteUrl: null,
-        loadingComprobante: false,
-        mostrarRechazo: false,
-        motivoRechazo: '',
+        // Recuperar de sessionStorage o defecto (hace 1 semana hasta hoy)
+        const initialFechaInicio = sessionStorage.getItem('gestion_pedidos_fecha_inicio') || oneWeekAgoStr;
+        const initialFechaFin = sessionStorage.getItem('gestion_pedidos_fecha_fin') || todayStr;
 
-        // Variables del Modal de Asignar Ruta
-        asignarModal: false,
-        selectedCamionId: '',
-        
-        async init() {
-            try {
-                // Load Pedidos and Camiones in parallel
-                const [pedidosRes, camionesRes] = await Promise.all([
-                    window.api('/api/pedidos'),
-                    window.api('/api/camiones')
-                ]);
-                
-                this.pedidos = pedidosRes;
-                this.camiones = camionesRes;
-                if(this.camiones.data) this.camiones = this.camiones.data;
-                
-                this.updateCounts();
-            } catch (error) {
-                console.error("Error al cargar pedidos:", error);
-            }
+        return {
+            fechaInicio: initialFechaInicio,
+            fechaFin: initialFechaFin,
+            loading: true,
+            filtroEstado: null,
+            estados: [
+                {nombre: 'TODOS', count: 0, color: 'border-gray-500'},
+                {nombre: 'CANCELADO', count: 0, color: 'border-red-500'},
+                {nombre: 'PENDIENTE', count: 0, color: 'border-yellow-500'},
+                {nombre: 'APROBADO', count: 0, color: 'border-blue-500'},
+                {nombre: 'EN_RUTA', count: 0, color: 'border-indigo-500'},
+                {nombre: 'ENTREGADO', count: 0, color: 'border-green-500'}
+            ],
+            pedidos: [],
+            camiones: [],
+            map: null,
+            markersLayer: null,
+            currentLat: null,
+            currentLng: null,
+            
+            // Paginación
+            currentPage: 1,
+            perPage: 10,
+            sortCol: 'raw_fecha',
+            sortDesc: true,
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    this.currentLat = pos.coords.latitude;
-                    this.currentLng = pos.coords.longitude;
-                    
-                    // Inyectar la distancia en el array para poder ordenar la tabla
-                    this.pedidos.forEach(p => {
-                        if (p.lat && p.lng) {
-                            p.distancia = parseFloat(this.getDist(this.currentLat, this.currentLng, p.lat, p.lng));
-                        } else {
-                            p.distancia = 999999; // Fallback para que salgan al fondo al ordenar
-                        }
+            // Variables del Modal de Revisión
+            revisarModal: false,
+            selectedPedido: null,
+            comprobanteUrl: null,
+            loadingComprobante: false,
+            mostrarRechazo: false,
+            motivoRechazo: '',
+
+            // Variables del Modal de Asignar Ruta
+            asignarModal: false,
+            selectedCamionId: '',
+
+            // CÁLCULO DE FECHA MÁXIMA PERMITIDA (Máximo 1 Mes a partir de Fecha Inicial)
+            get maxFechaFin() {
+                if (!this.fechaInicio) return '';
+                const parts = this.fechaInicio.split('-').map(Number);
+                const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                dateObj.setMonth(dateObj.getMonth() + 1);
+                return getFormattedDate(dateObj);
+            },
+
+            async init() {
+                this.validarRangoFechas();
+                await this.cargarDatos();
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        this.currentLat = pos.coords.latitude;
+                        this.currentLng = pos.coords.longitude;
+                        
+                        this.pedidos.forEach(p => {
+                            if (p.lat && p.lng) {
+                                p.distancia = parseFloat(this.getDist(this.currentLat, this.currentLng, p.lat, p.lng));
+                            } else {
+                                p.distancia = 999999;
+                            }
+                        });
+
+                        this.renderMarkers();
                     });
+                }
 
+                this.$watch('filtroEstado', () => {
+                    this.currentPage = 1;
                     this.renderMarkers();
                 });
-            }
-            
-            if (!this.map) {
-                setTimeout(() => {
-                    this.map = L.map('mapa-gestion').setView([-1.249, -78.616], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
-                    this.markersLayer = L.layerGroup().addTo(this.map);
-                    this.renderMarkers();
-                }, 100);
-            } else {
-                this.renderMarkers();
-            }
+            },
 
-            this.$watch('filtroEstado', () => {
-                this.currentPage = 1;
-                this.renderMarkers();
-            });
-        },
+            validarRangoFechas() {
+                if (!this.fechaInicio) this.fechaInicio = oneWeekAgoStr;
+                if (!this.fechaFin) this.fechaFin = todayStr;
+
+                // 1. Fecha Final no menor a la Fecha Inicial
+                if (this.fechaFin < this.fechaInicio) {
+                    this.fechaFin = this.fechaInicio;
+                }
+
+                // 2. Fecha Final no mayor a 1 mes desde Fecha Inicial
+                const maxPermitida = this.maxFechaFin;
+                if (maxPermitida && this.fechaFin > maxPermitida) {
+                    this.fechaFin = maxPermitida;
+                }
+
+                // Persistencia en sesión
+                sessionStorage.setItem('gestion_pedidos_fecha_inicio', this.fechaInicio);
+                sessionStorage.setItem('gestion_pedidos_fecha_fin', this.fechaFin);
+            },
+
+            onFechaInicioChange() {
+                this.validarRangoFechas();
+                this.cargarDatos();
+            },
+
+            onFechaFinChange() {
+                this.validarRangoFechas();
+                this.cargarDatos();
+            },
+
+            resetFechasSemana() {
+                this.fechaInicio = oneWeekAgoStr;
+                this.fechaFin = todayStr;
+                this.validarRangoFechas();
+                this.cargarDatos();
+            },
+
+            presetPeriodo(tipo) {
+                const hoyObj = new Date();
+                const hoyStrVal = getFormattedDate(hoyObj);
+                this.fechaFin = hoyStrVal;
+
+                if (tipo === 'MES') {
+                    const haceUnMes = new Date();
+                    haceUnMes.setMonth(hoyObj.getMonth() - 1);
+                    this.fechaInicio = getFormattedDate(haceUnMes);
+                } else if (tipo === 'SEMANA') {
+                    const haceUnaSemana = new Date();
+                    haceUnaSemana.setDate(hoyObj.getDate() - 7);
+                    this.fechaInicio = getFormattedDate(haceUnaSemana);
+                } else if (tipo === 'HOY') {
+                    this.fechaInicio = hoyStrVal;
+                }
+                this.validarRangoFechas();
+                this.cargarDatos();
+            },
+
+            esPeriodo(tipo) {
+                const hoyObj = new Date();
+                const hoyStrVal = getFormattedDate(hoyObj);
+                if (this.fechaFin !== hoyStrVal) return false;
+
+                if (tipo === 'HOY') return this.fechaInicio === hoyStrVal;
+                if (tipo === 'SEMANA') {
+                    const haceUnaSemana = new Date();
+                    haceUnaSemana.setDate(hoyObj.getDate() - 7);
+                    return this.fechaInicio === getFormattedDate(haceUnaSemana);
+                }
+                if (tipo === 'MES') {
+                    const haceUnMes = new Date();
+                    haceUnMes.setMonth(hoyObj.getMonth() - 1);
+                    return this.fechaInicio === getFormattedDate(haceUnMes);
+                }
+                return false;
+            },
+
+            async cargarDatos() {
+                this.loading = true;
+                try {
+                    const params = `?fecha_inicio=${this.fechaInicio}&fecha_fin=${this.fechaFin}`;
+                    const [pedidosRes, camionesRes] = await Promise.all([
+                        window.api(`/api/pedidos${params}`),
+                        window.api('/api/camiones')
+                    ]);
+                    
+                    this.pedidos = pedidosRes || [];
+                    this.camiones = camionesRes || [];
+                    if(this.camiones.data) this.camiones = this.camiones.data;
+                    
+                    this.updateCounts();
+                    this.renderMapa();
+                } catch (error) {
+                    console.error("Error al cargar pedidos:", error);
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            renderMapa() {
+                if (!this.map) {
+                    setTimeout(() => {
+                        const mapEl = document.getElementById('mapa-gestion');
+                        if (mapEl) {
+                            this.map = L.map('mapa-gestion').setView([-1.249, -78.616], 13);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+                            this.markersLayer = L.layerGroup().addTo(this.map);
+                            this.renderMarkers();
+                        }
+                    }, 100);
+                } else {
+                    this.renderMarkers();
+                }
+            },
         
         renderMarkers() {
             if(!this.markersLayer) return;
@@ -541,6 +714,19 @@ document.addEventListener('alpine:init', () => {
             return this.filteredPedidos.slice(start, start + this.perPage);
         },
 
+        get startRecord() {
+            if (this.filteredPedidos.length === 0) return 0;
+            return (this.currentPage - 1) * this.perPage + 1;
+        },
+
+        get endRecord() {
+            return Math.min(this.currentPage * this.perPage, this.filteredPedidos.length);
+        },
+
+        goToPage(p) {
+            if (p >= 1 && p <= this.totalPages) this.currentPage = p;
+        },
+
         sort(col) {
             if(this.sortCol === col) this.sortAsc = !this.sortAsc;
             else { this.sortCol = col; this.sortAsc = true; }
@@ -553,7 +739,8 @@ document.addEventListener('alpine:init', () => {
         prevPage() {
             if (this.currentPage > 1) this.currentPage--;
         }
-    }));
+        };
+    });
 });
 </script>
 @endsection

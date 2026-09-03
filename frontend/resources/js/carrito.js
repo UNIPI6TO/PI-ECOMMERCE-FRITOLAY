@@ -22,23 +22,62 @@ export const CarritoManager = {
         window.dispatchEvent(new Event('cart-updated'));
     },
 
-    agregarItem(productoId, nombre, cantidad, precioUnitario, unidadesPorPaca = 1) {
+    agregarItem(productoId, nombre, cantidad, precioUnitario, unidadesPorPaca = 1, imagen = '') {
         let cart = this._getCookie();
         let existing = cart.find(item => item.productoId === productoId);
         
         if (existing) {
             existing.cantidad += parseInt(cantidad, 10);
             if(unidadesPorPaca) existing.unidadesPorPaca = unidadesPorPaca;
+            if(imagen) existing.imagen = imagen;
         } else {
             cart.push({
                 productoId,
                 nombre,
                 cantidad: parseInt(cantidad, 10),
                 precioUnitario: parseFloat(precioUnitario),
-                unidadesPorPaca: parseInt(unidadesPorPaca, 10) || 1
+                unidadesPorPaca: parseInt(unidadesPorPaca, 10) || 1,
+                imagen: imagen || ''
             });
         }
         this._setCookie(cart);
+    },
+
+    actualizarCantidad(productoId, nuevaCantidad) {
+        let cart = this._getCookie();
+        let item = cart.find(i => i.productoId === productoId);
+        if (item) {
+            let qty = parseInt(nuevaCantidad, 10);
+            if (qty <= 0) {
+                this.eliminarItem(productoId);
+                return;
+            }
+            item.cantidad = qty;
+            this._setCookie(cart);
+        }
+    },
+
+    incrementarCantidad(productoId, paso = 1) {
+        let cart = this._getCookie();
+        let item = cart.find(i => i.productoId === productoId);
+        if (item) {
+            item.cantidad += parseInt(paso, 10);
+            this._setCookie(cart);
+        }
+    },
+
+    decrementarCantidad(productoId, paso = 1) {
+        let cart = this._getCookie();
+        let item = cart.find(i => i.productoId === productoId);
+        if (item) {
+            let nueva = item.cantidad - parseInt(paso, 10);
+            if (nueva <= 0) {
+                this.eliminarItem(productoId);
+            } else {
+                item.cantidad = nueva;
+                this._setCookie(cart);
+            }
+        }
     },
 
     mergeItem(productoId, cantidad) {
@@ -82,26 +121,38 @@ export const CarritoManager = {
             return;
         }
         const valorTotal = parseFloat(this.calcularSubtotal());
-        // Intentar obtener cliente_id del JWT si está disponible
         let clienteId = null;
         try {
             const token = localStorage.getItem('jwt_token');
             if (token) {
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                clienteId = payload.cliente_id || null;
+                clienteId = payload.cliente_id || payload.sub || null;
             }
         } catch (_) {}
 
+        const backendUrl = (typeof window !== 'undefined' && window.BACKEND_URL) ? window.BACKEND_URL : 'http://localhost:8000';
+
         try {
-            await fetch(`${window.BACKEND_URL}/api/carritos-abandonados`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({
-                    cliente_id: clienteId,
-                    motivo_cancelacion: motivo,
-                    valor_total: valorTotal
-                })
-            });
+            if (typeof window !== 'undefined' && window.api) {
+                await window.api('/api/carritos-abandonados', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        cliente_id: clienteId,
+                        motivo_cancelacion: motivo,
+                        valor_total: valorTotal
+                    })
+                });
+            } else {
+                await fetch(`${backendUrl}/api/carritos-abandonados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        cliente_id: clienteId,
+                        motivo_cancelacion: motivo,
+                        valor_total: valorTotal
+                    })
+                });
+            }
         } catch (e) {
             console.warn('[CarritoManager] No se pudo registrar abandono:', e);
         } finally {

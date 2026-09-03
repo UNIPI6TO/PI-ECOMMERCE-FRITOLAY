@@ -30,8 +30,8 @@ class PedidoFiltroRequest extends FormRequest
                 $inicio = Carbon::parse($this->input('fecha_inicio'));
                 $fin = Carbon::parse($this->input('fecha_fin'));
 
-                if ($inicio->diffInDays($fin) > 30) {
-                    $validator->errors()->add('fechas', 'El rango máximo es de 30 días');
+                if ($inicio->diffInDays($fin) > 31) {
+                    $validator->errors()->add('fechas', 'El rango máximo es de 31 días (1 mes)');
                 }
             }
         });

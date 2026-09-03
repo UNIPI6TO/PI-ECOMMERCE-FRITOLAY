@@ -112,9 +112,9 @@ class PedidoService
             ->get();
     }
 
-    public function cancelarPedido(int $pedidoId, int $usuarioId): void
+    public function cancelarPedido(int $pedidoId, int $usuarioId, ?string $motivo = null): void
     {
-        DB::transaction(function () use ($pedidoId, $usuarioId) {
+        DB::transaction(function () use ($pedidoId, $usuarioId, $motivo) {
             $cliente = \App\Models\Cliente::where('usuario_id', $usuarioId)->first();
             if (!$cliente) throw new Exception("Cliente no encontrado.");
 
@@ -124,8 +124,10 @@ class PedidoService
                 throw new Exception("El pedido no puede ser cancelado en su estado actual.");
             }
 
+            $motivoTexto = $motivo ?: 'Cancelado por el cliente';
+
             $pedido->estado = 'cancelado';
-            $pedido->motivo_cancelacion = 'Cancelado por el cliente';
+            $pedido->motivo_cancelacion = $motivoTexto;
             $pedido->save();
 
             // Generar Nota de Crédito (Formato SRI)
@@ -136,7 +138,7 @@ class PedidoService
                     'numero_nota' => \App\Models\NotaCredito::generarNumero($factura->id),
                     'fecha_emision' => now(),
                     'valor_total' => $factura->total,
-                    'motivo' => 'Devolución/Cancelación: Cancelado por el cliente'
+                    'motivo' => 'Cancelación: ' . $motivoTexto
                 ]);
             }
 

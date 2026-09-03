@@ -107,9 +107,16 @@
             </div>
             <button 
                 @click="finalizarCompra" 
-                x-bind:disabled="!selectedDireccion || items.length === 0 || ((selectedPago === 'DEPOSITO' || selectedPago === 'DE_UNA') && !comprobante)"
-                class="w-full mt-6 bg-[#F5C518] hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed">
-                Finalizar Compra
+                :disabled="loading || !selectedDireccion || items.length === 0 || ((selectedPago === 'DEPOSITO' || selectedPago === 'DE_UNA') && !comprobante)"
+                class="w-full mt-6 bg-[#F5C518] hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-all flex justify-center items-center">
+                <span x-show="!loading">Finalizar Compra</span>
+                <span x-show="loading" class="flex items-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    Procesando Pedido...
+                </span>
             </button>
         </div>
     </div>
@@ -143,6 +150,7 @@ document.addEventListener('alpine:init', () => {
         comprobante: null,
         newAddressData: null,
         showAddressModal: false,
+        loading: false,
         selectedMap: null,
         selectedMarker: null,
 
@@ -274,10 +282,12 @@ document.addEventListener('alpine:init', () => {
         },
 
         async finalizarCompra() {
+            if (this.loading) return;
             if (!this.selectedDireccion) {
                 Swal.fire('Atención', 'Debe seleccionar o agregar una dirección de entrega obligatoria antes de finalizar la compra.', 'warning');
                 return;
             }
+            this.loading = true;
             try {
                 // Map items to match backend requirements
                 const itemsForBackend = this.items.map(i => ({
@@ -334,6 +344,7 @@ document.addEventListener('alpine:init', () => {
                         window.location.href = '/ecommerce/confirmacion';
                     });
             } catch (error) {
+                this.loading = false;
                 Swal.fire({ icon: 'error', title: 'Error al procesar pedido', text: error.message, confirmButtonColor: '#E3001B' });
             }
         },

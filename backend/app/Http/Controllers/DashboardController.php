@@ -29,6 +29,11 @@ class DashboardController extends Controller
         return response()->json($this->dashboardService->getRecaudacion($request->validated()));
     }
 
+    public function perdidas(DashboardFiltroRequest $request)
+    {
+        return response()->json($this->dashboardService->getPerdidas($request->validated()));
+    }
+
     public function carritosAbandonados(DashboardFiltroRequest $request)
     {
         return response()->json($this->dashboardService->getCarritosAbandonados($request->validated()));
