@@ -101,3 +101,10 @@ fix_direcciones_mapa.php
 # Storage generated files and local databases
 backend/storage/app/comprobantes/
 frontend/database/*.sqlite
+
+# Secure local scratch & execution folders (never tracked by git)
+tmp_scripts/
+.temp_exec/
+temp/
+scratch/
+*_temp/
