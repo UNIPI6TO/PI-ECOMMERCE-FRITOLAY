@@ -110,13 +110,18 @@ class EntregaService
 
             $pedido = $this->pedidoRepository->update($pedido->id, [
                 'estado' => $nuevoEstado,
+                'fecha_entrega' => now(),
                 'motivo_cancelacion' => $motivoPrincipal
             ]);
             
             $estadoAsig = $todosDevueltos ? \App\Models\AsignacionPedidoCamion::ESTADO_NO_ENTREGADO : \App\Models\AsignacionPedidoCamion::ESTADO_ENTREGADO;
             \Illuminate\Support\Facades\DB::table('asignacion_pedido_camion')
                 ->where('pedido_id', $pedido->id)
-                ->update(['estado' => $estadoAsig]);
+                ->update([
+                    'estado' => $estadoAsig,
+                    'fecha_entrega' => now(),
+                    'updated_at' => now()
+                ]);
 
             $factura = DB::table('facturas')->where('pedido_id', $pedido->id)->first();
             if (!$factura) {

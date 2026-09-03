@@ -56,6 +56,10 @@ class PedidoController extends Controller
 
             $asignacion = $asignaciones->get($p->id);
 
+            $dtEntrega = $p->fecha_entrega ? \Carbon\Carbon::parse($p->fecha_entrega) : ($p->updated_at ?: null);
+            $fechaEntregaStr = $dtEntrega ? $dtEntrega->format('d/m/Y') : null;
+            $horaEntregaStr = $dtEntrega ? $dtEntrega->format('H:i') : null;
+
             return [
                 'id' => $p->id,
                 'cliente' => $p->cliente ? ($p->cliente->razon_social ?: ($p->cliente->nombre_cliente ?: ($p->cliente->usuario->nombre ?? 'Sin Cliente'))) : 'Desconocido',
@@ -68,6 +72,8 @@ class PedidoController extends Controller
                 'camion_placa' => $asignacion ? $asignacion->camion_placa : null,
                 'fecha' => $p->creado_en ? $p->creado_en->format('Y-m-d H:i') : '',
                 'raw_fecha' => $p->creado_en ? $p->creado_en->timestamp : 0,
+                'fecha_entrega' => $fechaEntregaStr,
+                'hora_entrega' => $horaEntregaStr,
                 'lat' => $p->direccion ? $p->direccion->latitud : null,
                 'lng' => $p->direccion ? $p->direccion->longitud : null,
             ];
