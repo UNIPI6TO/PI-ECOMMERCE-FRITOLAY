@@ -163,11 +163,7 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-gray-500 font-medium" x-text="timeAgo(p.fecha)"></td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <button @click="
-                                        if(p.estado === 'PENDIENTE') verDetalle(p); 
-                                        else if(p.estado === 'APROBADO') abrirAsignarRuta(p); 
-                                        else verDetalle(p)
-                                    " 
+                                    <button @click="verDetalle(p)" 
                                             class="py-1.5 px-3 rounded-xl font-bold text-xs shadow-2xs transition-all cursor-pointer"
                                             :class="{
                                                 'bg-amber-500 text-slate-950 hover:bg-amber-400': p.estado === 'PENDIENTE',
@@ -207,7 +203,171 @@
             </div>
         </div>
 
-        <!-- Modal Revisión -->
+        <!-- Modal Detalle Completo del Pedido -->
+        <div x-show="detalleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" style="display: none;">
+            <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative border border-gray-100">
+                <!-- Header -->
+                <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border"
+                                  :class="{
+                                      'bg-amber-50 text-amber-800 border-amber-200': selectedPedido?.estado === 'PENDIENTE',
+                                      'bg-blue-50 text-blue-800 border-blue-200': selectedPedido?.estado === 'APROBADO',
+                                      'bg-indigo-50 text-indigo-800 border-indigo-200': selectedPedido?.estado === 'EN_RUTA',
+                                      'bg-emerald-50 text-emerald-800 border-emerald-200': selectedPedido?.estado === 'ENTREGADO',
+                                      'bg-rose-50 text-rose-800 border-rose-200': selectedPedido?.estado === 'CANCELADO'
+                                  }"
+                                  x-text="selectedPedido?.estado"></span>
+                            <span class="text-xs text-gray-400 font-semibold" x-text="`Creado: ${selectedPedido?.fecha || ''}`"></span>
+                        </div>
+                        <h3 class="text-xl font-black text-gray-900">Detalle de Orden #<span x-text="selectedPedido?.id"></span></h3>
+                    </div>
+                    <button @click="detalleModal = false" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-xl hover:bg-gray-100 transition-all cursor-pointer">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Banner de Cancelación si aplica -->
+                <template x-if="selectedPedido?.estado === 'CANCELADO' || detalleFull?.motivo_cancelacion">
+                    <div class="mb-5 bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3">
+                        <svg class="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <div>
+                            <h4 class="font-extrabold text-xs text-rose-900 uppercase tracking-wider">Pedido Cancelado</h4>
+                            <p class="text-xs text-rose-700 font-medium mt-0.5" x-text="detalleFull?.motivo_cancelacion || 'Este pedido ha sido cancelado por el operador o sistema.'"></p>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Spinner de Carga de Detalle -->
+                <div x-show="loadingDetalle" class="py-12 text-center text-gray-500">
+                    <svg class="animate-spin h-8 w-8 text-slate-800 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                    <span class="text-xs font-bold">Cargando información del pedido...</span>
+                </div>
+
+                <!-- Contenido cuando ya cargó -->
+                <div x-show="!loadingDetalle">
+                    <!-- Grid Información Comercial, Dirección y Pago -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <!-- Cliente -->
+                        <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 block mb-1">Cliente / Negocio</span>
+                            <div class="font-bold text-gray-900 text-sm" x-text="selectedPedido?.cliente"></div>
+                            <div class="text-xs text-gray-500 font-medium mt-0.5" x-text="`Contacto: ${selectedPedido?.nombre_persona || 'N/A'}`"></div>
+                        </div>
+
+                        <!-- Dirección -->
+                        <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 block mb-1">Dirección de Entrega</span>
+                            <div class="font-bold text-gray-900 text-xs truncate" x-text="detalleFull?.direccion?.descripcion || 'Dirección no registrada'"></div>
+                            <div class="text-xs text-blue-600 font-bold mt-1" x-text="selectedPedido?.distancia ? `📍 Distancia: ${selectedPedido.distancia} km` : ''"></div>
+                        </div>
+
+                        <!-- Pago y Factura -->
+                        <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 block mb-1">Método de Pago & Facturación</span>
+                            <div class="font-bold text-gray-900 text-xs" x-text="`Método: ${selectedPedido?.pago || ''}`"></div>
+                            <template x-if="detalleFull?.factura">
+                                <div class="text-xs font-bold text-emerald-700 mt-1 flex items-center gap-1">
+                                    <span>📄 Factura:</span>
+                                    <span x-text="detalleFull.factura.numero_factura"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Ítems Solicitados -->
+                    <div class="mb-6">
+                        <h4 class="font-extrabold text-xs uppercase tracking-wider text-gray-500 mb-3">Productos Solicitados</h4>
+                        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-2xs">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-gray-50 border-b border-gray-100 text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                                    <tr>
+                                        <th class="py-2.5 px-4">Producto</th>
+                                        <th class="py-2.5 px-4 text-center">Cant. Solicitada</th>
+                                        <th class="py-2.5 px-4 text-center">Cant. Entregada</th>
+                                        <th class="py-2.5 px-4 text-right">Precio Unit.</th>
+                                        <th class="py-2.5 px-4 text-right">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <template x-if="!detalleFull?.items || detalleFull.items.length === 0">
+                                        <tr><td colspan="5" class="py-4 text-center text-gray-400">Sin detalles de productos</td></tr>
+                                    </template>
+                                    <template x-for="item in (detalleFull?.items || [])" :key="item.id">
+                                        <tr>
+                                            <td class="py-3 px-4 font-bold text-gray-900" x-text="item.producto?.nombre || `Producto #${item.producto_id}`"></td>
+                                            <td class="py-3 px-4 text-center font-bold text-gray-800" x-text="item.cantidad_solicitada"></td>
+                                            <td class="py-3 px-4 text-center font-bold text-emerald-700" x-text="item.cantidad_entregada || 0"></td>
+                                            <td class="py-3 px-4 text-right text-gray-600 font-medium" x-text="`$${Number(item.precio_unitario).toFixed(2)}`"></td>
+                                            <td class="py-3 px-4 text-right font-black text-slate-900" x-text="`$${(Number(item.cantidad_solicitada) * Number(item.precio_unitario)).toFixed(2)}`"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Resumen Financiero y Comprobante -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mb-6">
+                        <!-- Vista Previa de Comprobante si aplica -->
+                        <div>
+                            <template x-if="comprobanteUrl">
+                                <div>
+                                    <h4 class="font-extrabold text-xs uppercase tracking-wider text-gray-500 mb-2">Comprobante de Pago Adjunto</h4>
+                                    <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 text-center">
+                                        <a :href="comprobanteUrl" target="_blank" title="Abrir en otra ventana">
+                                            <img :src="comprobanteUrl" class="max-h-48 object-contain rounded-lg shadow-2xs mx-auto hover:opacity-90 transition-opacity" />
+                                        </a>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Totales del Pedido -->
+                        <div class="bg-gray-50/80 p-4 rounded-2xl border border-gray-100 space-y-2 text-xs">
+                            <div class="flex justify-between font-semibold text-gray-600">
+                                <span>Subtotal:</span>
+                                <span x-text="`$${Number(detalleFull?.subtotal || selectedPedido?.total || 0).toFixed(2)}`"></span>
+                            </div>
+                            <div class="flex justify-between font-semibold text-gray-600">
+                                <span>Descuento Aplicado:</span>
+                                <span class="text-rose-600" x-text="`-$${Number(detalleFull?.descuento || 0).toFixed(2)}`"></span>
+                            </div>
+                            <div class="flex justify-between font-semibold text-gray-600">
+                                <span>IVA (15%):</span>
+                                <span x-text="`$${Number(detalleFull?.iva || 0).toFixed(2)}`"></span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-2 flex justify-between font-black text-gray-900 text-base">
+                                <span>Total Final:</span>
+                                <span class="text-slate-900" x-text="`$${Number(detalleFull?.total || selectedPedido?.total || 0).toFixed(2)}`"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción del Modal -->
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button @click="detalleModal = false" class="px-5 py-2.5 border border-gray-200 rounded-xl text-gray-700 text-xs font-bold hover:bg-gray-50 transition-all cursor-pointer">
+                            Cerrar
+                        </button>
+
+                        <template x-if="selectedPedido?.estado === 'PENDIENTE'">
+                            <button @click="detalleModal = false; abrirRevisionModal(selectedPedido)" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer">
+                                Revisar Comprobante
+                            </button>
+                        </template>
+
+                        <template x-if="selectedPedido?.estado === 'APROBADO'">
+                            <button @click="detalleModal = false; abrirAsignarRuta(selectedPedido)" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer">
+                                Asignar a Ruta
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Revisión (para PENDIENTE) -->
         <div x-show="revisarModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" style="display: none;">
             <div class="bg-white p-6 sm:p-8 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
                 <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
@@ -362,6 +522,11 @@ document.addEventListener('alpine:init', () => {
             perPage: 10,
             sortCol: 'raw_fecha',
             sortDesc: true,
+
+            // Variables de Modales
+            detalleModal: false,
+            loadingDetalle: false,
+            detalleFull: null,
 
             revisarModal: false,
             selectedPedido: null,
@@ -604,29 +769,36 @@ document.addEventListener('alpine:init', () => {
             },
 
             async verDetalle(p) {
-                if (p.estado === 'PENDIENTE') {
-                    this.selectedPedido = p;
-                    this.revisarModal = true;
-                    this.mostrarRechazo = false;
-                    this.motivoRechazo = '';
-                    
+                this.selectedPedido = p;
+                this.loadingDetalle = true;
+                this.detalleModal = true;
+                this.detalleFull = null;
+                this.comprobanteUrl = null;
+
+                try {
+                    const res = await window.api(`/api/pedidos/${p.id}`);
+                    this.detalleFull = res.data || res;
+
                     if (p.pago === 'DE_UNA' || p.pago === 'DEPOSITO') {
-                        this.loadingComprobante = true;
-                        this.comprobanteUrl = null;
                         try {
-                            const res = await window.api(`/api/pedidos/${p.id}/comprobante`);
-                            this.comprobanteUrl = res.data.url;
+                            const compRes = await window.api(`/api/pedidos/${p.id}/comprobante`);
+                            this.comprobanteUrl = compRes.data?.url || null;
                         } catch (e) {
-                            console.error("No se pudo cargar el comprobante", e);
+                            console.log("Sin comprobante adjunto");
                         }
-                        this.loadingComprobante = false;
-                    } else {
-                        this.comprobanteUrl = null;
-                        this.loadingComprobante = false;
                     }
-                } else {
-                    Swal.fire('Detalle', `Pedido #${p.id} pagado con ${p.pago}. Estado actual: ${p.estado}`, 'info');
+                } catch (e) {
+                    console.error("Error al cargar detalle del pedido:", e);
+                } finally {
+                    this.loadingDetalle = false;
                 }
+            },
+
+            abrirRevisionModal(p) {
+                this.selectedPedido = p;
+                this.revisarModal = true;
+                this.mostrarRechazo = false;
+                this.motivoRechazo = '';
             },
 
             cerrarRevision() {
