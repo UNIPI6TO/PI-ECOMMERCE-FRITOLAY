@@ -56,9 +56,17 @@ class PedidoController extends Controller
 
             $asignacion = $asignaciones->get($p->id);
 
-            $dtEntrega = $p->fecha_entrega ? \Carbon\Carbon::parse($p->fecha_entrega) : ($p->updated_at ?: null);
+            $tz = config('app.timezone', 'America/Guayaquil');
+            $dtEntrega = $p->fecha_entrega 
+                ? \Carbon\Carbon::parse($p->fecha_entrega)->setTimezone($tz) 
+                : ($p->updated_at ? \Carbon\Carbon::parse($p->updated_at)->setTimezone($tz) : null);
+
             $fechaEntregaStr = $dtEntrega ? $dtEntrega->format('d/m/Y') : null;
             $horaEntregaStr = $dtEntrega ? $dtEntrega->format('H:i') : null;
+
+            $fechaCreadoStr = $p->creado_en 
+                ? \Carbon\Carbon::parse($p->creado_en)->setTimezone($tz)->format('Y-m-d H:i') 
+                : ($p->created_at ? \Carbon\Carbon::parse($p->created_at)->setTimezone($tz)->format('Y-m-d H:i') : '');
 
             return [
                 'id' => $p->id,
@@ -70,8 +78,8 @@ class PedidoController extends Controller
                 'raw_estado' => $rawEstado,
                 'camion_id' => $asignacion ? $asignacion->camion_id : null,
                 'camion_placa' => $asignacion ? $asignacion->camion_placa : null,
-                'fecha' => $p->creado_en ? $p->creado_en->format('Y-m-d H:i') : '',
-                'raw_fecha' => $p->creado_en ? $p->creado_en->timestamp : 0,
+                'fecha' => $fechaCreadoStr,
+                'raw_fecha' => $p->creado_en ? \Carbon\Carbon::parse($p->creado_en)->timestamp : 0,
                 'fecha_entrega' => $fechaEntregaStr,
                 'hora_entrega' => $horaEntregaStr,
                 'lat' => $p->direccion ? $p->direccion->latitud : null,
