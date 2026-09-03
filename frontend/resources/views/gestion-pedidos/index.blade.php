@@ -736,56 +736,72 @@ document.addEventListener('alpine:init', () => {
                             badgeDot = '#f43f5e';
                         }
 
-                        // Lógica condicional de estado y logística
+                        // Lógica condicional de estado y logística (Sin datos falsos si no está asignado)
                         let logisticaHtml = '';
-                        const camionPlaca = p.camion_placa || p.placa || (p.camion_id ? `CAM-${p.camion_id}` : 'ABC-1234');
-                        const guiaNum = p.guia_numero || p.guia_id ? `TRK-${p.guia_numero || p.guia_id}` : 'TRK-8839201';
+                        const camionPlaca = p.camion_placa || p.placa || (p.camion_id ? `CAM-${p.camion_id}` : null);
+                        const guiaNum = p.guia_numero || p.guia_id ? `TRK-${p.guia_numero || p.guia_id}` : null;
+                        const tienePlaca = !!camionPlaca;
+                        const tieneFechaEntrega = !!(p.fecha_entrega || p.hora_entrega);
 
                         if (estadoClean.includes('RUTA') || estadoClean.includes('APROBADO') || estadoClean.includes('LISTO')) {
-                            logisticaHtml = `
-                                <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f8fafc;padding:6px;border-radius:6px;font-size:11px;">
-                                    <div>
-                                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Guía</span>
-                                        <span style="font-family:monospace;font-weight:700;color:#0f172a;">${guiaNum}</span>
+                            if (tienePlaca || guiaNum) {
+                                logisticaHtml = `
+                                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f8fafc;padding:6px;border-radius:6px;font-size:11px;">
+                                        ${guiaNum ? `
+                                            <div>
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Guía</span>
+                                                <span style="font-family:monospace;font-weight:700;color:#0f172a;">${guiaNum}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${tienePlaca ? `
+                                            <div>
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Vehículo (Placa)</span>
+                                                <span style="font-weight:800;color:#2563eb;">🚚 ${camionPlaca}</span>
+                                            </div>
+                                        ` : ''}
                                     </div>
-                                    <div>
-                                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Vehículo (Placa)</span>
-                                        <span style="font-weight:800;color:#2563eb;">🚚 ${camionPlaca}</span>
-                                    </div>
-                                </div>
-                            `;
+                                `;
+                            }
                         } else if (estadoClean.includes('ENTREGADO')) {
-                            const fechaEntrega = p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString('es-EC') : '24/05/2024';
-                            const horaEntrega = p.hora_entrega ? p.hora_entrega : '14:30';
-                            logisticaHtml = `
-                                <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#ecfdf5;padding:6px;border-radius:6px;font-size:11px;">
-                                    <div style="grid-column: span 2; border-bottom: 1px border-emerald-100; padding-bottom: 4px;">
-                                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Vehículo de Entrega (Placa)</span>
-                                        <span style="font-weight:800;color:#065f46;">🚚 ${camionPlaca}</span>
+                            if (tienePlaca || tieneFechaEntrega) {
+                                logisticaHtml = `
+                                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#ecfdf5;padding:6px;border-radius:6px;font-size:11px;">
+                                        ${tienePlaca ? `
+                                            <div style="${tieneFechaEntrega ? 'grid-column: span 2; border-bottom: 1px solid #a7f3d0; padding-bottom: 4px;' : 'grid-column: span 2;'}">
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Vehículo de Entrega (Placa)</span>
+                                                <span style="font-weight:800;color:#065f46;">🚚 ${camionPlaca}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${p.fecha_entrega ? `
+                                            <div>
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Fecha Entrega</span>
+                                                <span style="font-weight:700;color:#065f46;">${p.fecha_entrega}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${p.hora_entrega ? `
+                                            <div>
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Hora Entrega</span>
+                                                <span style="font-weight:700;color:#065f46;">${p.hora_entrega}</span>
+                                            </div>
+                                        ` : ''}
                                     </div>
-                                    <div>
-                                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Fecha Entrega</span>
-                                        <span style="font-weight:700;color:#065f46;">${fechaEntrega}</span>
-                                    </div>
-                                    <div>
-                                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Hora Entrega</span>
-                                        <span style="font-weight:700;color:#065f46;">${horaEntrega}</span>
-                                    </div>
-                                </div>
-                            `;
+                                `;
+                            }
                         } else if (estadoClean.includes('CANCEL') || estadoClean.includes('NO_ENTREGADO')) {
-                            logisticaHtml = `
-                                <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#fff1f2;padding:6px;border-radius:6px;font-size:11px;">
-                                    <div>
-                                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#e11d48;display:block;">Vehículo (Placa)</span>
-                                        <span style="font-weight:800;color:#9f1239;">🚚 ${camionPlaca}</span>
+                            if (tienePlaca) {
+                                logisticaHtml = `
+                                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#fff1f2;padding:6px;border-radius:6px;font-size:11px;">
+                                        <div>
+                                            <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#e11d48;display:block;">Vehículo (Placa)</span>
+                                            <span style="font-weight:800;color:#9f1239;">🚚 ${camionPlaca}</span>
+                                        </div>
+                                        <div>
+                                            <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#e11d48;display:block;">Resultado</span>
+                                            <span style="font-weight:700;color:#9f1239;">No Entregado</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#e11d48;display:block;">Resultado</span>
-                                        <span style="font-weight:700;color:#9f1239;">No Entregado</span>
-                                    </div>
-                                </div>
-                            `;
+                                `;
+                            }
                         }
 
                         ordersHtml += `
