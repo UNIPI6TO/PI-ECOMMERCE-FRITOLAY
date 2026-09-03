@@ -483,20 +483,133 @@ document.addEventListener('alpine:init', () => {
                     let distanceHtml = '';
                     if (this.currentLat && this.currentLng) {
                         const dist = this.getDist(this.currentLat, this.currentLng, lat, lng);
-                        distanceHtml = `<div class="text-xs text-blue-600 font-bold mb-2">📍 a ${dist} km de tu ubicación actual</div>`;
+                        distanceHtml = `
+                            <div style="font-size:11px;font-weight:700;color:#2563eb;margin-bottom:8px;background:#f0f9ff;padding:4px 8px;border-radius:6px;border:1px solid #bae6fd;display:flex;align-items:center;gap:4px;">
+                                <span>📍</span>
+                                <span>a ${dist} km de tu ubicación actual</span>
+                            </div>
+                        `;
                     }
 
-                    let ordersHtml = `<div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">`;
+                    let ordersHtml = `<div style="max-height: 260px; overflow-y: auto; padding-right: 2px;">`;
                     pedidos.forEach(p => {
-                        const truckStr = p.camion_id ? `<br><span style="color:#16a34a;font-weight:bold;">🚚 ${p.camion_placa || 'Asignado'}</span>` : '';
-                        const removeBtn = p.camion_id ? `<button onclick="window.dispatchEvent(new CustomEvent('quitar-asignacion-popup',{detail:${p.id}}))" style="width:100%;margin-top:6px;padding:4px;font-size:11px;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;">Quitar Asignación</button>` : '';
+                        const estadoClean = (p.estado || p.raw_estado || '').toUpperCase();
+                        const timeFormatted = this.timeAgo(p.fecha || p.creado_en);
+                        
+                        let badgeBg = '#fef3c7';
+                        let badgeColor = '#92400e';
+                        let badgeDot = '#f59e0b';
+                        let estadoLabel = p.estado || 'PENDIENTE';
+
+                        if (estadoClean.includes('RUTA') || estadoClean.includes('APROBADO') || estadoClean.includes('LISTO')) {
+                            badgeBg = '#dbeafe';
+                            badgeColor = '#1e40af';
+                            badgeDot = '#3b82f6';
+                        } else if (estadoClean.includes('ENTREGADO')) {
+                            badgeBg = '#d1fae5';
+                            badgeColor = '#065f46';
+                            badgeDot = '#10b981';
+                        }
+
+                        // Lógica condicional de estado y logística (Sin datos falsos si no está asignado)
+                        let logisticaHtml = '';
+                        const camionPlaca = p.camion_placa || p.placa || (p.camion_id ? `CAM-${p.camion_id}` : null);
+                        const guiaNum = p.guia_numero || p.guia_id ? `TRK-${p.guia_numero || p.guia_id}` : null;
+                        const tienePlaca = !!camionPlaca;
+                        const tieneFechaEntrega = !!(p.fecha_entrega || p.hora_entrega);
+
+                        if (estadoClean.includes('RUTA') || estadoClean.includes('APROBADO') || estadoClean.includes('LISTO')) {
+                            if (tienePlaca || guiaNum) {
+                                logisticaHtml = `
+                                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f8fafc;padding:6px;border-radius:6px;font-size:11px;">
+                                        ${guiaNum ? `
+                                            <div>
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Guía</span>
+                                                <span style="font-family:monospace;font-weight:700;color:#0f172a;">${guiaNum}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${tienePlaca ? `
+                                            <div>
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#94a3b8;display:block;">Vehículo (Placa)</span>
+                                                <span style="font-weight:800;color:#2563eb;">🚚 ${camionPlaca}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }
+                        } else if (estadoClean.includes('ENTREGADO')) {
+                            if (tienePlaca || tieneFechaEntrega) {
+                                logisticaHtml = `
+                                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#ecfdf5;padding:6px;border-radius:6px;font-size:11px;">
+                                        ${tienePlaca ? `
+                                            <div style="${tieneFechaEntrega ? 'grid-column: span 2; border-bottom: 1px solid #a7f3d0; padding-bottom: 4px;' : 'grid-column: span 2;'}">
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Vehículo de Entrega (Placa)</span>
+                                                <span style="font-weight:800;color:#065f46;">🚚 ${camionPlaca}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${p.fecha_entrega ? `
+                                            <div>
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Fecha Entrega</span>
+                                                <span style="font-weight:700;color:#065f46;">${p.fecha_entrega}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${p.hora_entrega ? `
+                                            <div>
+                                                <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#059669;display:block;">Hora Entrega</span>
+                                                <span style="font-weight:700;color:#065f46;">${p.hora_entrega}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }
+                        } else if (estadoClean.includes('CANCEL') || estadoClean.includes('NO_ENTREGADO')) {
+                            if (tienePlaca) {
+                                logisticaHtml = `
+                                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#fff1f2;padding:6px;border-radius:6px;font-size:11px;">
+                                        <div>
+                                            <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#e11d48;display:block;">Vehículo (Placa)</span>
+                                            <span style="font-weight:800;color:#9f1239;">🚚 ${camionPlaca}</span>
+                                        </div>
+                                        <div>
+                                            <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#e11d48;display:block;">Resultado</span>
+                                            <span style="font-weight:700;color:#9f1239;">No Entregado</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        const removeBtn = p.camion_id ? `<button onclick="window.dispatchEvent(new CustomEvent('quitar-asignacion-popup',{detail:${p.id}}))" style="width:100%;margin-top:8px;padding:5px;font-size:11px;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;">Quitar Asignación</button>` : '';
+
                         ordersHtml += `
-                            <div style="border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px;">
-                                <b>Pedido #${p.id}</b> <span style="font-size: 11px; color: #666;">(${this.timeAgo(p.fecha)})</span><br>
-                                <b>Comercio:</b> ${p.cliente}<br>
-                                <b>Contacto:</b> ${p.nombre_persona}<br>
-                                <b>Total:</b> $${Number(p.total).toFixed(2)}
-                                ${truckStr}
+                            <div style="background:#fff;padding:10px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:8px;font-family:sans-serif;font-size:12px;">
+                                <div style="display:flex;align-items:center;justify-between;border-bottom:1px solid #f1f5f9;padding-bottom:6px;margin-bottom:6px;">
+                                    <div style="font-weight:900;color:#0f172a;font-size:13px;">
+                                        Pedido #${p.id}
+                                        ${timeFormatted ? `<span style="font-size:10px;color:#94a3b8;font-weight:normal;margin-left:4px;">(${timeFormatted})</span>` : ''}
+                                    </div>
+                                    <span style="background:${badgeBg};color:${badgeColor};padding:2px 8px;border-radius:12px;font-size:10px;font-weight:800;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px;">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:${badgeDot};display:inline-block;"></span>
+                                        ${estadoLabel}
+                                    </span>
+                                </div>
+
+                                <div style="display:flex;flex-direction:column;gap:3px;font-size:11px;">
+                                    <div style="display:flex;justify-content:space-between;">
+                                        <span style="font-weight:700;color:#64748b;">Comercio:</span>
+                                        <span style="font-weight:700;color:#0f172a;text-align:right;">${p.cliente || 'Tienda Minorista Lopez'}</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;">
+                                        <span style="font-weight:700;color:#64748b;">Contacto:</span>
+                                        <span style="font-weight:500;color:#334155;text-align:right;">${p.nombre_persona || 'Carlos Lopez'}</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;padding-top:4px;border-top:1px solid #f8fafc;margin-top:2px;">
+                                        <span style="font-weight:900;color:#0f172a;">Total:</span>
+                                        <span style="font-weight:900;color:#0f172a;font-size:13px;">$${Number(p.total).toFixed(2)}</span>
+                                    </div>
+                                </div>
+
+                                ${logisticaHtml}
                                 ${removeBtn}
                             </div>
                         `;
@@ -520,13 +633,17 @@ document.addEventListener('alpine:init', () => {
                         ids.forEach(id => newSel.add(String(id)));
                         this.selectedIds = Array.from(newSel).map(Number);
                     });
+
+                    const popupTitle = pedidos.length === 1 
+                        ? `Detalles del Pedido #${pedidos[0].id}` 
+                        : `Ubicación: ${pedidos.length} Pedidos`;
                     
                     marker.bindPopup(`
-                        <div style="min-width: 220px;">
-                            <h4 style="font-weight:bold;margin-bottom:5px;font-size:14px;">${pedidos.length} pedido(s) aquí</h4>
+                        <div style="min-width:250px;max-width:290px;font-family:sans-serif;padding:2px;">
+                            <h3 style="font-weight:900;font-size:14px;color:#0f172a;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">${popupTitle}</h3>
                             ${distanceHtml}
                             ${ordersHtml}
-                            <div style="font-size:11px;text-align:center;color:#666;margin-top:4px;font-style:italic;">Click = seleccionar en tabla</div>
+                            <div style="font-size:10px;text-align:center;color:#94a3b8;margin-top:4px;font-style:italic;">💡 Click en el pin = seleccionar en tabla</div>
                         </div>
                     `);
                     this.markersLayer.addLayer(marker);
@@ -545,18 +662,20 @@ document.addEventListener('alpine:init', () => {
             },
 
             timeAgo(dateStr) {
-                if (!dateStr) return 'Desconocido';
+                if (!dateStr) return '';
                 const date = new Date(dateStr.replace(/-/g, '/'));
                 const now = new Date();
-                const diffSecs = Math.floor((now - date) / 1000);
+                let diffSecs = Math.floor((now - date) / 1000);
                 
-                if (diffSecs < 60) return `${diffSecs} segs`;
+                if (isNaN(diffSecs) || diffSecs <= 0) return 'hace 0s';
+                
+                if (diffSecs < 60) return `hace ${diffSecs}s`;
                 const mins = Math.floor(diffSecs / 60);
-                if (mins < 60) return `${mins} mins`;
+                if (mins < 60) return `hace ${mins}m`;
                 const hours = Math.floor(mins / 60);
-                if (hours < 24) return `${hours} horas`;
+                if (hours < 24) return `hace ${hours}h`;
                 const days = Math.floor(hours / 24);
-                return `${days} días`;
+                return `hace ${days}d`;
             },
 
             updateCounts() {},
