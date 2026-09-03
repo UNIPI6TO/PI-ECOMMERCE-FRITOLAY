@@ -28,8 +28,13 @@ class JwtMiddleware
         }
 
         try {
-            $secret = env('JWT_SECRET', 'secret_key');
-            $decoded = JWT::decode($token, new Key($secret, 'HS256'));
+            $secret = config('jwt.secret');
+            if (empty($secret)) {
+                return response()->json(['error' => 'Server misconfiguration', 'message' => 'JWT secret is missing'], 500);
+            }
+
+            $algorithm = config('jwt.algorithm', 'HS256');
+            $decoded = JWT::decode($token, new Key($secret, $algorithm));
             
             $request->merge([
                 'user_id' => $decoded->sub,

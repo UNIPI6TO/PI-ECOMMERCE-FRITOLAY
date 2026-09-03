@@ -20,7 +20,7 @@ class AuthController extends Controller
         try {
             $email = (string) $request->input('email');
             $password = (string) $request->input('password');
-            $remember = (bool) $request->input('remember', false);
+            $remember = filter_var($request->input('remember', false), FILTER_VALIDATE_BOOLEAN);
 
             $data = $this->authService->login($email, $password, $remember);
             
