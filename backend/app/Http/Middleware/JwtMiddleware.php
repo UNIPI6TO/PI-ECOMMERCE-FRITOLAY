@@ -9,19 +9,26 @@ use Illuminate\Http\Request;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Exception;
+use Illuminate\Support\Facades\Cookie;
 
 class JwtMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
+        // 1. Buscar token en Header Authorization: Bearer <token>
         $token = $request->bearerToken();
 
+        // 2. Fallback: buscar token en Cookie HttpOnly 'jwt_token'
         if (!$token) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            $token = $request->cookie('jwt_token');
+        }
+
+        if (!$token) {
+            return response()->json(['error' => 'Unauthorized', 'message' => 'Sesión no iniciada o no autorizada.'], 401);
         }
 
         try {
-            $secret = env('JWT_SECRET');
+            $secret = env('JWT_SECRET', 'secret_key');
             $decoded = JWT::decode($token, new Key($secret, 'HS256'));
             
             $request->merge([
@@ -29,7 +36,11 @@ class JwtMiddleware
                 'user_rol' => $decoded->rol
             ]);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            $forgetCookie = Cookie::forget('jwt_token');
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'Sesión expirada o token inválido.'
+            ], 401)->withCookie($forgetCookie);
         }
 
         return $next($request);

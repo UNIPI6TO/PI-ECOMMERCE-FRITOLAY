@@ -87,3 +87,17 @@ revert.php
 revert_3.php
 test_state.php
 backend/.phpunit.result.cache
+
+# Sensitive script exclusions
+backend/check_*.php
+backend/fix_*.php
+backend/migrate_*.php
+backend/query_*.php
+backend/test_*.php
+backend/update_*.php
+backend/script_out.js
+fix_direcciones_mapa.php
+
+# Storage generated files and local databases
+backend/storage/app/comprobantes/
+frontend/database/*.sqlite

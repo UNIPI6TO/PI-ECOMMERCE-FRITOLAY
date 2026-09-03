@@ -379,10 +379,14 @@
             }));
         });
         
-        function logout() {
+        async function logout() {
+            try {
+                await window.api('/api/auth/logout', { method: 'POST' });
+            } catch (_) {}
             localStorage.removeItem('jwt_token');
             localStorage.removeItem('role');
             localStorage.removeItem('user_nombre');
+            document.cookie = "jwt_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/auth/login';
         }
 

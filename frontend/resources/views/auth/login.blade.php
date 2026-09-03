@@ -76,7 +76,18 @@
                 </div>
             </div>
 
-            <!-- Botón Submit Sutil y Elegante -->
+            <!-- Opción Recuérdame -->
+            <div class="flex items-center justify-between pt-1">
+                <label class="flex items-center cursor-pointer select-none">
+                    <input type="checkbox" 
+                           x-model="remember" 
+                           class="rounded border-gray-300 text-[#E3001B] focus:ring-[#E3001B] h-4 w-4 cursor-pointer">
+                    <span class="ml-2 text-xs font-semibold text-gray-600">Recuérdame</span>
+                </label>
+                <span class="text-[11px] text-gray-400 italic">Extiende tu sesión de forma segura</span>
+            </div>
+
+            <!-- Botón Submit -->
             <button type="submit" 
                     :disabled="loading" 
                     class="w-full py-2.5 px-4 bg-[#E3001B] hover:bg-red-700 text-white font-bold rounded-xl shadow-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2">
@@ -95,7 +106,6 @@
             </button>
         </form>
 
-
         <!-- Footer del Formulario -->
         <div class="mt-6 text-center">
             <p class="text-xs text-gray-500">
@@ -112,24 +122,10 @@ function loginForm() {
     return {
         email: '',
         password: '',
+        remember: false,
         showPassword: false,
         error: '',
         loading: false,
-
-        setDemo(role) {
-            const demoAccounts = {
-                'admin': { email: 'wilsonivansalinasflores@gmail.com', pass: 'password123' },
-                'operador': { email: 'operador@mail.com', pass: 'password' },
-                'chofer': { email: 'chofer@mail.com', pass: 'password' },
-                'cliente': { email: 'carlos.lopez@email.com', pass: 'password' }
-            };
-            const acc = demoAccounts[role];
-            if (acc) {
-                this.email = acc.email;
-                this.password = acc.pass;
-                this.error = '';
-            }
-        },
 
         async submit() {
             this.loading = true;
@@ -137,7 +133,11 @@ function loginForm() {
             try {
                 const data = await window.api('/api/auth/login', {
                     method: 'POST',
-                    body: JSON.stringify({ email: this.email, password: this.password })
+                    body: JSON.stringify({ 
+                        email: this.email, 
+                        password: this.password,
+                        remember: this.remember
+                    })
                 });
                 localStorage.setItem('jwt_token', data.token);
                 let role = data.user?.rol || data.role || 'cliente';

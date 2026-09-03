@@ -9,6 +9,7 @@ use App\Http\Requests\RecoverPasswordRequest;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 
 class AuthController extends Controller
 {
@@ -17,8 +18,34 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         try {
-            $data = $this->authService->login($request->email, $request->password);
-            return response()->json($data);
+            $email = (string) $request->input('email');
+            $password = (string) $request->input('password');
+            $remember = (bool) $request->input('remember', false);
+
+            $data = $this->authService->login($email, $password, $remember);
+            
+            $ttlMinutes = (int) ceil($data['ttl_seconds'] / 60);
+
+            // Cookie segura HttpOnly + SameSite Strict
+            $cookie = cookie(
+                'jwt_token',
+                $data['token'],
+                $ttlMinutes,
+                '/',
+                null,
+                config('app.env') === 'production', // Secure en producción (HTTPS)
+                true,   // HttpOnly
+                false,  // Raw
+                'Strict' // SameSite
+            );
+
+            return response()->json([
+                'token' => $data['token'],
+                'user' => $data['user'],
+                'expires_in' => $data['ttl_seconds'],
+                'remember' => $remember
+            ])->withCookie($cookie);
+
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 401);
         }
@@ -66,8 +93,26 @@ class AuthController extends Controller
             \Illuminate\Support\Facades\DB::commit();
 
             // Auto-login
-            $data = $this->authService->login($validated['email'], $validated['password']);
-            return response()->json($data, 201);
+            $data = $this->authService->login($validated['email'], $validated['password'], false);
+            $ttlMinutes = (int) ceil($data['ttl_seconds'] / 60);
+
+            $cookie = cookie(
+                'jwt_token',
+                $data['token'],
+                $ttlMinutes,
+                '/',
+                null,
+                config('app.env') === 'production',
+                true,
+                false,
+                'Strict'
+            );
+
+            return response()->json([
+                'token' => $data['token'],
+                'user' => $data['user'],
+                'expires_in' => $data['ttl_seconds']
+            ], 201)->withCookie($cookie);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
             return response()->json(['error' => 'Error al registrar cliente: ' . $e->getMessage()], 500);
@@ -76,7 +121,8 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        return response()->json(['message' => 'Logout exitoso']);
+        $forgetCookie = Cookie::forget('jwt_token');
+        return response()->json(['message' => 'Sesión cerrada exitosamente'])->withCookie($forgetCookie);
     }
 
     public function recover(RecoverPasswordRequest $request): JsonResponse
