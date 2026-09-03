@@ -95,9 +95,8 @@ Route::middleware('jwt')->group(function () {
         // Cancelar pedido
         Route::patch('/{id}/cancelar', [PedidoController::class, 'cancelar']);
 
-        // Comprobante: solo operador/admin
-        Route::get('/{id}/comprobante', [PedidoController::class, 'comprobante'])
-            ->middleware('role:operador,administrador');
+        // Comprobante: cliente (propio) u operador/administrador
+        Route::get('/{id}/comprobante', [PedidoController::class, 'comprobante']);
 
         // Aprobación/Rechazo de pagos (operador/admin)
         Route::get('/pendientes-aprobacion', [PedidoController::class, 'pendientesAprobacion'])

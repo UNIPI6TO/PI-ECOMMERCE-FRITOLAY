@@ -592,29 +592,27 @@ document.addEventListener('alpine:init', () => {
             this.loadingComprobante = true;
 
             try {
-                // Fetch full nested relations (items.producto, cliente, direccion, etc.)
                 const res = await window.api(`/api/pedidos/${pedido.id}`);
-                const fullObj = res.data || res;
+                const fullObj = res?.data || res;
                 if (fullObj && fullObj.id) {
                     this.pedidoSeleccionado = fullObj;
                 }
-
-                const p = this.pedidoSeleccionado;
-                const pagoUpper = (p.metodo_pago || p.pago || '').toUpperCase();
-                
-                if (p.comprobante_path || pagoUpper.includes('DE_UNA') || pagoUpper.includes('DEPOSITO') || pagoUpper.includes('DEPOSIT')) {
-                    try {
-                        const compRes = await window.api(`/api/pedidos/${p.id}/comprobante`);
-                        this.comprobanteUrl = compRes?.data?.url || compRes?.url || null;
-                    } catch (e) {
-                        console.log("Sin comprobante adjunto o error al obtener URL");
-                    }
-                }
             } catch (e) {
-                console.error("Error al cargar detalle del pedido:", e);
-            } finally {
-                this.loadingComprobante = false;
+                console.warn("Utilizando datos en memoria del pedido:", e);
             }
+
+            const p = this.pedidoSeleccionado;
+            const pagoUpper = (p.metodo_pago || p.pago || '').toUpperCase();
+            
+            if (p.comprobante_path || pagoUpper.includes('DE_UNA') || pagoUpper.includes('DEPOSITO') || pagoUpper.includes('DEPOSIT')) {
+                try {
+                    const compRes = await window.api(`/api/pedidos/${p.id}/comprobante`);
+                    this.comprobanteUrl = compRes?.data?.url || compRes?.url || null;
+                } catch (e) {
+                    console.log("Sin comprobante adjunto o error al obtener URL:", e);
+                }
+            }
+            this.loadingComprobante = false;
         },
 
         async cancelarPedido(pedido) {
