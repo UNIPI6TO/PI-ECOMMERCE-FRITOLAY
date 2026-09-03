@@ -10,7 +10,21 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthService
 {
-    public function login(string $email, string $password): array
+    /**
+     * Calcula el TTL (segundos) según el rol y la opción recuérdame.
+     * Regla general: 1 hora (3600s). Excepción Chofer: 24 horas (86400s).
+     */
+    public function calculateTtl(string $rol, bool $remember = false): int
+    {
+        $rolLower = strtolower($rol);
+        if ($rolLower === 'chofer') {
+            return $remember ? (7 * 86400) : 86400; // 7 días si activa recuérdame, 24 horas por defecto
+        }
+
+        return $remember ? 86400 : 3600; // 24 horas si activa recuérdame, 1 hora por defecto
+    }
+
+    public function login(string $email, string $password, bool $remember = false): array
     {
         $user = Usuario::where('email', $email)->where('activo', true)->first();
         if (!$user) {
@@ -26,22 +40,27 @@ class AuthService
             throw new \Exception('Credenciales inválidas');
         }
 
+        $ttlSeconds = $this->calculateTtl($user->rol, $remember);
+        $token = $this->generateJwt($user, $ttlSeconds);
+
         return [
-            'token' => $this->generateJwt($user),
-            'user' => $user
+            'token' => $token,
+            'user' => $user,
+            'ttl_seconds' => $ttlSeconds,
+            'remember' => $remember
         ];
     }
 
-    public function generateJwt(Usuario $user): string
+    public function generateJwt(Usuario $user, int $ttlSeconds = 3600): string
     {
         $payload = [
             'sub' => $user->id,
             'email' => $user->email,
             'rol' => $user->rol,
             'iat' => time(),
-            'exp' => time() + config('jwt.ttl', 3600)
+            'exp' => time() + $ttlSeconds
         ];
-        return JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+        return JWT::encode($payload, env('JWT_SECRET', 'secret_key'), 'HS256');
     }
 
     public function generatePin(int $digits = 6): string
