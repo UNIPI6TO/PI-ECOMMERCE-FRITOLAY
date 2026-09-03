@@ -160,7 +160,8 @@ class PedidoController extends Controller
     public function cancelar(int $id, \Illuminate\Http\Request $request): JsonResponse
     {
         try {
-            $this->pedidoService->cancelarPedido($id, (int) $request->input('user_id'));
+            $motivo = $request->input('motivo') ?: $request->input('motivo_cancelacion');
+            $this->pedidoService->cancelarPedido($id, (int) $request->input('user_id'), $motivo);
             return response()->json(['message' => 'Pedido cancelado correctamente']);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 422);

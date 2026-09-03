@@ -34,18 +34,24 @@ class EntregaService
             }
             
             $tieneDevoluciones = false;
+            $todosDevueltos = true;
             $montoDevuelto = 0;
 
             foreach ($data['items'] as $itemData) {
+                if (($itemData['cantidad_entregada'] ?? 0) > 0) {
+                    $todosDevueltos = false;
+                }
                 if (isset($itemData['cantidad_devuelta']) && $itemData['cantidad_devuelta'] > 0) {
                     $tieneDevoluciones = true;
-                    $item = clone DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
-                    $montoDevuelto += ($itemData['cantidad_devuelta'] * $item->precio_unitario);
+                    $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
+                    if ($item) {
+                        $montoDevuelto += ($itemData['cantidad_devuelta'] * (float)$item->precio_unitario);
+                    }
                 }
             }
 
-            if ($pedido->metodo_pago !== 'efectivo' && $tieneDevoluciones) {
-                throw new Exception('No se permiten devoluciones en pedidos pagados con tarjeta.');
+            if (!$todosDevueltos && strtolower((string)$pedido->metodo_pago) !== 'efectivo' && $tieneDevoluciones) {
+                throw new Exception('No se permiten devoluciones parciales en pedidos pagados con tarjeta o transferencia.');
             }
 
             $asignacion = \App\Models\AsignacionPedidoCamion::with('guiaRuta.guiaRemision')
@@ -53,18 +59,20 @@ class EntregaService
                 ->first();
                 
             if (!$asignacion || !$asignacion->guiaRuta || !$asignacion->guiaRuta->guiaRemision) {
-                throw new Exception("No se encontró la ruta del pedido.");
+                throw new Exception("No se encontró la ruta asignada a este pedido.");
             }
             
             $camionId = $asignacion->guiaRuta->guiaRemision->camion_id;
-
             $todosEntregados = true;
+            $motivoPrincipal = $data['motivo_no_entrega'] ?? ($data['items'][0]['motivo_devolucion'] ?? 'Devolución de pedido');
+
             foreach ($data['items'] as $itemData) {
                 DB::table('items_pedido')
                     ->where('id', $itemData['item_pedido_id'])
                     ->update(['cantidad_entregada' => $itemData['cantidad_entregada']]);
 
                 $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
+                if (!$item) continue;
                 
                 if ($itemData['cantidad_entregada'] < $item->cantidad_solicitada) {
                     $todosEntregados = false;
@@ -75,7 +83,7 @@ class EntregaService
                             'guia_ruta_id' => $asignacion->guia_ruta_id,
                             'producto_id' => $item->producto_id,
                             'cantidad' => $item->cantidad_solicitada - $itemData['cantidad_entregada'],
-                            'motivo' => $itemData['motivo_devolucion'] ?? 'Rechazo',
+                            'motivo' => $itemData['motivo_devolucion'] ?? $motivoPrincipal,
                             'created_at' => now(),
                             'updated_at' => now()
                         ]);
@@ -83,42 +91,67 @@ class EntregaService
                 }
 
                 if ($itemData['cantidad_entregada'] > 0) {
-                    $this->inventarioService->egresoFisicoCamion($camionId, $item->producto_id, $itemData['cantidad_entregada']);
+                    $this->inventarioService->egresoFisicoCamion($camionId, $item->producto_id, (float)$itemData['cantidad_entregada']);
                 }
             }
 
-            $nuevoEstado = $todosEntregados ? 'entregado' : 'entregado_parcialmente';
-            $pedido = $this->pedidoRepository->update($pedido->id, ['estado' => $nuevoEstado]);
-            
-            \Illuminate\Support\Facades\DB::table('asignacion_pedido_camion')
-                ->where('pedido_id', $pedido->id)
-                ->update(['estado' => \App\Models\AsignacionPedidoCamion::ESTADO_ENTREGADO]);
+            if ($todosDevueltos) {
+                $nuevoEstado = 'no_entregado';
+                // Restaurar el inventario reservado en pedidos
+                foreach ($data['items'] as $itemData) {
+                    $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
+                    if ($item) {
+                        $this->inventarioService->decrementarEnPedidos((int)$item->producto_id, (float)$item->cantidad_solicitada);
+                    }
+                }
+            } else {
+                $nuevoEstado = $todosEntregados ? 'entregado' : 'entregado_parcialmente';
+            }
 
-            $numeroFactura = 'FAC-' . date('Y') . '-' . str_pad((string)$pedido->id, 6, '0', STR_PAD_LEFT);
-            $facturaId = DB::table('facturas')->insertGetId([
-                'pedido_id' => $pedido->id,
-                'numero_factura' => $numeroFactura,
-                'subtotal' => $pedido->subtotal,
-                'iva' => $pedido->iva,
-                'total' => $pedido->total,
-                'created_at' => now(),
-                'updated_at' => now()
+            $pedido = $this->pedidoRepository->update($pedido->id, [
+                'estado' => $nuevoEstado,
+                'motivo_cancelacion' => $motivoPrincipal
             ]);
             
-            if ($tieneDevoluciones && $montoDevuelto > 0) {
-                $montoDevueltoConIva = $montoDevuelto * 1.15; // asumiendo 15% iva
-                DB::table('notas_credito')->insert([
-                    'factura_id' => $facturaId,
-                    'numero_nota' => 'NC-' . date('Y') . '-' . str_pad((string)$facturaId, 6, '0', STR_PAD_LEFT),
-                    'fecha_emision' => now()->toDateString(),
-                    'valor_total' => $montoDevueltoConIva,
-                    'motivo' => 'Devolución parcial en entrega - ' . ($data['items'][0]['motivo_devolucion'] ?? 'Rechazo parcial'),
+            $estadoAsig = $todosDevueltos ? \App\Models\AsignacionPedidoCamion::ESTADO_NO_ENTREGADO : \App\Models\AsignacionPedidoCamion::ESTADO_ENTREGADO;
+            \Illuminate\Support\Facades\DB::table('asignacion_pedido_camion')
+                ->where('pedido_id', $pedido->id)
+                ->update(['estado' => $estadoAsig]);
+
+            $factura = DB::table('facturas')->where('pedido_id', $pedido->id)->first();
+            if (!$factura) {
+                $numeroFactura = 'FAC-' . date('Y') . '-' . str_pad((string)$pedido->id, 6, '0', STR_PAD_LEFT);
+                $facturaId = DB::table('facturas')->insertGetId([
+                    'pedido_id' => $pedido->id,
+                    'numero_factura' => $numeroFactura,
+                    'subtotal' => $pedido->subtotal,
+                    'iva' => $pedido->iva,
+                    'total' => $pedido->total,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
+            } else {
+                $facturaId = $factura->id;
+                $numeroFactura = $factura->numero_factura;
+            }
+            
+            if ($tieneDevoluciones || $todosDevueltos) {
+                $valorNota = $todosDevueltos ? $pedido->total : ($montoDevuelto * 1.15);
+                $existente = DB::table('notas_credito')->where('factura_id', $facturaId)->first();
+                if (!$existente) {
+                    DB::table('notas_credito')->insert([
+                        'factura_id' => $facturaId,
+                        'numero_nota' => 'NC-' . date('Y') . '-' . str_pad((string)$facturaId, 6, '0', STR_PAD_LEFT),
+                        'fecha_emision' => now()->toDateString(),
+                        'valor_total' => $valorNota,
+                        'motivo' => 'Devolución en entrega - ' . $motivoPrincipal,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
             }
 
-            $this->auditoriaService->logSimple('entrega_registrada', 'Entrega de pedido ' . $pedido->id, $choferId);
+            $this->auditoriaService->logSimple('entrega_registrada', 'Entrega/Devolución de pedido ' . $pedido->id, $choferId);
 
             return [
                 'pedido' => $pedido,
@@ -210,11 +243,18 @@ class EntregaService
                 'total' => $p->total,
                 'metodo_pago' => $p->metodo_pago,
                 'items' => $p->items->map(function($item) {
+                    $cant = (int) ($item->cantidad_solicitada ?? $item->cantidad ?? 0);
+                    $precio = (float) ($item->precio_unitario ?? 0);
+                    $subtotal = $cant * $precio;
                     return [
+                        'id' => $item->id,
+                        'item_pedido_id' => $item->id,
+                        'producto_id' => $item->producto_id,
                         'producto' => $item->producto->nombre ?? 'Producto',
-                        'cantidad' => $item->cantidad,
-                        'precio_unitario' => $item->precio_unitario,
-                        'subtotal' => $item->subtotal
+                        'cantidad' => $cant,
+                        'cantidad_solicitada' => $cant,
+                        'precio_unitario' => $precio,
+                        'subtotal' => $subtotal
                     ];
                 })->toArray()
             ];

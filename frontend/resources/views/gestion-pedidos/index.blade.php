@@ -9,30 +9,30 @@
         </div>
         
         <!-- Filtro de Rango de Fechas (Persistente en Sesión, Defecto 1 Semana, Máx. 1 Mes) -->
-        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2 text-sm text-gray-700">
-                <label class="font-semibold text-gray-600">Fecha Inicial:</label>
+        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Desde:</span>
                 <input type="date" 
                        x-model="fechaInicio" 
                        @change="onFechaInicioChange()" 
-                       class="border border-gray-300 rounded px-2.5 py-1 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs">
             </div>
-            
-            <div class="flex items-center gap-2 text-sm text-gray-700">
-                <label class="font-semibold text-gray-600">Fecha Final:</label>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Hasta:</span>
                 <input type="date" 
                        x-model="fechaFin" 
                        :min="fechaInicio"
                        :max="maxFechaFin" 
                        @change="onFechaFinChange()" 
-                       class="border border-gray-300 rounded px-2.5 py-1 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs">
             </div>
 
-            <button @click="resetFechasSemana()" 
-                    class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded transition-colors"
-                    title="Restablecer a 1 semana atrás">
-                Última Semana
-            </button>
+            <!-- Presets -->
+            <div class="flex items-center bg-gray-100 p-1 rounded-lg text-xs font-semibold">
+                <button @click="presetPeriodo('MES')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('MES') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Último Mes</button>
+                <button @click="presetPeriodo('SEMANA')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('SEMANA') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Última Semana</button>
+                <button @click="presetPeriodo('HOY')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('HOY') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Hoy</button>
+            </div>
         </div>
     </div>
 
@@ -79,15 +79,15 @@
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Auto Aprobar Efectivo/TC/Débito
             </button>
-            <div class="flex items-center space-x-2 text-sm border-l pl-4">
-                <span class="text-gray-600">Mostrar:</span>
-                <select x-model="perPage" @change="currentPage = 1" class="border-gray-300 rounded-md text-sm py-1 pl-2 pr-8 focus:ring-primary focus:border-primary border">
-                    <option :value="5">5</option>
-                    <option :value="10">10</option>
-                    <option :value="20">20</option>
-                    <option :value="50">50</option>
+            <div class="flex items-center gap-2 border-l pl-3 border-gray-200">
+                <span class="text-xs font-semibold text-gray-500 hidden sm:inline">Mostrar:</span>
+                <select x-model.number="perPage" @change="currentPage = 1" class="border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm font-medium focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs bg-white cursor-pointer">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
                 </select>
-                <span class="text-gray-600">registros</span>
+                <span class="text-xs font-semibold text-gray-500 hidden sm:inline">registros</span>
             </div>
         </div>
     </div>
@@ -130,15 +130,27 @@
             </tbody>
         </table>
         
-        <!-- Paginador -->
-        <div class="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
-            <div class="text-sm text-gray-500">
-                Mostrando pág <span class="font-medium text-gray-800" x-text="currentPage"></span> de <span class="font-medium text-gray-800" x-text="totalPages"></span> 
-                (<span x-text="filteredPedidos.length"></span> registros totales)
+        <!-- Pagination Controls Footer Bar -->
+        <div x-show="!loading && filteredPedidos.length > 0" class="bg-gray-50/80 border-t border-gray-200 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-xs font-semibold text-gray-600">
+                Mostrando <span class="font-extrabold text-gray-900" x-text="startRecord"></span> a <span class="font-extrabold text-gray-900" x-text="endRecord"></span> de <span class="font-extrabold text-gray-900" x-text="filteredPedidos.length"></span> pedidos
             </div>
-            <div class="flex space-x-2">
-                <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
-                <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Siguiente</button>
+
+            <!-- Page Buttons -->
+            <div class="flex items-center gap-1">
+                <button @click="prevPage()" :disabled="currentPage === 1" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-gray-100 text-gray-700 border-gray-300">
+                    Anterior
+                </button>
+
+                <template x-for="p in totalPages" :key="p">
+                    <button @click="goToPage(p)" class="w-8 h-8 rounded-lg text-xs font-extrabold transition-all"
+                            :class="currentPage === p ? 'bg-slate-900 text-white shadow-xs' : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'"
+                            x-text="p"></button>
+                </template>
+
+                <button @click="nextPage()" :disabled="currentPage === totalPages" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-gray-100 text-gray-700 border-gray-300">
+                    Siguiente
+                </button>
             </div>
         </div>
     </div>
@@ -382,6 +394,45 @@ document.addEventListener('alpine:init', () => {
                 this.fechaFin = todayStr;
                 this.validarRangoFechas();
                 this.cargarDatos();
+            },
+
+            presetPeriodo(tipo) {
+                const hoyObj = new Date();
+                const hoyStrVal = getFormattedDate(hoyObj);
+                this.fechaFin = hoyStrVal;
+
+                if (tipo === 'MES') {
+                    const haceUnMes = new Date();
+                    haceUnMes.setMonth(hoyObj.getMonth() - 1);
+                    this.fechaInicio = getFormattedDate(haceUnMes);
+                } else if (tipo === 'SEMANA') {
+                    const haceUnaSemana = new Date();
+                    haceUnaSemana.setDate(hoyObj.getDate() - 7);
+                    this.fechaInicio = getFormattedDate(haceUnaSemana);
+                } else if (tipo === 'HOY') {
+                    this.fechaInicio = hoyStrVal;
+                }
+                this.validarRangoFechas();
+                this.cargarDatos();
+            },
+
+            esPeriodo(tipo) {
+                const hoyObj = new Date();
+                const hoyStrVal = getFormattedDate(hoyObj);
+                if (this.fechaFin !== hoyStrVal) return false;
+
+                if (tipo === 'HOY') return this.fechaInicio === hoyStrVal;
+                if (tipo === 'SEMANA') {
+                    const haceUnaSemana = new Date();
+                    haceUnaSemana.setDate(hoyObj.getDate() - 7);
+                    return this.fechaInicio === getFormattedDate(haceUnaSemana);
+                }
+                if (tipo === 'MES') {
+                    const haceUnMes = new Date();
+                    haceUnMes.setMonth(hoyObj.getMonth() - 1);
+                    return this.fechaInicio === getFormattedDate(haceUnMes);
+                }
+                return false;
             },
 
             async cargarDatos() {
@@ -661,6 +712,19 @@ document.addEventListener('alpine:init', () => {
         get paginatedPedidos() {
             const start = (this.currentPage - 1) * this.perPage;
             return this.filteredPedidos.slice(start, start + this.perPage);
+        },
+
+        get startRecord() {
+            if (this.filteredPedidos.length === 0) return 0;
+            return (this.currentPage - 1) * this.perPage + 1;
+        },
+
+        get endRecord() {
+            return Math.min(this.currentPage * this.perPage, this.filteredPedidos.length);
+        },
+
+        goToPage(p) {
+            if (p >= 1 && p <= this.totalPages) this.currentPage = p;
         },
 
         sort(col) {

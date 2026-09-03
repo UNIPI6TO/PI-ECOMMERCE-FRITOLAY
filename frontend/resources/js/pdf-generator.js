@@ -185,6 +185,125 @@ export const generateFactura = async (facturaData) => {
     doc.save(`factura_${numSRI}.pdf`);
 };
 
+export const generateNotaCredito = async (notaData) => {
+    const empresa = await getEmpresaConfig();
+    const [r, g, b] = hexToRgb(empresa.color_primario || '#E3001B');
+    const doc = new jsPDF();
+
+    // ── Header Banner ─────────────────────────────────────────────────────────
+    doc.setFillColor(r, g, b);
+    doc.rect(0, 0, 210, 38, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text(empresa.nombre_comercial || empresa.razon_social, 14, 18);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(empresa.razon_social, 14, 25);
+    doc.text(`RUC: ${empresa.ruc}`, 14, 31);
+    doc.text(`Contribuyente ${empresa.tipo_contribuyente}`, 14, 36);
+
+    // ── Cuadro SRI (derecha) ──────────────────────────────────────────────────
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(118, 5, 87, 30, 2, 2, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.roundedRect(118, 5, 87, 30, 2, 2, 'S');
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    const numSRI = notaData.numeroNota || `NC-${notaData.id || '001'}`;
+    doc.setFont("helvetica", "bold");
+    doc.text("NOTA DE CRÉDITO", 120, 12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`No. ${numSRI}`, 120, 18);
+    doc.text(`Ambiente: ${empresa.tipo_ambiente === '1' ? 'PRUEBAS' : 'PRODUCCIÓN'}`, 120, 24);
+    doc.text(`Emisión: ${empresa.tipo_emision === '1' ? 'NORMAL' : 'IND. ELEC.'}`, 120, 30);
+
+    // ── Datos Empresa ─────────────────────────────────────────────────────────
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Dir. Matriz: ${empresa.direccion_matriz}`, 14, 44);
+    if (empresa.direccion_sucursal) {
+        doc.text(`Dir. Sucursal: ${empresa.direccion_sucursal}`, 14, 49);
+    }
+    doc.text(`Obligado a llevar contabilidad: ${empresa.obligado_contabilidad ? 'SÍ' : 'NO'}`, 14, 54);
+
+    // ── Datos del Cliente & Comprobante Modificado ─────────────────────────────
+    doc.setDrawColor(180, 180, 180);
+    doc.roundedRect(14, 58, 183, 34, 2, 2, 'S');
+    doc.setFontSize(8.5);
+
+    doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
+    doc.text("Razón Social / Nombres:", 17, 64);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(notaData.clienteNombre || 'Consumidor Final').substring(0, 55), 68, 64);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Identificación (RUC/C.I.):", 17, 70);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(notaData.clienteRuc || '9999999999999'), 65, 70);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Fecha Emisión:", 130, 70);
+    doc.setFont("helvetica", "normal");
+    doc.text(notaData.fecha || new Date().toLocaleDateString('es-EC'), 162, 70);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Comprobante Modificado:", 17, 76);
+    doc.setFont("helvetica", "normal");
+    doc.text(`FACTURA ${notaData.facturaNumero || ''}`, 68, 76);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Motivo de Modificación:", 17, 82);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(notaData.motivo || 'Devolución Total').substring(0, 60), 68, 82);
+
+    // ── Tabla Detalles ────────────────────────────────────────────────────────
+    const tableColumn = ["#", "Cantidad", "Descripción", "P. Unit.", "Descuento", "Total"];
+    const tableRows = (notaData.items || []).map((item, index) => [
+        `${index + 1}`,
+        item.cantidad,
+        item.nombre,
+        `$${Number(item.precioUnitario).toFixed(2)}`,
+        `$0.00`,
+        `$${(item.cantidad * item.precioUnitario).toFixed(2)}`
+    ]);
+
+    doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 96,
+        headStyles: { fillColor: [r, g, b], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 8 },
+        columnStyles: { 2: { cellWidth: 60 } }
+    });
+
+    const finalY = doc.lastAutoTable.finalY || 96;
+
+    // ── Totales ───────────────────────────────────────────────────────────────
+    const xL = 130; const xR = 195;
+    let cy = finalY + 14;
+    const row = (label, value) => {
+        doc.setFont("helvetica", "bold"); doc.text(label, xL, cy);
+        doc.setFont("helvetica", "normal"); doc.text(`$${Number(value).toFixed(2)}`, xR, cy, { align: 'right' });
+        cy += 6;
+    };
+    row("SUBTOTAL MODIFICADO:", notaData.subtotal);
+    row("DESCUENTO:", notaData.descuento || 0);
+    row("IVA 15%:", notaData.iva);
+
+    doc.setFontSize(10); doc.setFont("helvetica", "bold");
+    doc.text("VALOR MODIFICADO:", xL, cy);
+    doc.text(`$${Number(notaData.total).toFixed(2)}`, xR, cy, { align: 'right' });
+
+    // ── Footer ────────────────────────────────────────────────────────────────
+    doc.setFontSize(7); doc.setFont("helvetica", "italic"); doc.setTextColor(120, 120, 120);
+    doc.text(`Documento generado el ${new Date().toLocaleString('es-EC')} — Ambiente: ${empresa.tipo_ambiente === '1' ? 'PRUEBAS' : 'PRODUCCIÓN'}`, 14, 285);
+
+    doc.save(`nota_credito_${numSRI}.pdf`);
+};
+
 export const generateGuiaRemision = async (guiaData) => {
     const empresa = await getEmpresaConfig();
     const [r, g, b] = hexToRgb(empresa.color_primario || '#E3001B');
