@@ -220,7 +220,7 @@
         </div>
     </div>
 
-    <!-- Modal Detalle Completo de Pedido del Cliente -->
+    <!-- Modal Detalle Completo de Pedido del Cliente con Comprobante GCS -->
     <div x-show="pedidoSeleccionado" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" style="display: none;">
         <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative border border-gray-100" @click.away="pedidoSeleccionado = null">
             
@@ -282,6 +282,70 @@
                     </template>
                 </div>
             </div>
+
+            <!-- Sección de Comprobante de Pago (DE_UNA / Depósito) -->
+            <template x-if="pedidoSeleccionado?.metodo_pago === 'de_una' || pedidoSeleccionado?.metodo_pago === 'deposito' || pedidoSeleccionado?.comprobante_path">
+                <div class="mb-6 bg-amber-50/40 p-4.5 rounded-2xl border border-amber-100 shadow-2xs">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-extrabold text-xs uppercase tracking-wider text-amber-900 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Comprobante de Pago Adjunto (DE_UNA / Depósito)
+                        </h4>
+                        <template x-if="comprobanteUrl">
+                            <a :href="comprobanteUrl" target="_blank" class="text-[11px] font-bold text-slate-700 hover:text-slate-900 underline flex items-center gap-1">
+                                <span>Abrir en nueva pestaña ↗</span>
+                            </a>
+                        </template>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div x-show="loadingComprobante" class="py-6 text-center text-gray-500">
+                        <div class="inline-flex items-center gap-2 text-xs font-semibold">
+                            <svg class="animate-spin h-4 w-4 text-slate-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Cargando imagen/PDF del comprobante...</span>
+                        </div>
+                    </div>
+
+                    <!-- Sin comprobante -->
+                    <div x-show="!loadingComprobante && !comprobanteUrl" class="text-xs text-gray-400 italic text-center py-3">
+                        No hay comprobante cargado en el servidor para este pedido.
+                    </div>
+
+                    <!-- Previsualización / Descarga -->
+                    <template x-if="!loadingComprobante && comprobanteUrl">
+                        <div class="mt-2 text-center">
+                            <!-- Si es PDF -->
+                            <template x-if="comprobanteUrl.split('?')[0].toLowerCase().endsWith('.pdf')">
+                                <div class="p-4 bg-white rounded-xl border border-amber-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3">
+                                        <span class="p-2.5 bg-red-50 text-red-600 rounded-xl text-xl font-bold">📄</span>
+                                        <div class="text-left">
+                                            <div class="text-xs font-extrabold text-gray-900">Comprobante de Pago (PDF)</div>
+                                            <div class="text-[10px] text-gray-400 font-medium">Documento adjunto en checkout</div>
+                                        </div>
+                                    </div>
+                                    <a :href="comprobanteUrl" target="_blank" download class="w-full sm:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5">
+                                        <span>Ver / Descargar PDF</span>
+                                    </a>
+                                </div>
+                            </template>
+
+                            <!-- Si es Imagen -->
+                            <template x-if="!comprobanteUrl.split('?')[0].toLowerCase().endsWith('.pdf')">
+                                <div class="space-y-2">
+                                    <a :href="comprobanteUrl" target="_blank" title="Haz clic para ver imagen en tamaño completo">
+                                        <img :src="comprobanteUrl" class="max-h-60 object-contain rounded-xl border border-gray-200 shadow-2xs mx-auto hover:opacity-90 transition-all cursor-pointer bg-white p-1" />
+                                    </a>
+                                    <p class="text-[10px] font-semibold text-gray-500">💡 Haz clic en la imagen para abrirla en pantalla completa o descargarla.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
 
             <!-- Tabla de Ítems Solicitados -->
             <div class="mb-6">
@@ -355,13 +419,22 @@
             </div>
             
             <!-- Acciones -->
-            <div class="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
-                <button @click="verPdf(pedidoSeleccionado)" class="bg-white hover:bg-red-50 text-slate-800 hover:text-red-700 border border-gray-200 px-4 py-2 rounded-xl text-xs font-extrabold transition-all shadow-2xs">
-                    📄 Descargar Factura
-                </button>
-                <button @click="pedidoSeleccionado = null" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer">
-                    Cerrar
-                </button>
+            <div class="flex items-center justify-between flex-wrap gap-2.5 pt-4 border-t border-gray-100">
+                <div>
+                    <template x-if="comprobanteUrl">
+                        <a :href="comprobanteUrl" target="_blank" class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-4 py-2 rounded-xl text-xs font-extrabold transition-all shadow-2xs flex items-center gap-1.5">
+                            🖼️ Ver Comprobante
+                        </a>
+                    </template>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <button @click="verPdf(pedidoSeleccionado)" class="bg-white hover:bg-red-50 text-slate-800 hover:text-red-700 border border-gray-200 px-4 py-2 rounded-xl text-xs font-extrabold transition-all shadow-2xs">
+                        📄 Descargar Factura
+                    </button>
+                    <button @click="pedidoSeleccionado = null" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer">
+                        Cerrar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -376,6 +449,8 @@ document.addEventListener('alpine:init', () => {
         pedidosOriginales: [],
         pedidosFiltrados: [],
         pedidoSeleccionado: null,
+        comprobanteUrl: null,
+        loadingComprobante: false,
         perPage: 10,
         currentPage: 1,
         loading: false,
@@ -528,8 +603,22 @@ document.addEventListener('alpine:init', () => {
             if (p >= 1 && p <= this.totalPages) this.currentPage = p;
         },
 
-        verDetalle(pedido) {
+        async verDetalle(pedido) {
             this.pedidoSeleccionado = pedido;
+            this.comprobanteUrl = null;
+            this.loadingComprobante = false;
+
+            if (pedido.comprobante_path || (pedido.metodo_pago && ['de_una', 'deposito'].includes(pedido.metodo_pago))) {
+                this.loadingComprobante = true;
+                try {
+                    const compRes = await window.api(`/api/pedidos/${pedido.id}/comprobante`);
+                    this.comprobanteUrl = compRes?.data?.url || compRes?.url || null;
+                } catch (e) {
+                    console.warn("Sin comprobante público o no disponible:", e);
+                } finally {
+                    this.loadingComprobante = false;
+                }
+            }
         },
 
         async cancelarPedido(pedido) {
