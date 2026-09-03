@@ -18,10 +18,10 @@ class AuthService
     {
         $rolLower = strtolower($rol);
         if ($rolLower === 'chofer') {
-            return $remember ? (7 * 86400) : 86400; // 7 días si activa recuérdame, 24 horas por defecto
+            return $remember ? (7 * 86400) : 86400; // 7 días con recuérdame, 24 horas por defecto
         }
 
-        return $remember ? 86400 : 3600; // 24 horas si activa recuérdame, 1 hora por defecto
+        return $remember ? 86400 : 3600; // 24 horas con recuérdame, 1 hora por defecto
     }
 
     public function login(string $email, string $password, bool $remember = false): array
@@ -53,6 +53,13 @@ class AuthService
 
     public function generateJwt(Usuario $user, int $ttlSeconds = 3600): string
     {
+        $secret = config('jwt.secret');
+        if (empty($secret)) {
+            throw new \RuntimeException('JWT secret is not configured in config/jwt.php');
+        }
+
+        $algorithm = config('jwt.algorithm', 'HS256');
+
         $payload = [
             'sub' => $user->id,
             'email' => $user->email,
@@ -60,7 +67,8 @@ class AuthService
             'iat' => time(),
             'exp' => time() + $ttlSeconds
         ];
-        return JWT::encode($payload, env('JWT_SECRET', 'secret_key'), 'HS256');
+
+        return JWT::encode($payload, $secret, $algorithm);
     }
 
     public function generatePin(int $digits = 6): string

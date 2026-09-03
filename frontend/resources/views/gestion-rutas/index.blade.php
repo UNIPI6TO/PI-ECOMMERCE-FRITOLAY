@@ -1,230 +1,249 @@
 @extends('layouts.app')
 
+@section('title', 'Asignación de Rutas - Fritolay')
+
 @section('content')
-<div class="max-w-7xl mx-auto py-8 px-4" x-data="gestionRutas()">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6" x-data="gestionRutas()">
+    <!-- Header Principal -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-primary">Asignación de Rutas</h1>
-            <p class="text-sm text-gray-500 mt-0.5">Gestión de itinerarios, camiones y mapas geolocalizados</p>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full bg-red-50 text-[#E3001B] border border-red-100 font-extrabold text-[10px] uppercase tracking-wider">
+                    Logística & Despacho
+                </span>
+            </div>
+            <h1 class="text-2xl font-black text-gray-900 tracking-tight">Asignación de Rutas</h1>
+            <p class="text-xs font-semibold text-gray-500 mt-0.5">Gestión de itinerarios de despacho, vehícular y geolocalización de entregas.</p>
         </div>
         
-        <!-- Filtro de Rango de Fechas (Persistente en Sesión, Defecto 1 Semana, Máx. 1 Mes) -->
-        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Desde:</span>
+        <!-- Filtro de Rango de Fechas -->
+        <div class="bg-white p-3 rounded-2xl border border-gray-100 shadow-xs flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            <div class="flex items-center gap-2 text-xs">
+                <span class="font-extrabold uppercase tracking-wider text-gray-400">Desde:</span>
                 <input type="date" 
                        x-model="fechaInicio" 
                        @change="onFechaInicioChange()" 
-                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs">
+                       class="border border-gray-200 rounded-xl px-2.5 py-1.5 font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 outline-none bg-gray-50/50">
             </div>
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Hasta:</span>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="font-extrabold uppercase tracking-wider text-gray-400">Hasta:</span>
                 <input type="date" 
                        x-model="fechaFin" 
                        :min="fechaInicio"
                        :max="maxFechaFin" 
                        @change="onFechaFinChange()" 
-                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs">
+                       class="border border-gray-200 rounded-xl px-2.5 py-1.5 font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 outline-none bg-gray-50/50">
             </div>
 
             <!-- Presets -->
-            <div class="flex items-center bg-gray-100 p-1 rounded-lg text-xs font-semibold">
-                <button @click="presetPeriodo('MES')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('MES') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Último Mes</button>
-                <button @click="presetPeriodo('SEMANA')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('SEMANA') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Última Semana</button>
-                <button @click="presetPeriodo('HOY')" class="px-3 py-1.5 rounded-md transition-all" :class="esPeriodo('HOY') ? 'bg-white text-gray-900 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'">Hoy</button>
+            <div class="flex items-center bg-gray-100/80 p-1 rounded-xl text-xs font-bold">
+                <button @click="presetPeriodo('MES')" class="px-3 py-1 rounded-lg transition-all" :class="esPeriodo('MES') ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-900'">Último Mes</button>
+                <button @click="presetPeriodo('SEMANA')" class="px-3 py-1 rounded-lg transition-all" :class="esPeriodo('SEMANA') ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-900'">Semana</button>
+                <button @click="presetPeriodo('HOY')" class="px-3 py-1 rounded-lg transition-all" :class="esPeriodo('HOY') ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-900'">Hoy</button>
             </div>
         </div>
     </div>
 
-    <!-- Indicador de Carga (Spinner) -->
-    <div x-show="loading" class="flex flex-col items-center justify-center py-24 bg-white rounded-xl shadow-sm border border-gray-100 my-4">
-        <svg class="animate-spin h-12 w-12 text-[#E3001B] mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <!-- Indicador de Carga -->
+    <div x-show="loading" class="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-xs border border-gray-100 my-4">
+        <svg class="animate-spin h-10 w-10 text-slate-800 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
         </svg>
-        <span class="text-base font-semibold text-gray-700">Cargando rutas y pedidos...</span>
-        <span class="text-xs text-gray-400 mt-1">Por favor espera un momento</span>
+        <span class="text-sm font-semibold text-gray-700">Cargando rutas y pedidos...</span>
     </div>
 
     <!-- Contenido de Asignación de Rutas -->
     <div x-show="!loading" x-transition.opacity>
 
-    <!-- Mapa -->
-    <div class="bg-white p-4 rounded shadow mb-8">
-        <h2 class="font-semibold mb-4">Vista Geográfica</h2>
-        <div id="mapa-gestion" style="height: 400px;" class="rounded border z-0"></div>
-        
-        <!-- Leyenda de Mapa -->
-        <div class="mt-4 p-3 border-t border-gray-200 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-700">
-            <div class="flex items-center gap-2">
-                <div class="w-4 h-4 rounded-full bg-blue-500 shadow-sm border border-blue-700"></div>
-                <span class="font-medium">Libre / Sin asignar</span>
+        <!-- Mapa de Vista Geográfica -->
+        <div class="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                    Mapa de Rutas y Distribución
+                </h2>
+                <span class="text-xs font-semibold text-gray-400">Leyenda de color por estado de asignación</span>
             </div>
-            <div class="flex items-center gap-2">
-                <div class="w-4 h-4 rounded-full bg-green-600 shadow-sm border border-green-800"></div>
-                <span class="font-medium">Asignado a Ruta</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="w-4 h-4 rounded-full bg-red-600 shadow-sm border border-red-800"></div>
-                <span class="font-medium">Seleccionado</span>
+            <div id="mapa-gestion" style="height: 380px;" class="rounded-xl border border-gray-100 overflow-hidden z-0 shadow-inner"></div>
+            
+            <!-- Leyenda de Mapa -->
+            <div class="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-center gap-6 text-xs text-gray-600 font-semibold">
+                <div class="flex items-center gap-2">
+                    <div class="w-3.5 h-3.5 rounded-full bg-blue-500 shadow-2xs border border-blue-600"></div>
+                    <span>Libre / Sin asignar</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3.5 h-3.5 rounded-full bg-emerald-600 shadow-2xs border border-emerald-700"></div>
+                    <span>Asignado a Ruta</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3.5 h-3.5 rounded-full bg-rose-600 shadow-2xs border border-rose-700"></div>
+                    <span>Seleccionado</span>
+                </div>
             </div>
         </div>
-    </div>
 
-    
-    <!-- Barra de Acciones de Selección -->
-    <div class="mb-4 flex flex-wrap gap-3 items-center bg-gray-50 p-4 rounded-lg shadow border border-gray-200">
-
-        <!-- Botón Asignar Ruta: siempre visible, deshabilitado si no aplica -->
-        <button
-            @click="abrirAsignacionMultiple()"
-            :disabled="!isSelectionFree"
-            :class="isSelectionFree
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow cursor-pointer'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
-            class="px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5l-4-4h-0.05z" /></svg>
-            Asignar Ruta
-        </button>
-
-        <!-- Quitar Asignación: solo si hay pedidos asignados seleccionados -->
-        <button
-            x-show="isSelectionAssigned"
-            @click="confirmarQuitarAsignacionRapida(selectedIds)"
-            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow text-sm font-bold transition-colors">
-            Quitar Asignación
-        </button>
-
-        <!-- Cerrar Ruta: siempre visible por cada camión en ruta -->
-        <template x-for="truck in activeRoutes" :key="truck.id">
-            <button @click="cerrarRuta(truck.id, truck.placa)"
-                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow text-sm font-bold transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                Cerrar Ruta <span x-text="truck.placa"></span>
+        <!-- Barra de Acciones de Selección -->
+        <div class="mb-6 flex flex-wrap gap-3 items-center bg-white p-4 rounded-2xl shadow-xs border border-gray-100">
+            <!-- Botón Asignar Ruta -->
+            <button @click="abrirAsignacionMultiple()"
+                    :disabled="!isSelectionFree"
+                    :class="isSelectionFree
+                        ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs cursor-pointer'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'"
+                    class="px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2">
+                <svg class="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5l-4-4h-0.05z" /></svg>
+                <span>Asignar Ruta</span>
             </button>
-        </template>
 
-        <!-- Contador de selección -->
-        <div class="ml-auto text-sm text-gray-600 font-medium flex items-center gap-2">
-            <template x-if="selectedIds.length > 0">
-                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold">
-                    <span x-text="selectedIds.length"></span> seleccionado(s)
-                </span>
+            <!-- Quitar Asignación -->
+            <button x-show="isSelectionAssigned"
+                    @click="confirmarQuitarAsignacionRapida(selectedIds)"
+                    class="bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all cursor-pointer">
+                Quitar Asignación
+            </button>
+
+            <!-- Cerrar Ruta por camion -->
+            <template x-for="truck in activeRoutes" :key="truck.id">
+                <button @click="cerrarRuta(truck.id, truck.placa)"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-2xs text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer">
+                    <svg class="h-4 w-4 text-emerald-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                    <span>Cerrar Ruta <strong x-text="truck.placa"></strong></span>
+                </button>
             </template>
-            <template x-if="selectedIds.length === 0">
-                <span class="text-gray-400 italic">Selecciona pedidos de la tabla para asignar</span>
-            </template>
+
+            <!-- Contador de selección -->
+            <div class="ml-auto text-xs text-gray-500 font-semibold flex items-center gap-2">
+                <template x-if="selectedIds.length > 0">
+                    <span class="bg-slate-100 text-slate-900 border border-slate-200 px-3 py-1.5 rounded-xl font-extrabold">
+                        <span x-text="selectedIds.length"></span> seleccionado(s)
+                    </span>
+                </template>
+                <template x-if="selectedIds.length === 0">
+                    <span class="text-gray-400 italic">Selecciona pedidos de la tabla para asignar</span>
+                </template>
+            </div>
         </div>
-    </div>
 
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="font-semibold text-lg">Listado de Pedidos</h2>
-        <div class="flex items-center space-x-4">
-            <div class="flex items-center gap-2 border-l pl-3 border-gray-200">
-                <span class="text-xs font-semibold text-gray-500 hidden sm:inline">Mostrar:</span>
-                <select x-model.number="perPage" @change="currentPage = 1" class="border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm font-medium focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs bg-white cursor-pointer">
+        <!-- Encabezado de la Tabla -->
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-extrabold text-lg text-gray-900">Listado de Pedidos</h2>
+            <div class="flex items-center gap-2 text-xs font-semibold text-gray-500">
+                <span>Mostrar:</span>
+                <select x-model.number="perPage" @change="currentPage = 1" class="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-800 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-slate-800 outline-none cursor-pointer">
                     <option value="10">10</option>
                     <option value="20">20</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                 </select>
-                <span class="text-xs font-semibold text-gray-500 hidden sm:inline">registros</span>
             </div>
         </div>
-    </div>
-    <div class="bg-white rounded shadow overflow-x-auto">
-        <table class="w-full text-left">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="p-3 w-10 text-center"><input type="checkbox" x-model="allSelected" @change="toggleAll(); renderMarkers();" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"></th>
-                    <th class="p-3 cursor-pointer hover:bg-gray-200" @click="sort('id')">ID ⇕</th>
-                    <th class="p-3 cursor-pointer hover:bg-gray-200" @click="sort('cliente')">Nombre Comercial ⇕</th>
-                    <th class="p-3 cursor-pointer hover:bg-gray-200" @click="sort('distancia')">Distancia ⇕</th>
-                    <th class="p-3">Total</th>
-                    <th class="p-3">Ubicación</th>
-                    <th class="p-3 cursor-pointer hover:bg-gray-200" @click="sort('raw_fecha')">Tiempo Transcurrido ⇕</th>
-                    <th class="p-3">Ruta/Camión</th>
-                </tr>
-            </thead>
-            <tbody>
-                <template x-if="paginatedPedidos.length === 0">
-                    <tr><td colspan="8" class="p-4 text-center text-gray-500">No hay pedidos para mostrar</td></tr>
-                </template>
-                <template x-for="p in paginatedPedidos" :key="p.id">
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3 text-center"><input type="checkbox" :value="p.id" x-model="selectedIds" @change="renderMarkers()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"></td>
-                        <td class="p-3" x-text="p.id"></td>
-                        <td class="p-3 font-semibold text-gray-800" x-text="p.cliente"></td>
-                        <td class="p-3 text-sm font-medium text-blue-600" x-text="(p.distancia && p.distancia !== 999999) ? p.distancia + ' km' : '-'"></td>
-                        <td class="p-3 font-medium" x-text="`$${Number(p.total).toFixed(2)}`"></td>
-                        <td class="p-3 cursor-help text-sm" x-init="fetchLocation(p)" :title="p.locationFull || 'Cargando...'" x-text="p.locationDisplay || 'Cargando...'"></td>
-                        <td class="p-3 text-sm text-gray-500" x-text="timeAgo(p.fecha)"></td>
-                        <td class="p-3">
-                                <template x-if="p.camion_id">
-                                    <div class="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm border border-green-200 cursor-pointer hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors" @click="confirmarQuitarAsignacionRapida([p.id])" title="Clic para quitar asignación">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                                        🚚 <span x-text="p.camion_placa || 'Asignado'"></span>
-                                    </div>
-                                </template>
-                                <template x-if="!p.camion_id">
-                                    <span class="text-xs text-gray-400 italic">Sin asignar</span>
-                                </template>
-                            </td>
-                    </tr>
-                </template>
-            </tbody>
-        </table>
-        
-        <!-- Pagination Controls Footer Bar -->
-        <div x-show="!loading && filteredPedidos.length > 0" class="bg-gray-50/80 border-t border-gray-200 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="text-xs font-semibold text-gray-600">
-                Mostrando <span class="font-extrabold text-gray-900" x-text="startRecord"></span> a <span class="font-extrabold text-gray-900" x-text="endRecord"></span> de <span class="font-extrabold text-gray-900" x-text="filteredPedidos.length"></span> pedidos
+
+        <!-- Tabla Estilizada -->
+        <div class="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50/80 border-b border-gray-100 text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+                        <tr>
+                            <th class="py-3.5 px-4 w-10 text-center">
+                                <input type="checkbox" x-model="allSelected" @change="toggleAll(); renderMarkers();" class="rounded border-gray-300 text-slate-900 focus:ring-slate-800 w-4 h-4 cursor-pointer">
+                            </th>
+                            <th class="py-3.5 px-4 cursor-pointer hover:text-gray-900 transition-colors" @click="sort('id')">ID ⇕</th>
+                            <th class="py-3.5 px-4 cursor-pointer hover:text-gray-900 transition-colors" @click="sort('cliente')">Comercio / Cliente ⇕</th>
+                            <th class="py-3.5 px-4 cursor-pointer hover:text-gray-900 transition-colors" @click="sort('distancia')">Distancia ⇕</th>
+                            <th class="py-3.5 px-4">Total</th>
+                            <th class="py-3.5 px-4">Ubicación</th>
+                            <th class="py-3.5 px-4 cursor-pointer hover:text-gray-900 transition-colors" @click="sort('raw_fecha')">Transcurrido ⇕</th>
+                            <th class="py-3.5 px-4">Ruta / Camión</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-xs">
+                        <template x-if="paginatedPedidos.length === 0">
+                            <tr><td colspan="8" class="py-12 text-center text-gray-400 font-medium">No hay pedidos disponibles para asignación.</td></tr>
+                        </template>
+                        <template x-for="p in paginatedPedidos" :key="p.id">
+                            <tr class="hover:bg-gray-50/80 transition-colors group">
+                                <td class="py-3.5 px-4 text-center">
+                                    <input type="checkbox" :value="p.id" x-model="selectedIds" @change="renderMarkers()" class="rounded border-gray-300 text-slate-900 focus:ring-slate-800 w-4 h-4 cursor-pointer">
+                                </td>
+                                <td class="py-3.5 px-4 font-black text-gray-900" x-text="`#${p.id}`"></td>
+                                <td class="py-3.5 px-4">
+                                    <div class="font-bold text-gray-900 group-hover:text-[#E3001B] transition-colors" x-text="p.cliente"></div>
+                                    <div class="text-[11px] text-gray-400 font-medium" x-text="p.nombre_persona"></div>
+                                </td>
+                                <td class="py-3.5 px-4 text-blue-600 font-extrabold" x-text="(p.distancia && p.distancia !== 999999) ? p.distancia + ' km' : '-'"></td>
+                                <td class="py-3.5 px-4 font-black text-slate-900 text-sm" x-text="`$${Number(p.total).toFixed(2)}`"></td>
+                                <td class="py-3.5 px-4 font-semibold text-gray-600" x-init="fetchLocation(p)" :title="p.locationFull || 'Cargando...'" x-text="p.locationDisplay || 'Cargando...'"></td>
+                                <td class="py-3.5 px-4 text-gray-500 font-medium" x-text="timeAgo(p.fecha)"></td>
+                                <td class="py-3.5 px-4">
+                                    <template x-if="p.camion_id">
+                                        <div class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-3 py-1 rounded-full text-[11px] font-extrabold border border-emerald-200 cursor-pointer hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors" @click="confirmarQuitarAsignacionRapida([p.id])" title="Clic para quitar asignación">
+                                            <span>🚚</span>
+                                            <span x-text="p.camion_placa || 'Asignado'"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="!p.camion_id">
+                                        <span class="text-[11px] text-gray-400 italic font-medium">Sin asignar</span>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
-
-            <!-- Page Buttons -->
-            <div class="flex items-center gap-1">
-                <button @click="prevPage()" :disabled="currentPage === 1" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-gray-100 text-gray-700 border-gray-300">
-                    Anterior
-                </button>
-
-                <template x-for="p in totalPages" :key="p">
-                    <button @click="goToPage(p)" class="w-8 h-8 rounded-lg text-xs font-extrabold transition-all"
-                            :class="currentPage === p ? 'bg-slate-900 text-white shadow-xs' : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'"
-                            x-text="p"></button>
-                </template>
-
-                <button @click="nextPage()" :disabled="currentPage === totalPages" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-gray-100 text-gray-700 border-gray-300">
-                    Siguiente
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Asignar Ruta -->
-    <div x-show="asignarModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-        <div class="bg-white rounded-lg w-11/12 md:w-1/3 p-6 shadow-2xl relative">
-            <button @click="asignarModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-red-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <h2 class="text-xl font-bold mb-4">Asignar a Ruta / Camión</h2>
-            <p class="text-sm text-gray-600 mb-4" x-text="`Pedido #${selectedPedido?.id} - ${selectedPedido?.cliente || ''}`"></p>
             
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Seleccionar Camión Disponible</label>
-                <select x-model="selectedCamionId" class="w-full border-gray-300 rounded shadow-sm p-2 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50">
-                    <option value="">-- Seleccione un camión --</option>
-                    <template x-for="camion in camiones" :key="camion.id">
-                        <option :value="camion.id" x-text="`${camion.placa} - ${camion.descripcion} (${camion.estado})`"></option>
+            <!-- Paginador Estandarizado Slate -->
+            <div x-show="!loading && filteredPedidos.length > 0" class="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50">
+                <div class="text-xs font-semibold text-gray-500">
+                    Mostrando <span class="font-extrabold text-gray-900" x-text="startRecord"></span> a <span class="font-extrabold text-gray-900" x-text="endRecord"></span> de <span class="font-extrabold text-gray-900" x-text="filteredPedidos.length"></span> pedidos
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button @click="prevPage()" :disabled="currentPage === 1" class="px-3 py-1.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs">
+                        Anterior
+                    </button>
+
+                    <template x-for="p in totalPages" :key="p">
+                        <button @click="goToPage(p)" 
+                                class="w-8 h-8 rounded-xl text-xs font-bold transition-all shadow-2xs"
+                                :class="currentPage === p ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'"
+                                x-text="p"></button>
                     </template>
-                </select>
-            </div>
-            
-            <div class="flex justify-end space-x-3">
-                <button @click="asignarModal = false" class="px-4 py-2 border border-gray-300 text-gray-600 font-medium rounded hover:bg-gray-100 transition-colors">Cancelar</button>
-                <button @click="confirmarAsignacion" :disabled="!selectedCamionId" class="px-4 py-2 bg-primary text-white font-medium rounded hover:bg-red-800 transition-colors disabled:opacity-50">Asignar y Enviar</button>
+
+                    <button @click="nextPage()" :disabled="currentPage === totalPages" class="px-3 py-1.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs">
+                        Siguiente
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
+
+        <!-- Modal Asignación Masiva de Ruta -->
+        <div x-show="asignarModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" style="display: none;">
+            <div class="bg-white rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative border border-gray-100">
+                <button @click="asignarModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <h3 class="text-lg font-extrabold text-gray-900 mb-1">Asignar a Ruta / Camión</h3>
+                <p class="text-xs font-semibold text-gray-500 mb-4">Asignando <strong class="text-slate-900" x-text="selectedIds.length"></strong> pedido(s) seleccionado(s)</p>
+                <div class="mb-5">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Seleccionar Camión Disponible</label>
+                    <select x-model="selectedCamionId" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-gray-800 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-slate-800 outline-none cursor-pointer">
+                        <option value="">-- Seleccione un camión --</option>
+                        <template x-for="camion in camiones" :key="camion.id">
+                            <option :value="camion.id" x-text="`${camion.placa} - ${camion.descripcion} (${camion.estado})`"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
+                    <button @click="asignarModal = false" class="px-4 py-2 border border-gray-200 text-gray-600 font-bold text-xs rounded-xl hover:bg-gray-50 transition-all">Cancelar</button>
+                    <button @click="confirmarAsignacion()" :disabled="!selectedCamionId" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all shadow-xs disabled:opacity-40 cursor-pointer">
+                        Confirmar Asignación
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -241,11 +260,9 @@ document.addEventListener('alpine:init', () => {
         const todayObj = new Date();
         const todayStr = getFormattedDate(todayObj);
         
-        // Defecto: 1 semana atrás (7 días)
         const oneWeekAgoObj = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         const oneWeekAgoStr = getFormattedDate(oneWeekAgoObj);
 
-        // Recuperar de sessionStorage o defecto (hace 1 semana hasta hoy)
         const initialFechaInicio = sessionStorage.getItem('gestion_rutas_fecha_inicio') || oneWeekAgoStr;
         const initialFechaFin = sessionStorage.getItem('gestion_rutas_fecha_fin') || todayStr;
 
@@ -266,7 +283,6 @@ document.addEventListener('alpine:init', () => {
             currentLat: null,
             currentLng: null,
             
-            // Paginación
             currentPage: 1,
             perPage: 10,
             sortCol: 'distancia',
@@ -275,7 +291,6 @@ document.addEventListener('alpine:init', () => {
             locationQueue: [],
             isProcessingQueue: false,
 
-            // Variables del Modal de Revisión
             revisarModal: false,
             selectedPedido: null,
             comprobanteUrl: null,
@@ -283,7 +298,6 @@ document.addEventListener('alpine:init', () => {
             mostrarRechazo: false,
             motivoRechazo: '',
 
-            // CÁLCULO DE FECHA MÁXIMA PERMITIDA (Máximo 1 Mes a partir de Fecha Inicial)
             get maxFechaFin() {
                 if (!this.fechaInicio) return '';
                 const parts = this.fechaInicio.split('-').map(Number);
@@ -449,397 +463,361 @@ document.addEventListener('alpine:init', () => {
                 }
             },
         
-        renderMarkers() {
-            if(!this.markersLayer) return;
-            this.markersLayer.clearLayers();
-            
-            // Agrupar pedidos con las mismas coordenadas
-            const grouped = {};
-            this.filteredPedidos.forEach(p => {
-                if (p.lat && p.lng) {
-                    const key = `${p.lat},${p.lng}`;
-                    if (!grouped[key]) grouped[key] = [];
-                    grouped[key].push(p);
-                }
-            });
-
-            for (const key in grouped) {
-                const pedidos = grouped[key];
-                const [lat, lng] = key.split(',');
+            renderMarkers() {
+                if(!this.markersLayer) return;
+                this.markersLayer.clearLayers();
                 
-                let distanceHtml = '';
-                if (this.currentLat && this.currentLng) {
-                    const dist = this.getDist(this.currentLat, this.currentLng, lat, lng);
-                    distanceHtml = `<div class="text-xs text-blue-600 font-bold mb-2">📍 a ${dist} km de tu ubicación actual</div>`;
-                }
+                const grouped = {};
+                this.filteredPedidos.forEach(p => {
+                    if (p.lat && p.lng) {
+                        const key = `${p.lat},${p.lng}`;
+                        if (!grouped[key]) grouped[key] = [];
+                        grouped[key].push(p);
+                    }
+                });
 
-                let ordersHtml = `<div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">`;
-                pedidos.forEach(p => {
-                    const truckStr = p.camion_id ? `<br><span style="color:#16a34a;font-weight:bold;">🚚 ${p.camion_placa || 'Asignado'}</span>` : '';
-                    const removeBtn = p.camion_id ? `<button onclick="window.dispatchEvent(new CustomEvent('quitar-asignacion-popup',{detail:${p.id}}))" style="width:100%;margin-top:6px;padding:4px;font-size:11px;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;">Quitar Asignación</button>` : '';
-                    ordersHtml += `
-                        <div style="border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px;">
-                            <b>Pedido #${p.id}</b> <span style="font-size: 11px; color: #666;">(${this.timeAgo(p.fecha)})</span><br>
-                            <b>Comercio:</b> ${p.cliente}<br>
-                            <b>Contacto:</b> ${p.nombre_persona}<br>
-                            <b>Total:</b> $${Number(p.total).toFixed(2)}
-                            ${truckStr}
-                            ${removeBtn}
+                for (const key in grouped) {
+                    const pedidos = grouped[key];
+                    const [lat, lng] = key.split(',');
+                    
+                    let distanceHtml = '';
+                    if (this.currentLat && this.currentLng) {
+                        const dist = this.getDist(this.currentLat, this.currentLng, lat, lng);
+                        distanceHtml = `<div class="text-xs text-blue-600 font-bold mb-2">📍 a ${dist} km de tu ubicación actual</div>`;
+                    }
+
+                    let ordersHtml = `<div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">`;
+                    pedidos.forEach(p => {
+                        const truckStr = p.camion_id ? `<br><span style="color:#16a34a;font-weight:bold;">🚚 ${p.camion_placa || 'Asignado'}</span>` : '';
+                        const removeBtn = p.camion_id ? `<button onclick="window.dispatchEvent(new CustomEvent('quitar-asignacion-popup',{detail:${p.id}}))" style="width:100%;margin-top:6px;padding:4px;font-size:11px;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;">Quitar Asignación</button>` : '';
+                        ordersHtml += `
+                            <div style="border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px;">
+                                <b>Pedido #${p.id}</b> <span style="font-size: 11px; color: #666;">(${this.timeAgo(p.fecha)})</span><br>
+                                <b>Comercio:</b> ${p.cliente}<br>
+                                <b>Contacto:</b> ${p.nombre_persona}<br>
+                                <b>Total:</b> $${Number(p.total).toFixed(2)}
+                                ${truckStr}
+                                ${removeBtn}
+                            </div>
+                        `;
+                    });
+                    ordersHtml += `</div>`;
+
+                    const isAnyAssigned = pedidos.some(p => !!p.camion_id);
+                    const hasSelected2 = pedidos.some(p => this.selectedIds.map(String).includes(String(p.id)));
+                    const dynamicColor = hasSelected2 ? '#dc2626' : (isAnyAssigned ? '#16a34a' : '#3b82f6');
+                    const svgIcon2 = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${dynamicColor}" width="34px" height="34px" style="filter:drop-shadow(0px 2px 2px rgba(0,0,0,0.3));"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
+                        iconSize: [34, 34],
+                        iconAnchor: [17, 34]
+                    });
+                    const marker = L.marker([lat, lng], {icon: svgIcon2});
+                    
+                    marker.on('click', () => {
+                        const ids = pedidos.map(p => p.id);
+                        const newSel = new Set(this.selectedIds.map(String));
+                        ids.forEach(id => newSel.add(String(id)));
+                        this.selectedIds = Array.from(newSel).map(Number);
+                    });
+                    
+                    marker.bindPopup(`
+                        <div style="min-width: 220px;">
+                            <h4 style="font-weight:bold;margin-bottom:5px;font-size:14px;">${pedidos.length} pedido(s) aquí</h4>
+                            ${distanceHtml}
+                            ${ordersHtml}
+                            <div style="font-size:11px;text-align:center;color:#666;margin-top:4px;font-style:italic;">Click = seleccionar en tabla</div>
                         </div>
-                    `;
-                });
-                ordersHtml += `</div>`;
+                    `);
+                    this.markersLayer.addLayer(marker);
+                }
+            },
 
-                const isAnyAssigned = pedidos.some(p => !!p.camion_id);
-                const hasSelected2 = pedidos.some(p => this.selectedIds.map(String).includes(String(p.id)));
-                const dynamicColor = hasSelected2 ? '#dc2626' : (isAnyAssigned ? '#16a34a' : '#3b82f6');
-                const svgIcon2 = L.divIcon({
-                    className: 'custom-div-icon',
-                    html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${dynamicColor}" width="34px" height="34px" style="filter:drop-shadow(0px 2px 2px rgba(0,0,0,0.3));"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
-                    iconSize: [34, 34],
-                    iconAnchor: [17, 34]
-                });
-                const marker = L.marker([lat, lng], {icon: svgIcon2});
+            getDist(lat1, lon1, lat2, lon2) {
+                const R = 6371;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return (R * c).toFixed(2);
+            },
+
+            timeAgo(dateStr) {
+                if (!dateStr) return 'Desconocido';
+                const date = new Date(dateStr.replace(/-/g, '/'));
+                const now = new Date();
+                const diffSecs = Math.floor((now - date) / 1000);
                 
-                marker.on('click', () => {
-                    const ids = pedidos.map(p => p.id);
-                    const newSel = new Set(this.selectedIds.map(String));
-                    ids.forEach(id => newSel.add(String(id)));
-                    this.selectedIds = Array.from(newSel).map(Number);
-                });
+                if (diffSecs < 60) return `${diffSecs} segs`;
+                const mins = Math.floor(diffSecs / 60);
+                if (mins < 60) return `${mins} mins`;
+                const hours = Math.floor(mins / 60);
+                if (hours < 24) return `${hours} horas`;
+                const days = Math.floor(hours / 24);
+                return `${days} días`;
+            },
+
+            updateCounts() {},
+            
+            toggleAll() {
+                if (this.allSelected) {
+                    this.selectedIds = this.paginatedPedidos.map(p => p.id);
+                } else {
+                    this.selectedIds = [];
+                }
+            },
+
+            abrirAsignacionMultiple() {
+                if (!this.isSelectionFree) {
+                    Swal.fire('Error', 'Selecciona solo pedidos que no estén asignados a una ruta.', 'error');
+                    return;
+                }
+                this.selectedCamionId = '';
+                this.asignarModal = true;
+            },
+
+            async confirmarQuitarAsignacionRapida(ids) {
+                if (!Array.isArray(ids)) {
+                    ids = [ids];
+                }
                 
-                marker.bindPopup(`
-                    <div style="min-width: 220px;">
-                        <h4 style="font-weight:bold;margin-bottom:5px;font-size:14px;">${pedidos.length} pedido(s) aquí</h4>
-                        ${distanceHtml}
-                        ${ordersHtml}
-                        <div style="font-size:11px;text-align:center;color:#666;margin-top:4px;font-style:italic;">Click = seleccionar en tabla</div>
-                    </div>
-                `);
-                this.markersLayer.addLayer(marker);
-            }
-        },
+                const result = await Swal.fire({
+                    title: '¿Quitar Asignación?',
+                    text: `¿Estás seguro de quitar la asignación a ${ids.length} pedido(s)?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, quitar',
+                    cancelButtonText: 'Cancelar'
+                });
 
-        getDist(lat1, lon1, lat2, lon2) {
-            const R = 6371; // radio de la Tierra en km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return (R * c).toFixed(2);
-        },
+                if (result.isConfirmed) {
+                    try {
+                        await window.api('/api/asignaciones', {
+                            method: 'DELETE',
+                            body: JSON.stringify({ pedido_ids: ids })
+                        });
+                        
+                        Swal.fire({
+                            toast: true,
+                            position: 'bottom',
+                            icon: 'success',
+                            title: 'Asignación eliminada',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                        
+                        this.selectedIds = [];
+                        window.location.reload();
+                    } catch(e) {
+                        Swal.fire('Error', e.message || 'Error al quitar la asignación', 'error');
+                    }
+                }
+            },
 
-        timeAgo(dateStr) {
-            if (!dateStr) return 'Desconocido';
-            const date = new Date(dateStr.replace(/-/g, '/'));
-            const now = new Date();
-            const diffSecs = Math.floor((now - date) / 1000);
+            async cerrarRuta(camionId, placa) {
+                const result = await Swal.fire({
+                    title: `¿Cerrar ruta del camión ${placa}?`,
+                    text: "Los pedidos asignados pasarán a estado 'entregado'.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, cerrar ruta',
+                    cancelButtonText: 'Cancelar'
+                });
+
+                if (result.isConfirmed) {
+                    try {
+                        await window.api(`/api/asignaciones/cerrar-ruta/${camionId}`, {
+                            method: 'POST'
+                        });
+                        
+                        Swal.fire({
+                            toast: true,
+                            position: 'bottom',
+                            icon: 'success',
+                            title: 'Ruta cerrada con éxito',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                        
+                        this.selectedIds = [];
+                        window.location.reload();
+                    } catch(e) {
+                        Swal.fire('Error', e.message || 'Error al cerrar la ruta', 'error');
+                    }
+                }
+            },
+
+            async fetchLocation(p) {
+                if (p.locationDisplay !== undefined) return;
+                p.locationDisplay = 'Cargando...';
+                p.locationFull = 'Cargando...';
+                if (!p.lat || !p.lng) {
+                    p.locationDisplay = 'Sin coords';
+                    p.locationFull = 'Sin coordenadas';
+                    return;
+                }
+                this.locationQueue.push(p);
+                this.processLocationQueue();
+            },
             
-            if (diffSecs < 60) return `${diffSecs} segs`;
-            const mins = Math.floor(diffSecs / 60);
-            if (mins < 60) return `${mins} mins`;
-            const hours = Math.floor(mins / 60);
-            if (hours < 24) return `${hours} horas`;
-            const days = Math.floor(hours / 24);
-            return `${days} días`;
-        },
+            async processLocationQueue() {
+                if (this.isProcessingQueue) return;
+                this.isProcessingQueue = true;
+                
+                while (this.locationQueue.length > 0) {
+                    const p = this.locationQueue.shift();
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.lat}&lon=${p.lng}`, {
+                            headers: { 'Accept-Language': 'es' }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            const iso = data.address['ISO3166-2-lvl4'] || data.address.state || 'N/A';
+                            const parroquia = data.address.suburb || data.address.village || data.address.town || data.address.neighbourhood || data.address.county || 'Desconocida';
+                            
+                            let full = `[${iso}] - ${parroquia}`;
+                            p.locationFull = full;
+                            p.locationDisplay = full.length > 15 ? full.substring(0, 15) + '...' : full;
+                        } else {
+                            p.locationDisplay = 'Err ' + res.status;
+                            p.locationFull = 'Error HTTP ' + res.status;
+                        }
+                    } catch(e) {
+                        p.locationDisplay = 'Error';
+                        p.locationFull = 'Error de conexión';
+                    }
+                    
+                    await new Promise(r => setTimeout(r, 1500));
+                }
+                this.isProcessingQueue = false;
+            },
 
-        updateCounts() {
-            // No-op in gestion-rutas (no KPI cards)
-        },
-        
+            isSubmitting: false,
 
-        toggleAll() {
-            if (this.allSelected) {
-                this.selectedIds = this.paginatedPedidos.map(p => p.id);
-            } else {
-                this.selectedIds = [];
-            }
-        },
-
-        abrirAsignacionMultiple() {
-            if (!this.isSelectionFree) {
-                Swal.fire('Error', 'Selecciona solo pedidos que no estén asignados a una ruta.', 'error');
-                return;
-            }
-            this.selectedCamionId = '';
-            this.asignarModal = true;
-        },
-
-        async confirmarQuitarAsignacionRapida(ids) {
-            if (!Array.isArray(ids)) {
-                ids = [ids]; // para clics desde el popup del mapa
-            }
-            
-            const result = await Swal.fire({
-                title: '¿Quitar Asignación?',
-                text: `¿Estás seguro de quitar la asignación a ${ids.length} pedido(s)?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, quitar',
-                cancelButtonText: 'Cancelar'
-            });
-
-            if (result.isConfirmed) {
+            async confirmarAsignacion() {
+                if (this.isSubmitting) return;
+                if(!this.selectedCamionId) return;
+                if(this.selectedIds.length === 0) {
+                    Swal.fire('Error', 'No hay pedidos seleccionados.', 'error');
+                    return;
+                }
+                this.isSubmitting = true;
                 try {
                     await window.api('/api/asignaciones', {
-                        method: 'DELETE',
-                        body: JSON.stringify({ pedido_ids: ids })
+                        method: 'POST',
+                        body: JSON.stringify({
+                            pedido_ids: this.selectedIds,
+                            camion_id: this.selectedCamionId
+                        })
                     });
                     
                     Swal.fire({
                         toast: true,
                         position: 'bottom',
                         icon: 'success',
-                        title: 'Asignación eliminada',
+                        title: 'Ruta asignada con éxito',
                         showConfirmButton: false,
                         timer: 3000
                     });
                     
-                    this.selectedIds = [];
+                    this.asignarModal = false;
                     window.location.reload();
                 } catch(e) {
-                    Swal.fire('Error', e.message || 'Error al quitar la asignación', 'error');
+                    this.isSubmitting = false;
+                    Swal.fire('Error', e.message || 'Error al asignar la ruta', 'error');
                 }
-            }
-        },
+            },
 
-        async cerrarRuta(camionId, placa) {
-            const result = await Swal.fire({
-                title: `¿Cerrar ruta del camión ${placa}?`,
-                text: "Los pedidos asignados pasarán a estado 'entregado'.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, cerrar ruta',
-                cancelButtonText: 'Cancelar'
-            });
-
-            if (result.isConfirmed) {
-                try {
-                    await window.api(`/api/asignaciones/cerrar-ruta/${camionId}`, {
-                        method: 'POST'
-                    });
-                    
-                    Swal.fire({
-                        toast: true,
-                        position: 'bottom',
-                        icon: 'success',
-                        title: 'Ruta cerrada con éxito',
-                        showConfirmButton: false,
-                        timer: 3000
-                    });
-                    
-                    this.selectedIds = [];
-                    window.location.reload();
-                } catch(e) {
-                    Swal.fire('Error', e.message || 'Error al cerrar la ruta', 'error');
-                }
-            }
-        },
-
-        
-        async fetchLocation(p) {
-            if (p.locationDisplay !== undefined) return;
-            p.locationDisplay = 'Cargando...';
-            p.locationFull = 'Cargando...';
-            if (!p.lat || !p.lng) {
-                p.locationDisplay = 'Sin coords';
-                p.locationFull = 'Sin coordenadas';
-                return;
-            }
-            this.locationQueue.push(p);
-            this.processLocationQueue();
-        },
-        
-        async processLocationQueue() {
-            if (this.isProcessingQueue) return;
-            this.isProcessingQueue = true;
+            get isSelectionFree() {
+                if(this.selectedIds.length === 0) return false;
+                return this.selectedIds.every(id => {
+                    const p = this.pedidos.find(p => String(p.id) === String(id));
+                    return p && !p.camion_id;
+                });
+            },
             
-            while (this.locationQueue.length > 0) {
-                const p = this.locationQueue.shift();
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.lat}&lon=${p.lng}`, {
-                        headers: { 'Accept-Language': 'es' }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        const iso = data.address['ISO3166-2-lvl4'] || data.address.state || 'N/A';
-                        const parroquia = data.address.suburb || data.address.village || data.address.town || data.address.neighbourhood || data.address.county || 'Desconocida';
-                        
-                        let full = `[${iso}] - ${parroquia}`;
-                        p.locationFull = full;
-                        p.locationDisplay = full.length > 15 ? full.substring(0, 15) + '...' : full;
-                    } else {
-                        p.locationDisplay = 'Err ' + res.status;
-                        p.locationFull = 'Error HTTP ' + res.status;
+            get isSelectionAssigned() {
+                if(this.selectedIds.length === 0) return false;
+                return this.selectedIds.every(id => {
+                    const p = this.pedidos.find(p => String(p.id) === String(id));
+                    return p && p.camion_id;
+                });
+            },
+            
+            get activeRoutes() {
+                const trucks = new Map();
+                this.pedidos.forEach(p => {
+                    if (p.camion_id && p.raw_estado === 'listo_para_entregar') {
+                        trucks.set(p.camion_id, { id: p.camion_id, placa: p.camion_placa || 'Desconocida' });
                     }
-                } catch(e) {
-                    p.locationDisplay = 'Error';
-                    p.locationFull = 'Error de conexión';
-                }
-                
-                // Rate limit (1.5 seconds) to respect Nominatim policy
-                await new Promise(r => setTimeout(r, 1500));
-            }
-            this.isProcessingQueue = false;
-        },
-
-        isSubmitting: false,
-
-        async confirmarAsignacion() {
-            if (this.isSubmitting) return;
-            if(!this.selectedCamionId) return;
-            if(this.selectedIds.length === 0) {
-                Swal.fire('Error', 'No hay pedidos seleccionados.', 'error');
-                return;
-            }
-            this.isSubmitting = true;
-            try {
-                await window.api('/api/asignaciones', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        pedido_ids: this.selectedIds,
-                        camion_id: this.selectedCamionId
-                    })
                 });
-                
-                Swal.fire({
-                    toast: true,
-                    position: 'bottom',
-                    icon: 'success',
-                    title: 'Ruta asignada con éxito',
-                    showConfirmButton: false,
-                    timer: 3000
+                return Array.from(trucks.values());
+            },
+
+            get selectedTrucks() {
+                if(this.selectedIds.length === 0) return [];
+                const trucks = new Map();
+                this.selectedIds.forEach(id => {
+                    const p = this.pedidos.find(p => String(p.id) === String(id));
+                    if(p && p.camion_id) {
+                        trucks.set(p.camion_id, { id: p.camion_id, placa: p.camion_placa || 'Desconocida' });
+                    }
                 });
+                return Array.from(trucks.values());
+            },
+
+            get filteredPedidos() {
+                let filtered = this.pedidos;
+                if(this.filtroEstado) {
+                    filtered = filtered.filter(p => p.raw_estado === this.filtroEstado || p.estado === this.filtroEstado);
+                } else {
+                    filtered = filtered.filter(p => p.raw_estado === 'en_espera_asignacion' || p.raw_estado === 'listo_para_entregar');
+                }
                 
-                this.asignarModal = false;
-                window.location.reload();
-            } catch(e) {
-                this.isSubmitting = false;
-                Swal.fire('Error', e.message || 'Error al asignar la ruta', 'error');
-            }
-        },
-
-        get isSelectionFree() {
-            if(this.selectedIds.length === 0) return false;
-            return this.selectedIds.every(id => {
-                const p = this.pedidos.find(p => String(p.id) === String(id));
-                return p && !p.camion_id;
-            });
-        },
-        
-        get isSelectionAssigned() {
-            if(this.selectedIds.length === 0) return false;
-            return this.selectedIds.every(id => {
-                const p = this.pedidos.find(p => String(p.id) === String(id));
-                return p && p.camion_id;
-            });
-        },
-        
-        
-        get activeRoutes() {
-            const trucks = new Map();
-            this.pedidos.forEach(p => {
-                if (p.camion_id && p.raw_estado === 'listo_para_entregar') {
-                    trucks.set(p.camion_id, { id: p.camion_id, placa: p.camion_placa || 'Desconocida' });
-                }
-            });
-            return Array.from(trucks.values());
-        },
-
-        get selectedTrucks() {
-            if(this.selectedIds.length === 0) return [];
-            const trucks = new Map();
-            this.selectedIds.forEach(id => {
-                const p = this.pedidos.find(p => String(p.id) === String(id));
-                if(p && p.camion_id) {
-                    trucks.set(p.camion_id, { id: p.camion_id, placa: p.camion_placa || 'Desconocida' });
-                }
-            });
-            return Array.from(trucks.values());
-        },
-
-        get filteredPedidos() {
-            let filtered = this.pedidos;
-            if(this.filtroEstado) {
-                // Support filtering by raw_estado or display estado
-                filtered = filtered.filter(p => p.raw_estado === this.filtroEstado || p.estado === this.filtroEstado);
-            } else {
-                // En gestion-rutas: mostrar pedidos pendientes de asignacion o listos para entregar (asignados pero no despachados)
-                filtered = filtered.filter(p => p.raw_estado === 'en_espera_asignacion' || p.raw_estado === 'listo_para_entregar');
-            }
+                return filtered.sort((a, b) => {
+                    let mod = this.sortAsc ? 1 : -1;
+                    return a[this.sortCol] > b[this.sortCol] ? mod : -mod;
+                });
+            },
             
-            return filtered.sort((a, b) => {
-                let mod = this.sortAsc ? 1 : -1;
-                return a[this.sortCol] > b[this.sortCol] ? mod : -mod;
-            });
-        },
-        
-        get totalPages() {
-            return Math.ceil(this.filteredPedidos.length / this.perPage) || 1;
-        },
-        
-        get paginatedPedidos() {
-            const start = (this.currentPage - 1) * this.perPage;
-            return this.filteredPedidos.slice(start, start + this.perPage);
-        },
+            get totalPages() {
+                return Math.ceil(this.filteredPedidos.length / this.perPage) || 1;
+            },
+            
+            get paginatedPedidos() {
+                const start = (this.currentPage - 1) * this.perPage;
+                return this.filteredPedidos.slice(start, start + this.perPage);
+            },
 
-        get startRecord() {
-            if (this.filteredPedidos.length === 0) return 0;
-            return (this.currentPage - 1) * this.perPage + 1;
-        },
+            get startRecord() {
+                if (this.filteredPedidos.length === 0) return 0;
+                return (this.currentPage - 1) * this.perPage + 1;
+            },
 
-        get endRecord() {
-            return Math.min(this.currentPage * this.perPage, this.filteredPedidos.length);
-        },
+            get endRecord() {
+                return Math.min(this.currentPage * this.perPage, this.filteredPedidos.length);
+            },
 
-        goToPage(p) {
-            if (p >= 1 && p <= this.totalPages) this.currentPage = p;
-        },
+            goToPage(p) {
+                if (p >= 1 && p <= this.totalPages) this.currentPage = p;
+            },
 
-        sort(col) {
-            if(this.sortCol === col) this.sortAsc = !this.sortAsc;
-            else { this.sortCol = col; this.sortAsc = true; }
-        },
-        
-        nextPage() {
-            if (this.currentPage < this.totalPages) this.currentPage++;
-        },
-        
-        prevPage() {
-            if (this.currentPage > 1) this.currentPage--;
-        }
+            sort(col) {
+                if(this.sortCol === col) this.sortAsc = !this.sortAsc;
+                else { this.sortCol = col; this.sortAsc = true; }
+            },
+            
+            nextPage() {
+                if (this.currentPage < this.totalPages) this.currentPage++;
+            },
+            
+            prevPage() {
+                if (this.currentPage > 1) this.currentPage--;
+            }
         };
     });
 });
 </script>
-
-    <!-- Modal Asignación Masiva de Ruta -->
-    <div x-show="asignarModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-        <div class="bg-white rounded-lg w-11/12 md:w-1/3 p-6 shadow-2xl relative">
-            <button @click="asignarModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-red-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <h2 class="text-xl font-bold mb-2">Asignar a Ruta / Camión</h2>
-            <p class="text-sm text-gray-500 mb-4">Asignando <strong x-text="selectedIds.length"></strong> pedido(s) seleccionado(s)</p>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Seleccionar Camión Disponible</label>
-                <select x-model="selectedCamionId" class="w-full border-gray-300 rounded shadow-sm p-2 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50">
-                    <option value="">-- Seleccione un camión --</option>
-                    <template x-for="camion in camiones" :key="camion.id">
-                        <option :value="camion.id" x-text="`${camion.placa} - ${camion.descripcion} (${camion.estado})`"></option>
-                    </template>
-                </select>
-            </div>
-            <div class="flex justify-end space-x-3">
-                <button @click="asignarModal = false" class="px-4 py-2 border border-gray-300 text-gray-600 font-medium rounded hover:bg-gray-100 transition-colors">Cancelar</button>
-                <button @click="confirmarAsignacion()" :disabled="!selectedCamionId" class="px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors disabled:opacity-50">
-                    Confirmar Asignación
-                </button>
-            </div>
-        </div>
-    </div>
-
 @endsection

@@ -25,12 +25,6 @@
 
         /**
          * api(path, options) - Wrapper centralizado para todas las llamadas al backend.
-         * Añade automáticamente:
-         *   - URL base correcta
-         *   - Content-Type: application/json
-         *   - Authorization: Bearer <token> si existe en localStorage
-         * Retorna la respuesta parseada como JSON.
-         * Lanza un Error con el mensaje del servidor en caso de fallo.
          */
         window.api = async function(path, options = {}) {
             const token = localStorage.getItem('jwt_token');
@@ -47,13 +41,11 @@
                 headers
             });
 
-            // Para respuestas sin cuerpo (204 No Content)
             if (response.status === 204) return null;
 
             const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                // HTTP Interceptor 401/403
                 if (response.status === 401) {
                     localStorage.removeItem('jwt_token');
                     localStorage.removeItem('role');
@@ -75,7 +67,6 @@
                     throw new Error('Acceso denegado a este recurso.');
                 }
 
-                // Construye mensaje legible desde errores de validación (422) u otros
                 const message = data.message
                     || data.error
                     || (data.errors ? Object.values(data.errors).flat().join(' ') : null)
@@ -106,13 +97,11 @@
                 'guest': '/ecommerce/catalogo'
             };
 
-            // 1. Redirección por Defecto (Root)
             if (path === '/') {
                 window.location.replace(homePages[role] || '/ecommerce/catalogo');
                 return;
             }
 
-            // 2. Guest Mode y Rutas Públicas
             const publicPaths = ['/ecommerce/catalogo', '/auth/login', '/auth/registro', '/auth/recover'];
             const isPublic = publicPaths.some(p => path === p || path.startsWith(p));
             
@@ -121,13 +110,11 @@
                 return;
             }
 
-            // Evitar que usuarios logueados vean pantallas de login/registro
             if (role !== 'guest' && path.startsWith('/auth/')) {
                 window.location.replace(homePages[role]);
                 return;
             }
 
-            // 3. Protección de Roles (Strict Auth Guards)
             const adminPaths = ['/dashboard', '/gestion-pedidos', '/gestion-rutas', '/admin', '/entregas'];
             const isPathInArray = (p, arr) => arr.some(prefix => p.startsWith(prefix) || p === prefix);
 
@@ -151,44 +138,74 @@
 </head>
 <body class="bg-gray-50 text-neutral-dark min-h-screen flex flex-col font-sans">
     
-           <nav class="bg-white text-gray-700 shadow-sm border-b border-gray-100" x-data="{ mobileMenuOpen: false }">
+    <nav class="bg-white text-gray-700 shadow-2xs border-b border-gray-100 sticky top-0 z-40" x-data="{ mobileMenuOpen: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <!-- Mobile menu button -->
-                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 mr-2 text-gray-600 hover:text-primary focus:outline-none">
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 mr-2 text-gray-600 hover:text-[#E3001B] focus:outline-none">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <a href="/" class="flex-shrink-0 flex items-center font-bold text-2xl tracking-tight">
-                        <span class="text-primary">Frito</span><span class="text-secondary">lay</span>
+                    <a href="/" class="flex-shrink-0 flex items-center font-black text-2xl tracking-tight">
+                        <span class="text-[#E3001B]">Frito</span><span class="text-[#F5C518]">lay</span>
                     </a>
                 </div>
                 
                 <div class="flex items-center space-x-2 md:space-x-4">
-                    <!-- Desktop Nav links -->
-                    <div x-data="{ role: localStorage.getItem('role') || 'guest' }" class="hidden md:flex space-x-4">
+                    <!-- Desktop Nav links con indicador activo sutil -->
+                    <div x-data="{ 
+                        role: localStorage.getItem('role') || 'guest',
+                        currentPath: window.location.pathname,
+                        isActive(target) {
+                            if (target === '/' || target === '/ecommerce/catalogo') {
+                                return this.currentPath === '/' || this.currentPath.startsWith('/ecommerce/catalogo');
+                            }
+                            return this.currentPath === target || this.currentPath.startsWith(target);
+                        } 
+                    }" class="hidden md:flex items-center space-x-1 sm:space-x-2">
+
                         <template x-if="role === 'guest' || role === 'cliente'">
-                            <a href="/" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Catálogo</a>
+                            <a href="/ecommerce/catalogo" 
+                               :class="isActive('/ecommerce/catalogo') ? 'bg-red-50 text-[#E3001B] border border-red-100 font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                               class="px-3.5 py-2 rounded-xl text-xs transition-all">Catálogo</a>
                         </template>
+
                         <template x-if="role === 'cliente'">
-                            <a href="/ecommerce/historial" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Mis Pedidos</a>
+                            <a href="/ecommerce/historial" 
+                               :class="isActive('/ecommerce/historial') ? 'bg-red-50 text-[#E3001B] border border-red-100 font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                               class="px-3.5 py-2 rounded-xl text-xs transition-all">Mis Pedidos</a>
                         </template>
+
                         <template x-if="role === 'chofer'">
-                            <a href="/entregas" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Mis Rutas</a>
+                            <a href="/entregas" 
+                               :class="isActive('/entregas') ? 'bg-red-50 text-[#E3001B] border border-red-100 font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                               class="px-3.5 py-2 rounded-xl text-xs transition-all">Mis Rutas</a>
                         </template>
+
                         <template x-if="role === 'admin' || role === 'administrador' || role === 'operador'">
-                            <div class="flex space-x-4">
-                                <a href="/dashboard" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Dashboard</a>
-                                <a href="/gestion-pedidos" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Gestión Pedidos</a>
-                                <a href="/gestion-rutas" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Asignación de Rutas</a>
+                            <div class="flex items-center space-x-1">
+                                <a href="/dashboard" 
+                                   :class="isActive('/dashboard') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Dashboard</a>
+                                <a href="/gestion-pedidos" 
+                                   :class="isActive('/gestion-pedidos') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Gestión Pedidos</a>
+                                <a href="/gestion-rutas" 
+                                   :class="isActive('/gestion-rutas') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Asignación Rutas</a>
                             </div>
                         </template>
+
                         <template x-if="role === 'admin' || role === 'administrador'">
-                            <div class="flex space-x-4">
-                                <a href="/admin/usuarios" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Usuarios</a>
-                                <a href="/admin/camiones" class="hover:text-primary px-3 py-2 rounded-md font-medium transition-colors">Camiones</a>
+                            <div class="flex items-center space-x-1">
+                                <a href="/admin/usuarios" 
+                                   :class="isActive('/admin/usuarios') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Usuarios</a>
+                                <a href="/admin/camiones" 
+                                   :class="isActive('/admin/camiones') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Camiones</a>
                             </div>
                         </template>
                     </div>
@@ -196,14 +213,14 @@
                     <!-- Cart Icon -->
                     <div x-data="{ role: localStorage.getItem('role') || 'guest' }">
                         <template x-if="role === 'guest' || role === 'cliente'">
-                            <button x-data="cartBadge" @click="$dispatch('toggle-cart')" class="relative flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-md transition-colors">
+                            <button x-data="cartBadge" @click="$dispatch('toggle-cart')" class="relative flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer">
                                 <div class="relative">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
-                                    <span x-show="count > 0" x-text="count" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-primary rounded-full" id="cart-count" style="display: none;"></span>
+                                    <span x-show="count > 0" x-text="count" class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-black leading-none text-white transform translate-x-1/3 -translate-y-1/3 bg-[#E3001B] rounded-full shadow-2xs" id="cart-count" style="display: none;"></span>
                                 </div>
-                                <span x-show="total > 0" x-text="formatMoney(total)" class="font-bold text-sm text-gray-700 hidden sm:inline-block" style="display: none;"></span>
+                                <span x-show="total > 0" x-text="formatMoney(total)" class="font-extrabold text-xs text-gray-800 hidden sm:inline-block" style="display: none;"></span>
                             </button>
                         </template>
                     </div>
@@ -211,36 +228,36 @@
                     <!-- User Dropdown (Solo Iniciales) -->
                     <div x-data="userHeaderWidget()" class="relative ml-2 md:ml-4 flex items-center">
                         <template x-if="!token">
-                            <a href="/auth/login" class="bg-primary hover:bg-red-800 text-white px-4 py-2 rounded-md font-medium transition-colors">Login</a>
+                            <a href="/auth/login" class="bg-[#E3001B] hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold text-xs transition-colors shadow-2xs">Login</a>
                         </template>
                         <template x-if="token">
                             <div class="relative">
                                 <!-- Botón con Iniciales del Usuario -->
                                 <button @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false" 
-                                        class="w-9 h-9 rounded-full bg-[#E3001B] hover:bg-red-700 text-white font-bold flex items-center justify-center text-xs shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 uppercase tracking-wider border-2 border-white"
+                                        class="w-9 h-9 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold flex items-center justify-center text-xs shadow-2xs transition-all focus:outline-none cursor-pointer uppercase tracking-wider border-2 border-white"
                                         title="Opciones de cuenta">
                                     <span x-text="userInitials"></span>
                                 </button>
                                 
                                 <div x-show="dropdownOpen" x-transition.opacity style="display: none;"
-                                     class="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-xl py-2 z-50 border border-gray-100">
+                                     class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl py-2 z-50 border border-gray-100">
                                     <div class="px-4 py-2 border-b border-gray-100">
-                                        <p class="text-xs text-gray-500">Conectado como</p>
-                                        <p class="text-sm font-bold text-gray-800 truncate" x-text="userNombre"></p>
-                                        <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 text-gray-700" x-text="roleLabel"></span>
+                                        <p class="text-[10px] font-extrabold uppercase text-gray-400">Conectado como</p>
+                                        <p class="text-xs font-bold text-gray-900 truncate" x-text="userNombre"></p>
+                                        <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-gray-100 text-gray-700" x-text="roleLabel"></span>
                                     </div>
 
-                                    <a href="/perfil" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                    <a href="/perfil" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                        <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                                         Mi Perfil
                                     </a>
-                                    <a href="/perfil/password" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                    <a href="/perfil/password" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                        <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
                                         Cambiar Contraseña
                                     </a>
                                     <div class="border-t border-gray-100 my-1"></div>
-                                    <button @click="logout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium flex items-center transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                    <button @click="logout" class="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 font-bold flex items-center transition-colors cursor-pointer">
+                                        <svg class="h-4 w-4 mr-2 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                                         Cerrar Sesión
                                     </button>
                                 </div>
@@ -251,28 +268,55 @@
             </div>
         </div>
 
-        <!-- Mobile Menu -->
+        <!-- Mobile Menu con indicador activo sutil -->
         <div x-show="mobileMenuOpen" class="md:hidden border-t border-gray-100" style="display: none;">
-            <div x-data="{ role: localStorage.getItem('role') || 'guest' }" class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <div x-data="{ 
+                role: localStorage.getItem('role') || 'guest',
+                currentPath: window.location.pathname,
+                isActive(target) {
+                    if (target === '/' || target === '/ecommerce/catalogo') {
+                        return this.currentPath === '/' || this.currentPath.startsWith('/ecommerce/catalogo');
+                    }
+                    return this.currentPath === target || this.currentPath.startsWith(target);
+                } 
+            }" class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                
                 <template x-if="role === 'guest' || role === 'cliente'">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Catálogo</a>
+                    <a href="/ecommerce/catalogo" 
+                       :class="isActive('/ecommerce/catalogo') ? 'bg-red-50 text-[#E3001B] font-extrabold border border-red-100' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                       class="block px-3 py-2 rounded-xl text-sm transition-all">Catálogo</a>
                 </template>
                 <template x-if="role === 'cliente'">
-                    <a href="/ecommerce/historial" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Mis Pedidos</a>
+                    <a href="/ecommerce/historial" 
+                       :class="isActive('/ecommerce/historial') ? 'bg-red-50 text-[#E3001B] font-extrabold border border-red-100' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                       class="block px-3 py-2 rounded-xl text-sm transition-all">Mis Pedidos</a>
                 </template>
                 <template x-if="role === 'chofer'">
-                    <a href="/entregas" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Mis Rutas</a>
+                    <a href="/entregas" 
+                       :class="isActive('/entregas') ? 'bg-red-50 text-[#E3001B] font-extrabold border border-red-100' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                       class="block px-3 py-2 rounded-xl text-sm transition-all">Mis Rutas</a>
                 </template>
                 <template x-if="role === 'admin' || role === 'administrador' || role === 'operador'">
-                    <div>
-                        <a href="/dashboard" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Dashboard</a>
-                        <a href="/gestion-pedidos" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Gestión Pedidos</a>
+                    <div class="space-y-1">
+                        <a href="/dashboard" 
+                           :class="isActive('/dashboard') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 rounded-xl text-sm transition-all">Dashboard</a>
+                        <a href="/gestion-pedidos" 
+                           :class="isActive('/gestion-pedidos') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 rounded-xl text-sm transition-all">Gestión Pedidos</a>
+                        <a href="/gestion-rutas" 
+                           :class="isActive('/gestion-rutas') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 rounded-xl text-sm transition-all">Asignación Rutas</a>
                     </div>
                 </template>
                 <template x-if="role === 'admin' || role === 'administrador'">
-                    <div>
-                        <a href="/admin/usuarios" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Usuarios</a>
-                        <a href="/admin/camiones" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">Camiones</a>
+                    <div class="space-y-1 pt-1 border-t border-gray-100">
+                        <a href="/admin/usuarios" 
+                           :class="isActive('/admin/usuarios') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 rounded-xl text-sm transition-all">Usuarios</a>
+                        <a href="/admin/camiones" 
+                           :class="isActive('/admin/camiones') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 rounded-xl text-sm transition-all">Camiones</a>
                     </div>
                 </template>
             </div>
@@ -284,10 +328,10 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-sm font-medium text-gray-500">Bienvenido,</span>
-                    <span class="text-sm font-bold text-gray-900" x-text="userNombre || 'Usuario'"></span>
+                    <span class="text-xs font-semibold text-gray-500">Bienvenido,</span>
+                    <span class="text-xs font-bold text-gray-900" x-text="userNombre || 'Usuario'"></span>
                     <span class="text-gray-300 hidden sm:inline">•</span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wide"
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide"
                           :class="{
                               'bg-purple-100 text-purple-800 border border-purple-200': role === 'administrador' || role === 'admin',
                               'bg-blue-100 text-blue-800 border border-blue-200': role === 'operador',
@@ -390,7 +434,6 @@
             window.location.href = '/auth/login';
         }
 
-        // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').then(registration => {
