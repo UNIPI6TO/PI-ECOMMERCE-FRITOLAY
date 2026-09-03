@@ -103,12 +103,15 @@ class PedidoController extends Controller
     public function show(int $id, \Illuminate\Http\Request $request): JsonResponse
     {
         try {
+            $usuarioId = (int) $request->input('user_id');
             $rol = strtolower($request->input('user_rol', ''));
             if (in_array($rol, ['chofer', 'operador', 'admin', 'administrador'])) {
                 $pedido = app(\App\Contracts\PedidoRepositoryInterface::class)->findById($id);
                 if (!$pedido) throw new \Exception("Pedido no encontrado.");
             } else {
-                $pedido = $this->pedidoService->getPedido($id, (int) $request->input('user_id'));
+                $cliente = \App\Models\Cliente::where('usuario_id', $usuarioId)->first();
+                $clienteId = $cliente ? $cliente->id : 0;
+                $pedido = $this->pedidoService->getPedido($id, $clienteId);
             }
             return response()->json(['data' => $pedido]);
         } catch (\Exception $e) {
@@ -119,7 +122,17 @@ class PedidoController extends Controller
     public function comprobante(int $id, \Illuminate\Http\Request $request): JsonResponse
     {
         try {
+            $usuarioId = (int) $request->input('user_id');
+            $rol = strtolower($request->input('user_rol', ''));
             $pedido = \App\Models\Pedido::findOrFail($id);
+
+            if ($rol === 'cliente') {
+                $cliente = \App\Models\Cliente::where('usuario_id', $usuarioId)->first();
+                if (!$cliente || $pedido->cliente_id !== $cliente->id) {
+                    return response()->json(['error' => 'No tiene permisos para ver este comprobante.'], 403);
+                }
+            }
+
             $url = $this->gcsService->getUrlFirmada($pedido->comprobante_path ?? '');
             return response()->json(['data' => ['url' => $url]]);
         } catch (\Exception $e) {

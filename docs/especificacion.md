@@ -1,4 +1,4 @@
-﻿## Sistema E-commerce y Gestión de Pedidos "Fritolay Ambato" 1. Objetivos del Proyecto Objetivo General
+## Sistema E-commerce y Gestión de Pedidos "Fritolay Ambato" 1. Objetivos del Proyecto Objetivo General
 
 - Construir una aplicación que debe ser web y compatible con PWA.
 
@@ -30,18 +30,27 @@
 
 - 3. Seguridad, Gestión de Estado y Variables de Entorno (Environment)
 
-- Autenticación API: Implementar JWT y usar Secret Manager en GCP para resguardar los secretos de infraestructura y JWT.
+- Autenticación API y JWT: Implementar JWT y usar Secret Manager en GCP para resguardar los secretos de infraestructura y JWT. El sistema utiliza `config('jwt.secret')` de forma estricta evitando llamadas directas a `env()` en ejecución para permitir el soporte de `config:cache`.
 
+- Funcionalidad "Recuérdame" y Cookies Seguras: Opción de "Recuérdame" (Remember Me) en el formulario de inicio de sesión. Manejo de tokens y sesiones mediante cookies seguras configuradas con las directivas `HttpOnly`, `Secure` (para HTTPS) y `SameSite` (`Strict`/`Lax`) para prevenir vulnerabilidades XSS y CSRF.
 
-- Gestión de Contraseñas: Usar hash para comparación de las contraseñas y no estén en la base de datos en texto claro. La clave para generar el hash debe estar en un archivo environment.
+- Políticas de Expiración de Sesión por Rol (TTL Dinámico):
+  - **Límite General (Sin Recuérdame):** La sesión para todos los usuarios (Administrador, Operador, Chofer, Cliente) caduca exactamente en **1 hora** (60 minutos).
+  - **Límite Extendido (Con "Recuérdame" Activo):**
+    - **Administrador y Operador:** **8 horas** (equivalente a 1 jornada laboral continua).
+    - **Chofer:** **12 horas** (cobertura completa de la jornada de ruta extendida).
+    - **Cliente:** **30 días** (persistencia prolongada para experiencias de e-commerce).
 
-- Recuperación de Credenciales: Todos los usuarios pueden recuperar sus credenciales mediante su correo electrónico con un pin de 6 dígitos aleatorios por defecto. La cantidad de dígitos debe ser configurada con una variable de entorno.
+- Gestión de Contraseñas: Usar hash Bcrypt para comparación de contraseñas de forma segura. Todas las cuentas iniciales de entorno local y GCP Cloud SQL cuentan con el estándar unificado `password123`.
 
-- Mensajería: Para la configuración del email para mensajería debe estar configurado en un environment en el backend para las funcionalidades.
+- Recuperación de Credenciales: Todos los usuarios pueden recuperar sus credenciales mediante su correo electrónico con un PIN aleatorio (por defecto 6 dígitos, configurable por variable de entorno).
 
-- Persistencia Temporal: Uso de cookies seguras expirables para mantener el estado del carrito.
+- Mensajería: Configuración de email para mensajería mediante variables de entorno en el backend.
 
-- Caché: Las imágenes (de GCS) deben guardarse en caché del lado del cliente o navegador con una duración configurable (por defecto 4 horas) que sea expirable.
+- Persistencia Temporal del Carrito: Cookies seguras expirables para mantener el estado del carrito.
+
+- Caché: Las imágenes (de GCS) deben guardarse en caché del lado del cliente/navegador con una duración expirable (por defecto 4 horas).
+
 
 ## 4. Roles y Permisos
 
@@ -2497,3 +2506,51 @@ Dado que un Chofer requiere la lista de sus paradas offline
 Cuando hace clic en "Descargar Listado de Ruta"
 Entonces el frontend procesa la tabla de clientes, direcciones y montos a cobrar
 Y renderiza un PDF en formato horizontal (Landscape) utilizando los recursos locales del dispositivo.
+
+---
+
+## 5. Actualizaciones de Seguridad, Autenticación y UI/UX Estandarizada (Ponytail Directives)
+
+### 5.1 Sistema de Autenticación "Recuérdame" y Control Estricto de Cookies
+- **Manejo de Cookies Seguras:** El login emite el token JWT dentro de una cookie HTTP con las directivas `HttpOnly`, `Secure` (en entorno HTTPS) y `SameSite` (`Strict`/`Lax`), previniendo ataques de XSS y CSRF.
+- **Expiración Dinámica de Sesión (TTL por Rol):**
+  - **Sesión Estándar (sin Recuérdame):** Duración fija de **1 hora** (60 minutos) para todos los usuarios.
+  - **Sesión Extendida (con Recuérdame):**
+    - Administrador / Operador: **8 horas** (1 jornada laboral).
+    - Chofer: **12 horas** (jornada de ruta extendida).
+    - Cliente: **30 días** (persistencia de e-commerce).
+- **Hardening de Secretos JWT (PR #46):** Reemplazo del uso directo de `env('JWT_SECRET')` en favor del repositorio configurativo `config('jwt.secret')` para garantizar el soporte de `config:cache` en entornos de producción.
+
+### 5.2 Rediseño e Interfaz de Usuarios y Gestión de Flota (Camiones)
+- **Módulo de Usuarios (`/admin/usuarios`):**
+  - Incorporación de avatares circulares con iniciales calculadas automáticamente.
+  - Insignias de rol en tonos pastel (`Administrador`, `Operador`, `Chofer`, `Cliente`).
+  - Indicador LED de estado en tiempo real (Verde Esmeralda = Activo, Gris = Inactivo).
+  - Buscador dinámico por nombre o correo (`searchTerm`) y filtro desplegable por rol.
+- **Módulo de Gestión de Camiones (`/admin/camiones`):**
+  - Tarjeta de vehículo con icono temático 🚚, placa en negrita tipográfica y subtexto de ID.
+  - Buscador dinámico por placa o modelo (`searchTerm`).
+  - Filtro por estado operativo (`ACTIVO`, `MANTENIMIENTO`, `INACTIVO`).
+  - Selector directo de asignación de choferes registrados con actualización transparente.
+
+### 5.3 Modal Enriquecido de Detalle de Pedidos
+- **Visualización Full Modal / Glassmorphism:** Reemplazo de alertas planas SweetAlert por un modal enriquecido (`bg-slate-900/60 backdrop-blur-xs`) en las vistas de **Gestión de Pedidos** (`/gestion-pedidos`) e **Historial de Pedidos del Cliente** (`/ecommerce/historial`).
+- **Contenido del Modal:**
+  - Encabezado con número de orden `#ID`, fecha de emisión en formato `es-EC` e insignia de estado pastel.
+  - Banner destacado de motivo de cancelación si el pedido fue anulado.
+  - Cuadrícula con datos comerciales (Razón Social, Cliente), Dirección de entrega geolocalizada en km y documento de pago.
+  - Tabla de productos solicitados vs. entregados con precios unitarios y subtotales.
+  - Desglose financiero completo: Subtotal, Descuentos aplicados, IVA (15%) y Total Final (`$XX.XX`).
+  - Acceso directo a vista previa y descarga de Factura PDF, Nota de Crédito oficial SRI y comprobantes de depósito / DE_UNA cargados en GCS.
+
+### 5.4 Navegación Sutil Dinámica en Navbar (`layouts/app.blade.php`)
+- **Resaltado Dinámico de Ruta Activa (`isActive`):** La barra de navegación detecta automáticamente la ruta activa (`window.location.pathname`).
+- **Estilo Visual Adaptativo:**
+  - Rutas de Cliente / Catálogo: Píldora sutil en rojo Frito-Lay pastel (`bg-red-50 text-[#E3001B] border border-red-100 font-extrabold`).
+  - Rutas de Administración / Operación: Píldora sutil en Slate oscuro (`bg-slate-900 text-white font-extrabold shadow-2xs`).
+  - Menú Móvil: Mapeo identico de opciones activas en el menú desplegable responsive.
+
+### 5.5 Paginación Estandarizada Slate
+- **Estructura Unificada de Tablas:** Todas las tablas administrativas (Usuarios, Camiones, Pedidos, Rutas, Historial) comparten la misma barra inferior de paginación Slate (`Mostrando X a Y de Z registros`).
+- **Controles Interactivos:** Botones de páginas numeradas con resaltado activo en Slate oscuro y selector de registros por página (`5`, `10`, `20`, `50`, `100`).
+

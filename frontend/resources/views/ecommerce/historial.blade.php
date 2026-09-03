@@ -220,7 +220,7 @@
         </div>
     </div>
 
-    <!-- Modal Detalle Completo de Pedido del Cliente -->
+    <!-- Modal Detalle Completo de Pedido del Cliente (Paridad Exacta con Gestión de Pedidos) -->
     <div x-show="pedidoSeleccionado" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" style="display: none;">
         <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative border border-gray-100" @click.away="pedidoSeleccionado = null">
             
@@ -315,26 +315,56 @@
                 </div>
             </div>
 
-            <!-- Banner Nota de Crédito si existe -->
-            <template x-if="pedidoSeleccionado?.factura?.nota_credito">
-                <div class="mb-6 bg-purple-50 p-4 rounded-xl border border-purple-200">
-                    <h4 class="font-extrabold text-purple-900 text-xs uppercase tracking-wider mb-2 flex items-center gap-2">
-                        <svg class="h-4 w-4 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
-                        </svg>
-                        Nota de Crédito Oficial SRI Emitida
-                    </h4>
-                    <div class="grid grid-cols-2 gap-2 text-xs text-purple-800 font-medium">
-                        <div><span class="font-bold">N° de Nota:</span> <span class="font-mono font-bold" x-text="pedidoSeleccionado.factura.nota_credito.numero_nota"></span></div>
-                        <div><span class="font-bold">Monto Ajustado:</span> $<span class="font-extrabold" x-text="Number(pedidoSeleccionado.factura.nota_credito.valor_total).toFixed(2)"></span></div>
-                        <div class="col-span-2"><span class="font-bold">Motivo:</span> <span x-text="pedidoSeleccionado.factura.nota_credito.motivo"></span></div>
+            <!-- Resumen Financiero y Comprobante (Idéntico a Gestión de Pedidos) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mb-6">
+                <!-- Vista Previa de Comprobante / Documento -->
+                <div>
+                    <h4 class="font-extrabold text-xs uppercase tracking-wider text-gray-500 mb-2">Comprobante de Pago Adjunto</h4>
+                    <div class="bg-gray-50 rounded-xl flex items-center justify-center min-h-[180px] relative border border-gray-200/80 p-4 overflow-hidden">
+                        
+                        <!-- Loading State -->
+                        <div x-show="loadingComprobante" class="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-xs">
+                            <span class="text-xs font-bold text-gray-600 flex items-center gap-2">
+                                <svg class="animate-spin h-4 w-4 text-slate-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                                Cargando comprobante...
+                            </span>
+                        </div>
+                        
+                        <!-- Sin comprobante -->
+                        <div x-show="!loadingComprobante && !comprobanteUrl" class="text-gray-400 text-center p-4">
+                            <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="text-xs font-semibold">No hay comprobante adjunto o es un método de pago directo.</span>
+                        </div>
+
+                        <!-- Con comprobante -->
+                        <template x-if="!loadingComprobante && comprobanteUrl">
+                            <div class="text-center">
+                                <!-- PDF -->
+                                <template x-if="comprobanteUrl.split('?')[0].toLowerCase().endsWith('.pdf')">
+                                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs">
+                                        <svg class="w-10 h-10 mx-auto text-rose-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                        <p class="text-xs text-gray-700 mb-3 font-semibold">Comprobante de Pago (PDF)</p>
+                                        <a :href="comprobanteUrl" target="_blank" class="inline-block bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all shadow-2xs">
+                                            Abrir Documento PDF ↗
+                                        </a>
+                                    </div>
+                                </template>
+                                <!-- Imagen -->
+                                <template x-if="!comprobanteUrl.split('?')[0].toLowerCase().endsWith('.pdf')">
+                                    <div class="space-y-2">
+                                        <a :href="comprobanteUrl" target="_blank" title="Haz clic para abrir en otra pestaña">
+                                            <img :src="comprobanteUrl" class="max-w-full max-h-[220px] object-contain rounded-xl shadow-md hover:opacity-90 transition-opacity mx-auto bg-white p-1" />
+                                        </a>
+                                        <p class="text-[10px] text-gray-400 font-semibold">💡 Haz clic para ver en tamaño completo.</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </div>
-            </template>
 
-            <!-- Totales del Pedido -->
-            <div class="flex justify-end mb-6">
-                <div class="w-full md:w-1/2 bg-gray-50/80 p-4 rounded-2xl border border-gray-100 space-y-2 text-xs">
+                <!-- Totales del Pedido -->
+                <div class="bg-gray-50/80 p-4 rounded-2xl border border-gray-100 space-y-2 text-xs">
                     <div class="flex justify-between font-semibold text-gray-600">
                         <span>Subtotal:</span>
                         <span x-text="formatMoney(pedidoSeleccionado?.subtotal)"></span>
@@ -353,15 +383,41 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Banner Nota de Crédito si existe -->
+            <template x-if="pedidoSeleccionado?.factura?.nota_credito">
+                <div class="mb-6 bg-purple-50 p-4 rounded-xl border border-purple-200">
+                    <h4 class="font-extrabold text-purple-900 text-xs uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <svg class="h-4 w-4 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
+                        </svg>
+                        Nota de Crédito Oficial SRI Emitida
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-purple-800 font-medium">
+                        <div><span class="font-bold">N° de Nota:</span> <span class="font-mono font-bold" x-text="pedidoSeleccionado.factura.nota_credito.numero_nota"></span></div>
+                        <div><span class="font-bold">Monto Ajustado:</span> $<span class="font-extrabold" x-text="Number(pedidoSeleccionado.factura.nota_credito.valor_total).toFixed(2)"></span></div>
+                        <div class="col-span-2"><span class="font-bold">Motivo:</span> <span x-text="pedidoSeleccionado.factura.nota_credito.motivo"></span></div>
+                    </div>
+                </div>
+            </template>
             
             <!-- Acciones -->
-            <div class="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
-                <button @click="verPdf(pedidoSeleccionado)" class="bg-white hover:bg-red-50 text-slate-800 hover:text-red-700 border border-gray-200 px-4 py-2 rounded-xl text-xs font-extrabold transition-all shadow-2xs">
-                    📄 Descargar Factura
-                </button>
-                <button @click="pedidoSeleccionado = null" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer">
-                    Cerrar
-                </button>
+            <div class="flex items-center justify-between flex-wrap gap-2.5 pt-4 border-t border-gray-100">
+                <div>
+                    <template x-if="comprobanteUrl">
+                        <a :href="comprobanteUrl" target="_blank" class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-4 py-2 rounded-xl text-xs font-extrabold transition-all shadow-2xs flex items-center gap-1.5">
+                            🖼️ Ver Comprobante Original ↗
+                        </a>
+                    </template>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <button @click="verPdf(pedidoSeleccionado)" class="bg-white hover:bg-red-50 text-slate-800 hover:text-red-700 border border-gray-200 px-4 py-2 rounded-xl text-xs font-extrabold transition-all shadow-2xs">
+                        📄 Descargar Factura
+                    </button>
+                    <button @click="pedidoSeleccionado = null" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer">
+                        Cerrar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -376,6 +432,8 @@ document.addEventListener('alpine:init', () => {
         pedidosOriginales: [],
         pedidosFiltrados: [],
         pedidoSeleccionado: null,
+        comprobanteUrl: null,
+        loadingComprobante: false,
         perPage: 10,
         currentPage: 1,
         loading: false,
@@ -528,8 +586,33 @@ document.addEventListener('alpine:init', () => {
             if (p >= 1 && p <= this.totalPages) this.currentPage = p;
         },
 
-        verDetalle(pedido) {
+        async verDetalle(pedido) {
             this.pedidoSeleccionado = pedido;
+            this.comprobanteUrl = null;
+            this.loadingComprobante = true;
+
+            try {
+                const res = await window.api(`/api/pedidos/${pedido.id}`);
+                const fullObj = res?.data || res;
+                if (fullObj && fullObj.id) {
+                    this.pedidoSeleccionado = fullObj;
+                }
+            } catch (e) {
+                console.warn("Utilizando datos en memoria del pedido:", e);
+            }
+
+            const p = this.pedidoSeleccionado;
+            const pagoUpper = (p.metodo_pago || p.pago || '').toUpperCase();
+            
+            if (p.comprobante_path || pagoUpper.includes('DE_UNA') || pagoUpper.includes('DEPOSITO') || pagoUpper.includes('DEPOSIT')) {
+                try {
+                    const compRes = await window.api(`/api/pedidos/${p.id}/comprobante`);
+                    this.comprobanteUrl = compRes?.data?.url || compRes?.url || null;
+                } catch (e) {
+                    console.log("Sin comprobante adjunto o error al obtener URL:", e);
+                }
+            }
+            this.loadingComprobante = false;
         },
 
         async cancelarPedido(pedido) {
