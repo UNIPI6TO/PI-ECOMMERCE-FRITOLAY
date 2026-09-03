@@ -29,7 +29,18 @@ class PedidoController extends Controller
             ->get()
             ->keyBy('pedido_id');
 
-        $pedidos = \App\Models\Pedido::with(['cliente.usuario', 'direccion'])->orderBy('id', 'desc')->get();
+        $query = \App\Models\Pedido::with(['cliente.usuario', 'direccion']);
+
+        if ($request->filled('fecha_inicio')) {
+            $inicio = \Carbon\Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+            $query->where('creado_en', '>=', $inicio);
+        }
+        if ($request->filled('fecha_fin')) {
+            $fin = \Carbon\Carbon::parse($request->input('fecha_fin'))->endOfDay();
+            $query->where('creado_en', '<=', $fin);
+        }
+
+        $pedidos = $query->orderBy('id', 'desc')->get();
         
         $data = $pedidos->map(function($p) use ($asignaciones) {
             $rawEstado = strtolower($p->estado);

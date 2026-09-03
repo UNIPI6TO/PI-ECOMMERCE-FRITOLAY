@@ -16,8 +16,8 @@ class DashboardService
 
     public function getKpis(array $filtrosFecha): array
     {
-        $inicio = Carbon::parse($filtrosFecha['fecha_inicio'] ?? now()->subDays(30));
-        $fin = Carbon::parse($filtrosFecha['fecha_fin'] ?? now());
+        $inicio = Carbon::parse($filtrosFecha['fecha_inicio'] ?? now())->startOfDay();
+        $fin = Carbon::parse($filtrosFecha['fecha_fin'] ?? now())->endOfDay();
 
         $porEstado = $this->reporteRepository->getPedidosCountPorEstado($inicio, $fin);
         
@@ -34,8 +34,8 @@ class DashboardService
 
     public function getVentas(array $filtrosFecha): array
     {
-        $inicio = Carbon::parse($filtrosFecha['fecha_inicio'] ?? now()->subDays(30));
-        $fin = Carbon::parse($filtrosFecha['fecha_fin'] ?? now());
+        $inicio = Carbon::parse($filtrosFecha['fecha_inicio'] ?? now())->startOfDay();
+        $fin = Carbon::parse($filtrosFecha['fecha_fin'] ?? now())->endOfDay();
 
         $porDia = $this->reporteRepository->getVentasPorDia($inicio, $fin);
         
@@ -48,8 +48,8 @@ class DashboardService
 
     public function getRecaudacion(array $filtrosFecha): array
     {
-        $inicio = Carbon::parse($filtrosFecha['fecha_inicio'] ?? now()->subDays(30));
-        $fin = Carbon::parse($filtrosFecha['fecha_fin'] ?? now());
+        $inicio = Carbon::parse($filtrosFecha['fecha_inicio'] ?? now())->startOfDay();
+        $fin = Carbon::parse($filtrosFecha['fecha_fin'] ?? now())->endOfDay();
 
         return [
             'por_metodo_pago' => $this->reporteRepository->getRecaudacionPorMetodo($inicio, $fin)

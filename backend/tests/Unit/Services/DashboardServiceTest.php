@@ -8,26 +8,22 @@ use Tests\TestCase;
 use App\Services\DashboardService;
 use App\Repositories\ReporteRepository;
 use Carbon\Carbon;
-use Mockery;
+use Illuminate\Support\Collection;
 
 class DashboardServiceTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
     public function test_get_kpis_calcula_efectividad()
     {
-        $reporteRepo = Mockery::mock(ReporteRepository::class);
-
-        $reporteRepo->shouldReceive('getPedidosCountPorEstado')
-            ->andReturn([
-                'entregado' => 4,
-                'entregado_parcialmente' => 1,
-                'cancelado' => 5
-            ]);
+        $reporteRepo = new class extends ReporteRepository {
+            public function getPedidosCountPorEstado(Carbon $inicio, Carbon $fin): array
+            {
+                return [
+                    'entregado' => 4,
+                    'entregado_parcialmente' => 1,
+                    'cancelado' => 5
+                ];
+            }
+        };
 
         $service = new DashboardService($reporteRepo);
         
@@ -39,15 +35,19 @@ class DashboardServiceTest extends TestCase
 
     public function test_get_ventas_calcula_total()
     {
-        $reporteRepo = Mockery::mock(ReporteRepository::class);
-
-        $ventasDiaMock = collect([
-            ['fecha' => '2023-01-01', 'total' => 100],
-            ['fecha' => '2023-01-02', 'total' => 250]
-        ]);
-
-        $reporteRepo->shouldReceive('getVentasPorDia')->andReturn($ventasDiaMock);
-        $reporteRepo->shouldReceive('getVentasPorCamion')->andReturn(collect([]));
+        $reporteRepo = new class extends ReporteRepository {
+            public function getVentasPorDia(Carbon $inicio, Carbon $fin): Collection
+            {
+                return collect([
+                    (object)['fecha' => '2023-01-01', 'total' => 100],
+                    (object)['fecha' => '2023-01-02', 'total' => 250]
+                ]);
+            }
+            public function getVentasPorCamion(Carbon $inicio, Carbon $fin): Collection
+            {
+                return collect([]);
+            }
+        };
 
         $service = new DashboardService($reporteRepo);
         

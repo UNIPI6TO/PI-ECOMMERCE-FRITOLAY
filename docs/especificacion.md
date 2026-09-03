@@ -69,7 +69,7 @@
   - **Vaciado al Finalizar Compra:** Al completar un pedido exitosamente, el sistema debe vaciar automáticamente el carrito (`CarritoManager.vaciar()`) antes de redirigir a la pantalla de confirmación. No se registra abandono en este caso (el pedido fue concretado).
 
 
-- Control de Stock: En el dashboard puede consultar el stock de los productos de las bodegas, de la bodega master y de los vehículos.
+- Control de Stock: En el dashboard puede consultar el stock de los productos de las bodegas, de la bodega master y de los vehículos. Para el inventario de los vehículos, el sistema debe omitir (filtrar) aquellos productos cuya cantidad física sea 0 para mantener la interfaz limpia y enfocada en la mercadería real a bordo.
 
 ## 5.2. Módulo de Gestión de Pedidos (Operativo y Administrativo)
 
@@ -137,7 +137,7 @@
 
 - Devoluciones: Las devoluciones parciales solo aplican en pedidos en efectivo, si el pago es de otro tipo la devolución es total.
 
-- Cierre de Caja: Guías pendientes de cierre, un reporte visual dinero por cada guía de ruta para realizar el cierre de la caja del camión, tener la opción de cierre donde debe declarar el valor en efectivo actual.
+- Cierre de Caja y Desglose Financiero: Guías pendientes de cierre, un reporte visual por cada guía de ruta. Esta pantalla (Mis Rutas Asignadas) debe mostrar un Desglose Financiero claro, calculando y separando la recaudación en Transferencias/Tarjetas y destacando prominentemente el 'Total Recaudado en Efectivo' esperado, ya que este es el valor crítico que el chofer debe cuadrar en su arqueo.
 
 ## 5.4. Módulo de Clientes (E-commerce)
 
@@ -452,7 +452,7 @@ Como: Operador de Ruta Quiero: Confirmar la recepción del dinero en efectivo y 
 
 Característica: Cierre de caja y encerado de bodegas móviles
 
-Escenario: Flujo principal exitoso de cierre con mercadería en buen estado Dado que un camión tiene una guía en estado de "Confirmación de cierre" Y el chofer ha declarado el valor en efectivo actual en su arqueo Cuando el Operador de Ruta confirma la recepción del dinero y
+Escenario: Flujo principal exitoso de cierre con mercadería en buen estado Dado que un camión tiene una guía en estado de "Confirmación de cierre" Y el chofer ha declarado el valor en efectivo actual guiado por el Desglose Financiero (Total en Efectivo esperado) Cuando el Operador de Ruta confirma la recepción del dinero y
 
 
 de los productos devueltos en buen estado Entonces el sistema actualiza el inventario máster sumando los productos recibidos Y genera las transacciones de ingreso correspondientes Y el sistema encera el inventario del camión dejándolo en cero.
@@ -2465,3 +2465,35 @@ Tanto el cliente como el operador (desde el modal de revisión) pueden cancelar 
 
 - **Asignación a Camiones:** Solucionado el flujo de endpoints RESTful. El controlador `CamionController` y su interfaz en repositorio (`CamionRepositoryInterface`) soportan correctamente el cambio de estados y la asignación paramétrica de Choferes a Camiones utilizando métodos `update()`.
 - **Enrutamiento Frontend:** Corrección en el mapeo `window.api()` donde la ruta apuntaba a recursos inexistentes (`/api/admin/camiones` vs `/api/camiones`), restaurando la capacidad de cargar y asignar choferes a la flota desde la interfaz administrativa de forma transparente.
+
+Épica: Módulo de Entregas (Chofer) y Gestión
+
+## HU-008 - Renderizado de PDFs del Lado del Cliente (Offloading)
+
+Como: Líder Técnico / Arquitecto de Software 
+Quiero: Que la generación de documentos PDF (Guías de Remisión, Listado de Ruta, Facturas) se procese exclusivamente en el navegador del cliente utilizando `pdfmake` 
+Para: Eliminar la carga computacional en el backend (servidor), reducir el consumo de memoria RAM, mejorar los tiempos de respuesta y aprovechar el procesamiento distribuido de los dispositivos de los usuarios.
+Prioridad: Crítica (Restricción Técnica)
+
+## Reglas de negocio
+
+- RN-01: Queda estrictamente prohibido el uso de librerías de servidor como `dompdf` o `snappy` para renderizar documentos.
+- RN-02: El backend debe proveer únicamente los datos crudos en formato JSON a través de endpoints ligeros.
+- RN-03: El frontend debe construir el documento de manera declarativa con `pdfmake` y activar la descarga directamente en el navegador.
+
+## Criterios de aceptación en Gherkin
+
+Característica: Generación de Documentos PDF Cliente-Servidor Optimizada
+
+Escenario: Descarga de Guía de Remisión (Formato SRI)
+Dado que un Operador de Ruta o Chofer visualiza sus guías activas
+Cuando hace clic en el botón "Descargar Guía de Remisión"
+Entonces el frontend obtiene el JSON del pedido desde el servidor
+Y el navegador (cliente) ensambla y renderiza el PDF localmente
+Y el archivo se descarga instantáneamente sin recargar la página.
+
+Escenario: Descarga de Listado de Ruta Detallado
+Dado que un Chofer requiere la lista de sus paradas offline
+Cuando hace clic en "Descargar Listado de Ruta"
+Entonces el frontend procesa la tabla de clientes, direcciones y montos a cobrar
+Y renderiza un PDF en formato horizontal (Landscape) utilizando los recursos locales del dispositivo.

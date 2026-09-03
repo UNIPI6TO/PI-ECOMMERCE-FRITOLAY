@@ -2,12 +2,52 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="gestionPedidos()">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Gestión de Pedidos</h1>
-        <div class="flex space-x-2">
-            <input type="text" placeholder="Filtro (ej: last 24h)" class="border px-4 py-2 rounded w-64">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Gestión de Pedidos</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Control de órdenes, aprobaciones y geolocalización</p>
+        </div>
+        
+        <!-- Filtro de Rango de Fechas (Persistente en Sesión, Defecto 1 Semana, Máx. 1 Mes) -->
+        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2 text-sm text-gray-700">
+                <label class="font-semibold text-gray-600">Fecha Inicial:</label>
+                <input type="date" 
+                       x-model="fechaInicio" 
+                       @change="onFechaInicioChange()" 
+                       class="border border-gray-300 rounded px-2.5 py-1 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+            </div>
+            
+            <div class="flex items-center gap-2 text-sm text-gray-700">
+                <label class="font-semibold text-gray-600">Fecha Final:</label>
+                <input type="date" 
+                       x-model="fechaFin" 
+                       :min="fechaInicio"
+                       :max="maxFechaFin" 
+                       @change="onFechaFinChange()" 
+                       class="border border-gray-300 rounded px-2.5 py-1 text-sm font-medium text-gray-800 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+            </div>
+
+            <button @click="resetFechasSemana()" 
+                    class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded transition-colors"
+                    title="Restablecer a 1 semana atrás">
+                Última Semana
+            </button>
         </div>
     </div>
+
+    <!-- Indicador de Carga (Spinner) -->
+    <div x-show="loading" class="flex flex-col items-center justify-center py-24 bg-white rounded-xl shadow-sm border border-gray-100 my-4">
+        <svg class="animate-spin h-12 w-12 text-[#E3001B] mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        <span class="text-base font-semibold text-gray-700">Cargando pedidos...</span>
+        <span class="text-xs text-gray-400 mt-1">Por favor espera un momento</span>
+    </div>
+
+    <!-- Contenido de Gestión de Pedidos -->
+    <div x-show="!loading" x-transition.opacity>
 
     <!-- KPI Cards -->
     <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
@@ -209,96 +249,178 @@
             </div>
         </div>
     </div>
+    </div>
 </div>
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('gestionPedidos', () => ({
-        filtroEstado: null,
-        estados: [
-            {nombre: 'TODOS', count: 0, color: 'border-gray-500'},
-            {nombre: 'CANCELADO', count: 0, color: 'border-red-500'},
-            {nombre: 'PENDIENTE', count: 0, color: 'border-yellow-500'},
-            {nombre: 'APROBADO', count: 0, color: 'border-blue-500'},
-            {nombre: 'EN_RUTA', count: 0, color: 'border-indigo-500'},
-            {nombre: 'ENTREGADO', count: 0, color: 'border-green-500'}
-        ],
-        pedidos: [],
-        camiones: [],
-        map: null,
-        markersLayer: null,
-        currentLat: null,
-        currentLng: null,
+    Alpine.data('gestionPedidos', () => {
+        const getFormattedDate = (dateObj) => {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const todayObj = new Date();
+        const todayStr = getFormattedDate(todayObj);
         
-        // Paginación
-        currentPage: 1,
-        perPage: 10,
-        sortCol: 'raw_fecha',
-        sortDesc: true,
+        // Defecto: 1 semana atrás (7 días)
+        const oneWeekAgoObj = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const oneWeekAgoStr = getFormattedDate(oneWeekAgoObj);
 
-        // Variables del Modal de Revisión
-        revisarModal: false,
-        selectedPedido: null,
-        comprobanteUrl: null,
-        loadingComprobante: false,
-        mostrarRechazo: false,
-        motivoRechazo: '',
+        // Recuperar de sessionStorage o defecto (hace 1 semana hasta hoy)
+        const initialFechaInicio = sessionStorage.getItem('gestion_pedidos_fecha_inicio') || oneWeekAgoStr;
+        const initialFechaFin = sessionStorage.getItem('gestion_pedidos_fecha_fin') || todayStr;
 
-        // Variables del Modal de Asignar Ruta
-        asignarModal: false,
-        selectedCamionId: '',
-        
-        async init() {
-            try {
-                // Load Pedidos and Camiones in parallel
-                const [pedidosRes, camionesRes] = await Promise.all([
-                    window.api('/api/pedidos'),
-                    window.api('/api/camiones')
-                ]);
-                
-                this.pedidos = pedidosRes;
-                this.camiones = camionesRes;
-                if(this.camiones.data) this.camiones = this.camiones.data;
-                
-                this.updateCounts();
-            } catch (error) {
-                console.error("Error al cargar pedidos:", error);
-            }
+        return {
+            fechaInicio: initialFechaInicio,
+            fechaFin: initialFechaFin,
+            loading: true,
+            filtroEstado: null,
+            estados: [
+                {nombre: 'TODOS', count: 0, color: 'border-gray-500'},
+                {nombre: 'CANCELADO', count: 0, color: 'border-red-500'},
+                {nombre: 'PENDIENTE', count: 0, color: 'border-yellow-500'},
+                {nombre: 'APROBADO', count: 0, color: 'border-blue-500'},
+                {nombre: 'EN_RUTA', count: 0, color: 'border-indigo-500'},
+                {nombre: 'ENTREGADO', count: 0, color: 'border-green-500'}
+            ],
+            pedidos: [],
+            camiones: [],
+            map: null,
+            markersLayer: null,
+            currentLat: null,
+            currentLng: null,
+            
+            // Paginación
+            currentPage: 1,
+            perPage: 10,
+            sortCol: 'raw_fecha',
+            sortDesc: true,
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    this.currentLat = pos.coords.latitude;
-                    this.currentLng = pos.coords.longitude;
-                    
-                    // Inyectar la distancia en el array para poder ordenar la tabla
-                    this.pedidos.forEach(p => {
-                        if (p.lat && p.lng) {
-                            p.distancia = parseFloat(this.getDist(this.currentLat, this.currentLng, p.lat, p.lng));
-                        } else {
-                            p.distancia = 999999; // Fallback para que salgan al fondo al ordenar
-                        }
+            // Variables del Modal de Revisión
+            revisarModal: false,
+            selectedPedido: null,
+            comprobanteUrl: null,
+            loadingComprobante: false,
+            mostrarRechazo: false,
+            motivoRechazo: '',
+
+            // Variables del Modal de Asignar Ruta
+            asignarModal: false,
+            selectedCamionId: '',
+
+            // CÁLCULO DE FECHA MÁXIMA PERMITIDA (Máximo 1 Mes a partir de Fecha Inicial)
+            get maxFechaFin() {
+                if (!this.fechaInicio) return '';
+                const parts = this.fechaInicio.split('-').map(Number);
+                const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                dateObj.setMonth(dateObj.getMonth() + 1);
+                return getFormattedDate(dateObj);
+            },
+
+            async init() {
+                this.validarRangoFechas();
+                await this.cargarDatos();
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        this.currentLat = pos.coords.latitude;
+                        this.currentLng = pos.coords.longitude;
+                        
+                        this.pedidos.forEach(p => {
+                            if (p.lat && p.lng) {
+                                p.distancia = parseFloat(this.getDist(this.currentLat, this.currentLng, p.lat, p.lng));
+                            } else {
+                                p.distancia = 999999;
+                            }
+                        });
+
+                        this.renderMarkers();
                     });
+                }
 
+                this.$watch('filtroEstado', () => {
+                    this.currentPage = 1;
                     this.renderMarkers();
                 });
-            }
-            
-            if (!this.map) {
-                setTimeout(() => {
-                    this.map = L.map('mapa-gestion').setView([-1.249, -78.616], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
-                    this.markersLayer = L.layerGroup().addTo(this.map);
-                    this.renderMarkers();
-                }, 100);
-            } else {
-                this.renderMarkers();
-            }
+            },
 
-            this.$watch('filtroEstado', () => {
-                this.currentPage = 1;
-                this.renderMarkers();
-            });
-        },
+            validarRangoFechas() {
+                if (!this.fechaInicio) this.fechaInicio = oneWeekAgoStr;
+                if (!this.fechaFin) this.fechaFin = todayStr;
+
+                // 1. Fecha Final no menor a la Fecha Inicial
+                if (this.fechaFin < this.fechaInicio) {
+                    this.fechaFin = this.fechaInicio;
+                }
+
+                // 2. Fecha Final no mayor a 1 mes desde Fecha Inicial
+                const maxPermitida = this.maxFechaFin;
+                if (maxPermitida && this.fechaFin > maxPermitida) {
+                    this.fechaFin = maxPermitida;
+                }
+
+                // Persistencia en sesión
+                sessionStorage.setItem('gestion_pedidos_fecha_inicio', this.fechaInicio);
+                sessionStorage.setItem('gestion_pedidos_fecha_fin', this.fechaFin);
+            },
+
+            onFechaInicioChange() {
+                this.validarRangoFechas();
+                this.cargarDatos();
+            },
+
+            onFechaFinChange() {
+                this.validarRangoFechas();
+                this.cargarDatos();
+            },
+
+            resetFechasSemana() {
+                this.fechaInicio = oneWeekAgoStr;
+                this.fechaFin = todayStr;
+                this.validarRangoFechas();
+                this.cargarDatos();
+            },
+
+            async cargarDatos() {
+                this.loading = true;
+                try {
+                    const params = `?fecha_inicio=${this.fechaInicio}&fecha_fin=${this.fechaFin}`;
+                    const [pedidosRes, camionesRes] = await Promise.all([
+                        window.api(`/api/pedidos${params}`),
+                        window.api('/api/camiones')
+                    ]);
+                    
+                    this.pedidos = pedidosRes || [];
+                    this.camiones = camionesRes || [];
+                    if(this.camiones.data) this.camiones = this.camiones.data;
+                    
+                    this.updateCounts();
+                    this.renderMapa();
+                } catch (error) {
+                    console.error("Error al cargar pedidos:", error);
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            renderMapa() {
+                if (!this.map) {
+                    setTimeout(() => {
+                        const mapEl = document.getElementById('mapa-gestion');
+                        if (mapEl) {
+                            this.map = L.map('mapa-gestion').setView([-1.249, -78.616], 13);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+                            this.markersLayer = L.layerGroup().addTo(this.map);
+                            this.renderMarkers();
+                        }
+                    }, 100);
+                } else {
+                    this.renderMarkers();
+                }
+            },
         
         renderMarkers() {
             if(!this.markersLayer) return;
@@ -553,7 +675,8 @@ document.addEventListener('alpine:init', () => {
         prevPage() {
             if (this.currentPage > 1) this.currentPage--;
         }
-    }));
+        };
+    });
 });
 </script>
 @endsection

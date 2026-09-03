@@ -41,9 +41,11 @@ function loginForm() {
     return {
         email: '',
         password: '',
+        error: '',
         loading: false,
         async submit() {
             this.loading = true;
+            this.error = '';
             try {
                 const data = await window.api('/api/auth/login', {
                     method: 'POST',
@@ -51,7 +53,9 @@ function loginForm() {
                 });
                 localStorage.setItem('jwt_token', data.token);
                 let role = data.user?.rol || data.role || 'cliente';
+                let nombre = data.user?.nombre || data.nombre || data.user?.email || '';
                 localStorage.setItem('role', role);
+                localStorage.setItem('user_nombre', nombre);
                 
                 if (role === 'cliente') {
                     window.location.href = '/ecommerce/catalogo';
@@ -63,10 +67,11 @@ function loginForm() {
                     window.location.href = '/dashboard';
                 }
             } catch (e) {
+                this.error = e.message || 'Credenciales inválidas. Verifica tu email y contraseña.';
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al iniciar sesión',
-                    text: e.message || 'Credenciales inválidas. Verifica tu email y contraseña.',
+                    text: this.error,
                     confirmButtonColor: '#E3001B'
                 });
             } finally {
