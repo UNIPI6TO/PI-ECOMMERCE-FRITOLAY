@@ -77,13 +77,13 @@
         </div>
     </div>
 
-    <!-- Charts Row 1: Ventas por Día & Métodos de Pago (ORIGINAL CLEAN LINE CHART) -->
+    <!-- Charts Row 1: Ventas en el Tiempo & Métodos de Pago -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-xs border border-gray-100">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h3 class="font-bold text-gray-900 text-base">Ventas por Día</h3>
-                    <p class="text-xs text-gray-400">Evolución del monto facturado ($) en el periodo seleccionado</p>
+                    <h3 class="font-bold text-gray-900 text-base" x-text="esRangoCorto ? 'Ventas por Hora' : 'Ventas por Día'">Ventas por Día</h3>
+                    <p class="text-xs text-gray-400" x-text="esRangoCorto ? 'Evolución horaria del monto facturado ($) en el periodo seleccionado' : 'Evolución diaria del monto facturado ($) en el periodo seleccionado'">Evolución del monto facturado ($) en el periodo seleccionado</p>
                 </div>
             </div>
             <div style="height: 300px;">
@@ -120,10 +120,10 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Tendencia de Pérdidas por Día -->
+            <!-- Tendencia de Pérdidas por Día/Hora -->
             <div class="bg-white p-5 rounded-xl shadow-xs border border-rose-100">
-                <h3 class="font-bold text-gray-900 text-sm mb-1">Tendencia de Dinero Perdido por Día ($)</h3>
-                <p class="text-xs text-gray-400 mb-4">Evolución diaria de pérdidas monetarias acumuladas</p>
+                <h3 class="font-bold text-gray-900 text-sm mb-1" x-text="esRangoCorto ? 'Tendencia de Dinero Perdido por Hora ($)' : 'Tendencia de Dinero Perdido por Día ($)'">Tendencia de Dinero Perdido por Día ($)</h3>
+                <p class="text-xs text-gray-400 mb-4" x-text="esRangoCorto ? 'Evolución horaria de pérdidas monetarias acumuladas' : 'Evolución diaria de pérdidas monetarias acumuladas'">Evolución diaria de pérdidas monetarias acumuladas</p>
                 <div style="height: 280px;">
                     <canvas id="perdidasDia"></canvas>
                 </div>
@@ -380,6 +380,14 @@ document.addEventListener('alpine:init', () => {
                 }
                 return false;
             },
+            get esRangoCorto() {
+                if (!this.fechaInicio || !this.fechaFin) return false;
+                const d1 = new Date(this.fechaInicio);
+                const d2 = new Date(this.fechaFin);
+                const diffTime = Math.abs(d2 - d1);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 2;
+            },
 
             async cargarDashboard() {
                 this.loading = true;
@@ -496,6 +504,23 @@ document.addEventListener('alpine:init', () => {
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: { display: true }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'category',
+                                    ticks: {
+                                        autoSkip: false,
+                                        maxRotation: 45,
+                                        minRotation: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: this.esRangoCorto ? 'Hora' : 'Fecha'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true
+                                }
                             }
                         }
                     });
@@ -528,7 +553,7 @@ document.addEventListener('alpine:init', () => {
                     });
                 }
 
-                // Chart 3: Tendencia de Dinero Perdido por Día ($) (EXCLUSIVO DE PÉRDIDAS)
+                // Chart 3: Tendencia de Dinero Perdido por Día/Hora ($) (EXCLUSIVO DE PÉRDIDAS)
                 let labelsPerdidasDia = [];
                 let dataPerdidasDia = [];
                 if (perdidasData && perdidasData.por_dia && perdidasData.por_dia.length > 0) {
@@ -559,6 +584,23 @@ document.addEventListener('alpine:init', () => {
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: { display: true }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'category',
+                                    ticks: {
+                                        autoSkip: false,
+                                        maxRotation: 45,
+                                        minRotation: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: this.esRangoCorto ? 'Hora' : 'Fecha'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true
+                                }
                             }
                         }
                     });

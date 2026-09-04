@@ -2467,6 +2467,13 @@ Para garantizar el cumplimiento de normativas tributarias (SRI) y de auditoría 
 - **Rollback Automático:** Ante cualquier excepción o fallo imprevisto durante una secuencia multi-tabla (ej: error en registro de mercadería o actualización de inventario), la base de datos aborta y revierte automáticamente (`rollback`) todas las escrituras sin dejar registros parciales o huérfanos.
 - **Paridad Multi-entorno:** La migración masiva de estructura y backfill de datos históricos fue ejecutada tanto en el servidor local **MySQL (`127.0.0.1:3306`)** como en la base de datos de producción **GCP Cloud SQL (`34.72.182.198:3306`)**.
 
+### 2.5 Granularidad Dinámica y Control de Eje Temporal en Gráficos de Series de Tiempo (Timeline Series)
+Para mejorar la legibilidad visual y evitar que la segmentación automática por defecto de la librería arruine la tendencia de los gráficos del Dashboard Administrativo, se implementó una regla condicional según el rango de fechas seleccionado por el usuario:
+
+- **Rango Corto (Hasta 2 Días):** Si el intervalo entre la fecha inicial y la fecha final es de **1 o 2 días** (`diffInDays <= 2`), los registros son agrupados en backend estrictamente por horas mediante `DATE_FORMAT(fecha, '%Y-%m-%d %H:00')`.
+- **Rango Largo (3 Días o Más):** Si el intervalo es de **3 días en adelante**, la agrupación en la consulta backend cambia dinámicamente a días mediante `DATE(fecha)`.
+- **Forzado de Granularidad en Frontend (Chart.js):** En [index.blade.php](file:///d:/UNIANDES/8VO/HERRAMIENTAS%20DE%20DESARROLLO%20DE%20SOFTWARE/PI-ECOMMERCE-FRITOLAY/frontend/resources/views/dashboard/index.blade.php), se configuraron explícitamente las opciones del eje X (`scales.x`) asignando `type: 'category'` con `ticks.autoSkip: false` y títulos dinámicos (`Hora` o `Fecha`). Esto desactiva el auto-escalado conflictivo de Chart.js y garantiza que las tendencias de Ventas y Pérdidas se rendericen con la resolución exacta solcitada.
+
 ## 3. Arquitectura y Correcciones de Sistema Core
 
 ### 3.1 Middleware de Autenticación JWT Stateless

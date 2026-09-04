@@ -12,9 +12,14 @@ class ReporteRepository
 {
     public function getVentasPorDia(Carbon $inicio, Carbon $fin): Collection
     {
+        $diasDiff = $inicio->diffInDays($fin);
+        $groupByRaw = $diasDiff <= 2 
+            ? "DATE_FORMAT(p.creado_en, '%Y-%m-%d %H:00')" 
+            : "DATE(p.creado_en)";
+
         return DB::table('pedidos as p')
             ->select(
-                DB::raw('DATE(p.creado_en) as fecha'),
+                DB::raw("{$groupByRaw} as fecha"),
                 DB::raw('SUM(CASE 
                     WHEN p.estado = "entregado" THEN p.total
                     WHEN p.estado = "entregado_parcialmente" THEN (
@@ -26,7 +31,7 @@ class ReporteRepository
             )
             ->whereIn('p.estado', ['entregado', 'entregado_parcialmente'])
             ->whereBetween('p.creado_en', [$inicio, $fin])
-            ->groupBy(DB::raw('DATE(p.creado_en)'))
+            ->groupBy(DB::raw($groupByRaw))
             ->get();
     }
 
@@ -135,22 +140,30 @@ class ReporteRepository
 
     public function getPerdidasPorDia(Carbon $inicio, Carbon $fin): Collection
     {
+        $diasDiff = $inicio->diffInDays($fin);
+        $groupByCarritos = $diasDiff <= 2 
+            ? "DATE_FORMAT(fecha_abandono, '%Y-%m-%d %H:00')" 
+            : "DATE(fecha_abandono)";
+        $groupByPedidos = $diasDiff <= 2 
+            ? "DATE_FORMAT(creado_en, '%Y-%m-%d %H:00')" 
+            : "DATE(creado_en)";
+
         $carritos = DB::table('carritos_abandonados')
             ->select(
-                DB::raw('DATE(fecha_abandono) as fecha'),
+                DB::raw("{$groupByCarritos} as fecha"),
                 DB::raw('SUM(valor_total) as total_perdido')
             )
             ->whereBetween('fecha_abandono', [$inicio, $fin])
-            ->groupBy(DB::raw('DATE(fecha_abandono)'));
+            ->groupBy(DB::raw($groupByCarritos));
 
         $pedidos = DB::table('pedidos')
             ->select(
-                DB::raw('DATE(creado_en) as fecha'),
+                DB::raw("{$groupByPedidos} as fecha"),
                 DB::raw('SUM(total) as total_perdido')
             )
             ->whereIn('estado', ['cancelado', 'no_entregado'])
             ->whereBetween('creado_en', [$inicio, $fin])
-            ->groupBy(DB::raw('DATE(creado_en)'));
+            ->groupBy(DB::raw($groupByPedidos));
 
         $unificado = $carritos->unionAll($pedidos)->get();
 
@@ -164,9 +177,14 @@ class ReporteRepository
 
     public function getTendenciaVolumenYVentas(Carbon $inicio, Carbon $fin): Collection
     {
+        $diasDiff = $inicio->diffInDays($fin);
+        $groupByRaw = $diasDiff <= 2 
+            ? "DATE_FORMAT(p.creado_en, '%Y-%m-%d %H:00')" 
+            : "DATE(p.creado_en)";
+
         return DB::table('pedidos as p')
             ->select(
-                DB::raw('DATE(p.creado_en) as fecha'),
+                DB::raw("{$groupByRaw} as fecha"),
                 DB::raw('COUNT(*) as cantidad_pedidos'),
                 DB::raw('SUM(CASE 
                     WHEN p.estado = "entregado" THEN p.total
@@ -180,7 +198,7 @@ class ReporteRepository
             )
             ->whereBetween('p.creado_en', [$inicio, $fin])
             ->where('p.estado', '!=', 'cancelado')
-            ->groupBy(DB::raw('DATE(p.creado_en)'))
+            ->groupBy(DB::raw($groupByRaw))
             ->orderBy('fecha', 'asc')
             ->get();
     }
