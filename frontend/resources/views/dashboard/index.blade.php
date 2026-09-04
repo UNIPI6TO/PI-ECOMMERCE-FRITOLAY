@@ -53,27 +53,27 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-blue-500 border-y border-r border-gray-100">
             <div class="text-xs font-bold uppercase tracking-wider text-gray-400"># Pedidos</div>
-            <div class="text-2xl font-black text-gray-900 mt-1" x-text="kpis.cantidad_total_pedidos || '0'"></div>
+            <div class="text-2xl font-black text-gray-900 mt-1" x-text="formatNumber(kpis.cantidad_total_pedidos || 0)"></div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-indigo-500 border-y border-r border-gray-100">
             <div class="text-xs font-bold uppercase tracking-wider text-gray-400">$ Total Pedidos</div>
-            <div class="text-2xl font-black text-gray-900 mt-1">$<span x-text="kpis.valor_total_pedidos || '0.00'"></span></div>
+            <div class="text-2xl font-black text-gray-900 mt-1" x-text="formatMoney(kpis.valor_total_pedidos)"></div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-emerald-500 border-y border-r border-gray-100">
             <div class="text-xs font-bold uppercase tracking-wider text-gray-400">$ Entregado</div>
-            <div class="text-2xl font-black text-gray-900 mt-1">$<span x-text="kpis.ventas_totales || '0.00'"></span></div>
+            <div class="text-2xl font-black text-gray-900 mt-1" x-text="formatMoney(kpis.ventas_totales)"></div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-purple-500 border-y border-r border-gray-100">
             <div class="text-xs font-bold uppercase tracking-wider text-gray-400">$ Devoluciones</div>
-            <div class="text-2xl font-black text-gray-900 mt-1">$<span x-text="kpis.total_devoluciones || '0.00'"></span></div>
+            <div class="text-2xl font-black text-gray-900 mt-1" x-text="formatMoney(kpis.total_devoluciones)"></div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-teal-500 border-y border-r border-gray-100">
             <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Efectividad Entrega</div>
-            <div class="text-2xl font-black text-gray-900 mt-1"><span x-text="kpis.efectividad || '0'"></span>%</div>
+            <div class="text-2xl font-black text-gray-900 mt-1"><span x-text="formatNumber(kpis.efectividad || 0, 1)"></span>%</div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-rose-500 border-y border-r border-gray-100">
             <div class="text-xs font-bold uppercase tracking-wider text-gray-400">$ Efectivo</div>
-            <div class="text-2xl font-black text-gray-900 mt-1">$<span x-text="kpis.recaudacion_efectivo || '0.00'"></span></div>
+            <div class="text-2xl font-black text-gray-900 mt-1" x-text="formatMoney(kpis.recaudacion_efectivo)"></div>
         </div>
     </div>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="bg-white px-4 py-2 rounded-xl shadow-xs border border-rose-200 text-right">
                 <span class="text-[10px] font-bold text-rose-500 uppercase block tracking-wider">Total Pérdida en Rango</span>
-                <span class="text-xl font-black text-rose-700">$<span x-text="Number(totalPerdido).toFixed(2)"></span></span>
+                <span class="text-xl font-black text-rose-700" x-text="formatMoney(totalPerdido)"></span>
             </div>
         </div>
 
@@ -180,7 +180,7 @@
                             <tr class="border-b hover:bg-gray-50/80 transition-colors">
                                 <td class="p-2 font-bold text-gray-800" x-text="carrito.cliente"></td>
                                 <td class="p-2 text-gray-500" x-text="carrito.motivo || 'Sin motivo'"></td>
-                                <td class="p-2 text-right font-extrabold text-rose-600" x-text="'$' + Number(carrito.monto).toFixed(2)"></td>
+                                <td class="p-2 text-right font-extrabold text-rose-600" x-text="formatMoney(carrito.monto)"></td>
                             </tr>
                         </template>
                     </tbody>
@@ -204,7 +204,7 @@
             <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-amber-500 border-y border-r border-gray-100 flex items-center justify-between">
                 <div>
                     <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Guías Abiertas</div>
-                    <div class="text-2xl font-black text-amber-600 mt-1" x-text="guiasPorEstado.abierta || 0"></div>
+                    <div class="text-2xl font-black text-amber-600 mt-1" x-text="formatNumber(guiasPorEstado.abierta || 0)"></div>
                 </div>
                 <div class="bg-amber-50 p-2.5 rounded-xl">
                     <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -214,7 +214,7 @@
             <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-blue-500 border-y border-r border-gray-100 flex items-center justify-between">
                 <div>
                     <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Guías Cerradas</div>
-                    <div class="text-2xl font-black text-blue-600 mt-1" x-text="guiasPorEstado.cerrada || 0"></div>
+                    <div class="text-2xl font-black text-blue-600 mt-1" x-text="formatNumber(guiasPorEstado.cerrada || 0)"></div>
                 </div>
                 <div class="bg-blue-50 p-2.5 rounded-xl">
                     <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -224,7 +224,7 @@
             <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-emerald-500 border-y border-r border-gray-100 flex items-center justify-between">
                 <div>
                     <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Guías Revisadas / Aprobadas</div>
-                    <div class="text-2xl font-black text-emerald-600 mt-1" x-text="guiasPorEstado.revisada || 0"></div>
+                    <div class="text-2xl font-black text-emerald-600 mt-1" x-text="formatNumber(guiasPorEstado.revisada || 0)"></div>
                 </div>
                 <div class="bg-emerald-50 p-2.5 rounded-xl">
                     <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -242,7 +242,7 @@
                     <h3 class="font-bold text-gray-900 text-base">Inventario por Marca</h3>
                     <p class="text-xs text-gray-400">Unidades en stock y valor inmovilizado</p>
                 </div>
-                <span class="px-2.5 py-1 text-xs font-black rounded-full bg-indigo-50 text-indigo-700" x-text="(stock.por_marca || []).length + ' Marcas'"></span>
+                <span class="px-2.5 py-1 text-xs font-black rounded-full bg-indigo-50 text-indigo-700" x-text="formatNumber((stock.por_marca || []).length) + ' Marcas'"></span>
             </div>
             <div class="overflow-y-auto max-h-[220px]">
                 <table class="w-full text-xs text-left">
@@ -260,8 +260,8 @@
                         <template x-for="m in stock.por_marca" :key="m.marca">
                             <tr class="hover:bg-gray-50/80 transition-colors">
                                 <td class="p-2.5 font-bold text-slate-800" x-text="m.marca"></td>
-                                <td class="p-2.5 text-center font-extrabold text-gray-900" x-text="parseFloat(m.total_unidades || 0).toFixed(0)"></td>
-                                <td class="p-2.5 text-right font-black text-emerald-600" x-text="'$' + Number(m.valor_total || 0).toFixed(2)"></td>
+                                <td class="p-2.5 text-center font-extrabold text-gray-900" x-text="formatNumber(m.total_unidades || 0)"></td>
+                                <td class="p-2.5 text-right font-black text-emerald-600" x-text="formatMoney(m.valor_total || 0)"></td>
                             </tr>
                         </template>
                     </tbody>
@@ -276,7 +276,7 @@
                     <h3 class="font-bold text-gray-900 text-base">Inventario por Categoría</h3>
                     <p class="text-xs text-gray-400">Segmentación por líneas de producto</p>
                 </div>
-                <span class="px-2.5 py-1 text-xs font-black rounded-full bg-amber-50 text-amber-700" x-text="(stock.por_categoria || []).length + ' Categorías'"></span>
+                <span class="px-2.5 py-1 text-xs font-black rounded-full bg-amber-50 text-amber-700" x-text="formatNumber((stock.por_categoria || []).length) + ' Categorías'"></span>
             </div>
             <div class="overflow-y-auto max-h-[220px]">
                 <table class="w-full text-xs text-left">
@@ -294,8 +294,8 @@
                         <template x-for="c in stock.por_categoria" :key="c.categoria">
                             <tr class="hover:bg-gray-50/80 transition-colors">
                                 <td class="p-2.5 font-bold text-slate-800" x-text="c.categoria"></td>
-                                <td class="p-2.5 text-center font-extrabold text-gray-900" x-text="parseFloat(c.total_unidades || 0).toFixed(0)"></td>
-                                <td class="p-2.5 text-right font-black text-emerald-600" x-text="'$' + Number(c.valor_total || 0).toFixed(2)"></td>
+                                <td class="p-2.5 text-center font-extrabold text-gray-900" x-text="formatNumber(c.total_unidades || 0)"></td>
+                                <td class="p-2.5 text-right font-black text-emerald-600" x-text="formatMoney(c.valor_total || 0)"></td>
                             </tr>
                         </template>
                     </tbody>
@@ -314,7 +314,7 @@
             <div class="flex items-center gap-3">
                 <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
                     <span class="text-[10px] font-black uppercase text-emerald-800 tracking-wider">VALOR TOTAL INVENTARIO:</span>
-                    <span class="text-sm font-black text-emerald-700" x-text="'$' + Number(stock.valor_total_inventario || 0).toFixed(2)"></span>
+                    <span class="text-sm font-black text-emerald-700" x-text="formatMoney(stock.valor_total_inventario || 0)"></span>
                 </div>
                 <div class="flex gap-2">
                     <button @click="stockTab = 'maestro'" :class="stockTab === 'maestro' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-700'" class="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer">Bodega Central</button>
@@ -346,10 +346,10 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="py-2.5 font-bold text-gray-800" x-text="p.nombre"></td>
                                 <td class="py-2.5 text-xs text-gray-500 font-semibold" x-text="(p.marca || 'N/A') + ' / ' + (p.categoria || 'N/A')"></td>
-                                <td class="py-2.5 text-right font-medium text-gray-600" x-text="'$' + Number(p.precio || 0).toFixed(2)"></td>
-                                <td class="py-2.5 text-right font-bold text-gray-900" x-text="parseFloat(p.disponible || p.cantidad_fisica || 0).toFixed(0)"></td>
-                                <td class="py-2.5 text-right text-gray-500" x-text="parseFloat(p.en_pedidos || 0).toFixed(0)"></td>
-                                <td class="py-2.5 text-right font-black text-emerald-600" x-text="'$' + Number(p.valor_total || ((p.disponible || p.cantidad_fisica || 0) * p.precio)).toFixed(2)"></td>
+                                <td class="py-2.5 text-right font-medium text-gray-600" x-text="formatMoney(p.precio || 0)"></td>
+                                <td class="py-2.5 text-right font-bold text-gray-900" x-text="formatNumber(p.disponible || p.cantidad_fisica || 0)"></td>
+                                <td class="py-2.5 text-right text-gray-500" x-text="formatNumber(p.en_pedidos || 0)"></td>
+                                <td class="py-2.5 text-right font-black text-emerald-600" x-text="formatMoney(p.valor_total || ((p.disponible || p.cantidad_fisica || 0) * p.precio))"></td>
                                 <td class="py-2.5 text-right">
                                     <span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full uppercase"
                                            :class="parseFloat(p.disponible || p.cantidad_fisica || 0) < 10 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
@@ -362,7 +362,7 @@
                     <tfoot>
                         <tr class="bg-gray-50 border-t-2 border-gray-200 font-black text-xs text-gray-900">
                             <td colspan="5" class="py-3 px-2 text-right uppercase">Total Capital Inmovilizado (Bodega Central):</td>
-                            <td class="py-3 text-right text-emerald-700 text-sm" x-text="'$' + Number(stock.valor_total_inventario || 0).toFixed(2)"></td>
+                            <td class="py-3 text-right text-emerald-700 text-sm" x-text="formatMoney(stock.valor_total_inventario || 0)"></td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -391,9 +391,9 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="py-2.5 font-bold text-slate-700" x-text="r.placa"></td>
                                 <td class="py-2.5 font-medium text-gray-800" x-text="r.nombre"></td>
-                                <td class="py-2.5 text-right font-medium text-gray-600" x-text="'$' + Number(r.precio || 0).toFixed(2)"></td>
-                                <td class="py-2.5 text-right font-bold text-gray-900" x-text="parseFloat(r.cantidad_actual || r.cantidad_fisica || 0).toFixed(0)"></td>
-                                <td class="py-2.5 text-right font-black text-emerald-600" x-text="'$' + Number(r.valor_total || ((r.cantidad_actual || 0) * r.precio)).toFixed(2)"></td>
+                                <td class="py-2.5 text-right font-medium text-gray-600" x-text="formatMoney(r.precio || 0)"></td>
+                                <td class="py-2.5 text-right font-bold text-gray-900" x-text="formatNumber(r.cantidad_actual || r.cantidad_fisica || 0)"></td>
+                                <td class="py-2.5 text-right font-black text-emerald-600" x-text="formatMoney(r.valor_total || ((r.cantidad_actual || 0) * r.precio))"></td>
                             </tr>
                         </template>
                     </tbody>

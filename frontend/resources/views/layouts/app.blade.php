@@ -149,7 +149,13 @@
         window.formatMoney = function(value) {
             let num = Number(value);
             if (isNaN(num)) return '$0.00';
-            return '$' + num.toFixed(2);
+            return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        window.formatNumber = function(value, decimals = 0) {
+            let num = Number(value);
+            if (isNaN(num)) return '0';
+            return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
         };
 
         // Guardian de rutas basado en roles (Role-Based Routing)
