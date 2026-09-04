@@ -111,10 +111,50 @@ class CierreService
 
     public function aprobarRevisionGuia(int $guiaId, int $operadorId): bool
     {
-        $res = $this->guiaRepository->aprobarRevisionGuia($guiaId, $operadorId);
-        if ($res) {
-            $this->auditoriaService->logSimple('revision_guia_aprobada', 'Se aprobó la revisión de la guía ' . $guiaId, $operadorId);
-        }
-        return $res;
+        return DB::transaction(function () use ($guiaId, $operadorId) {
+            $guia = \App\Models\GuiaRemision::with('guiasRuta.asignaciones.pedido.items')->find($guiaId);
+            if (!$guia) {
+                throw new Exception('Guía de remisión no encontrada.');
+            }
+
+            $res = $this->guiaRepository->aprobarRevisionGuia($guiaId, $operadorId);
+
+            if ($res) {
+                // Iterar sobre todos los pedidos asociados a la guía para reducir en_pedidos y crear transacción
+                foreach ($guia->guiasRuta as $ruta) {
+                    foreach ($ruta->asignaciones as $asig) {
+                        $pedido = $asig->pedido;
+                        if (!$pedido || !$pedido->items) continue;
+
+                        foreach ($pedido->items as $item) {
+                            $productoId = (int) $item->producto_id;
+                            $cantEntregada = (float) ($item->cantidad_entregada ?? 0);
+                            $cantSolicitada = (float) ($item->cantidad_solicitada ?? 0);
+
+                            // Reducir la cantidad reservada en_pedidos por la cantidad entregada
+                            if ($cantEntregada > 0) {
+                                $this->inventarioService->decrementarEnPedidos($productoId, $cantEntregada);
+
+                                // Registrar la transacción de inventario por la entrega/devolución final
+                                DB::table('transacciones_inventario')->insert([
+                                    'producto_id' => $productoId,
+                                    'camion_id' => $guia->camion_id,
+                                    'tipo' => 'EGRESO',
+                                    'cantidad' => $cantEntregada,
+                                    'motivo' => 'Aprobación de Cierre de Guía #' . $guiaId . ' (Entrega Pedido #' . $pedido->id . ')',
+                                    'fecha_transaccion' => now(),
+                                    'created_at' => now(),
+                                    'updated_at' => now()
+                                ]);
+                            }
+                        }
+                    }
+                }
+
+                $this->auditoriaService->logSimple('revision_guia_aprobada', 'Se aprobó la revisión de la guía ' . $guiaId, $operadorId);
+            }
+
+            return $res;
+        });
     }
 }

@@ -183,12 +183,13 @@
                                 <th class="py-3 px-4 text-center">Método Pago</th>
                                 <th class="py-3 px-4 text-right">Total ($)</th>
                                 <th class="py-3 px-4 text-center">Estado</th>
+                                <th class="py-3 px-4 text-center">Acción</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-xs font-semibold text-gray-700">
                             <template x-if="pedidosFiltrados.length === 0">
                                 <tr>
-                                    <td colspan="6" class="py-8 text-center text-gray-400">
+                                    <td colspan="7" class="py-8 text-center text-gray-400">
                                         No hay pedidos con el estado seleccionado.
                                     </td>
                                 </tr>
@@ -213,10 +214,189 @@
                                             <span x-text="p.estado"></span>
                                         </span>
                                     </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <button @click="verDetallePedido(p)" class="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1.5 cursor-pointer">
+                                            Detalles
+                                        </button>
+                                    </td>
                                 </tr>
                             </template>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Modal Detalle Completo de Orden (Idéntico a Historial y Gestión de Pedidos) -->
+            <div x-show="pedidoSeleccionado" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" style="display: none;">
+                <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative border border-gray-100" @click.away="pedidoSeleccionado = null">
+                    
+                    <!-- Header Modal -->
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border"
+                                      :class="{
+                                          'bg-amber-50 text-amber-800 border-amber-200': (pedidoSeleccionado?.estado || '').includes('espera'),
+                                          'bg-emerald-50 text-emerald-800 border-emerald-200': (pedidoSeleccionado?.estado || '').includes('entregado'),
+                                          'bg-blue-50 text-blue-800 border-blue-200': pedidoSeleccionado?.estado === 'en_ruta' || pedidoSeleccionado?.estado === 'listo_para_entregar',
+                                          'bg-rose-50 text-rose-800 border-rose-200': pedidoSeleccionado?.estado === 'cancelado' || pedidoSeleccionado?.estado === 'no_entregado'
+                                      }"
+                                      x-text="pedidoSeleccionado?.estado === 'no_entregado' ? 'Devolución / No Entregado' : (pedidoSeleccionado?.estado || '').replace(/_/g, ' ')"></span>
+                                <span class="text-xs text-gray-400 font-semibold" x-text="pedidoSeleccionado ? new Date(pedidoSeleccionado.creado_en || pedidoSeleccionado.created_at || new Date()).toLocaleDateString('es-EC') : ''"></span>
+                            </div>
+                            <h3 class="text-xl font-black text-gray-900">Detalles de Orden #<span x-text="pedidoSeleccionado?.id"></span></h3>
+                        </div>
+                        <button @click="pedidoSeleccionado = null" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-xl hover:bg-gray-100 transition-all cursor-pointer">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    <!-- Banner de Cancelación/Devolución si aplica -->
+                    <template x-if="pedidoSeleccionado?.estado === 'cancelado' || pedidoSeleccionado?.estado === 'no_entregado' || pedidoSeleccionado?.motivo_cancelacion">
+                        <div class="mb-5 bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3">
+                            <svg class="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            <div>
+                                <h4 class="font-extrabold text-xs text-rose-900 uppercase tracking-wider">PEDIDO CANCELADO / DEVUELTO</h4>
+                                <p class="text-xs text-rose-700 font-medium mt-0.5" x-text="pedidoSeleccionado?.motivo_cancelacion || 'Devolución de pedido registrado en entrega.'"></p>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Spinner Carga -->
+                    <div x-show="loadingDetallePedido" class="py-12 text-center text-gray-500">
+                        <svg class="animate-spin h-8 w-8 text-slate-800 mx-auto mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                        <span class="text-xs font-bold">Cargando información completa del pedido...</span>
+                    </div>
+
+                    <div x-show="!loadingDetallePedido">
+                        <!-- Grid Información Comercial, Dirección y Pago -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <!-- Cliente -->
+                            <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 block mb-1">CLIENTE / NEGOCIO</span>
+                                <div class="font-bold text-gray-900 text-xs" x-text="pedidoSeleccionado?.cliente?.razon_social || pedidoSeleccionado?.cliente?.nombre_cliente || pedidoSeleccionado?.cliente || 'Cliente'"></div>
+                                <div class="text-xs text-gray-500 font-medium mt-0.5" x-text="'Contacto: ' + (pedidoSeleccionado?.cliente?.usuario?.nombre || pedidoSeleccionado?.cliente?.nombre_cliente || 'N/A')"></div>
+                            </div>
+
+                            <!-- Dirección -->
+                            <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 block mb-1">DIRECCIÓN DE ENTREGA</span>
+                                <div class="font-bold text-gray-900 text-xs truncate" x-text="pedidoSeleccionado?.direccion?.descripcion || pedidoSeleccionado?.direccion || 'Dirección registrada'"></div>
+                            </div>
+
+                            <!-- Pago y Factura -->
+                            <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 block mb-1">MÉTODO DE PAGO & FACTURACIÓN</span>
+                                <div class="font-bold text-gray-900 text-xs capitalize" x-text="'Método: ' + (pedidoSeleccionado?.metodo_pago || '').replace(/_/g, ' ')"></div>
+                                <template x-if="pedidoSeleccionado?.factura">
+                                    <div class="text-xs font-bold text-emerald-700 mt-1 flex items-center gap-1">
+                                        <span>📄 Factura:</span>
+                                        <span x-text="pedidoSeleccionado.factura.numero_factura"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Ítems Solicitados -->
+                        <div class="mb-6">
+                            <h4 class="font-extrabold text-xs uppercase tracking-wider text-gray-500 mb-3">PRODUCTOS SOLICITADOS (PEDIDO ORIGINAL)</h4>
+                            <div class="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-2xs">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-gray-50 border-b border-gray-100 text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                                        <tr>
+                                            <th class="py-2.5 px-4">PRODUCTO</th>
+                                            <th class="py-2.5 px-4 text-center">CANT. SOLICITADA</th>
+                                            <th class="py-2.5 px-4 text-center">CANT. ENTREGADA</th>
+                                            <th class="py-2.5 px-4 text-right">PRECIO UNIT.</th>
+                                            <th class="py-2.5 px-4 text-right">SUBTOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <template x-if="!pedidoSeleccionado?.items || pedidoSeleccionado.items.length === 0">
+                                            <tr><td colspan="5" class="py-4 text-center text-gray-400">Sin detalles de productos</td></tr>
+                                        </template>
+                                        <template x-for="item in (pedidoSeleccionado?.items || [])" :key="item.id">
+                                            <tr>
+                                                <td class="py-3 px-4 font-bold text-gray-900" x-text="item.nombre_producto || item.producto?.nombre || `Producto #${item.producto_id}`"></td>
+                                                <td class="py-3 px-4 text-center font-bold text-gray-800" x-text="item.cantidad_solicitada"></td>
+                                                <td class="py-3 px-4 text-center font-bold text-emerald-700" x-text="item.cantidad_entregada || 0"></td>
+                                                <td class="py-3 px-4 text-right text-gray-600 font-medium" x-text="formatMoney(item.precio_unitario)"></td>
+                                                <td class="py-3 px-4 text-right font-black text-slate-900" x-text="formatMoney(item.precio_unitario * item.cantidad_solicitada)"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Detalle de Devolución -->
+                        <template x-if="pedidoSeleccionado?.items && pedidoSeleccionado.items.some(i => (i.cantidad_solicitada - (i.cantidad_entregada || 0)) > 0)">
+                            <div class="mb-6">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <svg class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
+                                    </svg>
+                                    <h4 class="font-extrabold text-xs uppercase tracking-wider text-rose-700">DETALLE DE DEVOLUCIÓN</h4>
+                                </div>
+                                <div class="bg-rose-50/40 rounded-xl border border-rose-200 overflow-hidden shadow-2xs">
+                                    <table class="w-full text-left text-xs">
+                                        <thead class="bg-rose-100/60 border-b border-rose-200 text-[10px] font-extrabold uppercase tracking-wider text-rose-800">
+                                            <tr>
+                                                <th class="py-2.5 px-4">PRODUCTO DEVUELTO</th>
+                                                <th class="py-2.5 px-4 text-center">CANT. DEVUELTA</th>
+                                                <th class="py-2.5 px-4 text-right">PRECIO UNIT.</th>
+                                                <th class="py-2.5 px-4 text-right">VALOR DEVUELTO ($)</th>
+                                                <th class="py-2.5 px-4">MOTIVO DE DEVOLUCIÓN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-rose-100">
+                                            <template x-for="item in (pedidoSeleccionado?.items || []).filter(i => (i.cantidad_solicitada - (i.cantidad_entregada || 0)) > 0)" :key="'dev_' + item.id">
+                                                <tr class="hover:bg-rose-50/80">
+                                                    <td class="py-3 px-4 font-bold text-gray-900" x-text="item.nombre_producto || item.producto?.nombre || `Producto #${item.producto_id}`"></td>
+                                                    <td class="py-3 px-4 text-center font-black text-rose-700" x-text="item.cantidad_solicitada - (item.cantidad_entregada || 0)"></td>
+                                                    <td class="py-3 px-4 text-right text-gray-600 font-medium" x-text="formatMoney(item.precio_unitario)"></td>
+                                                    <td class="py-3 px-4 text-right font-black text-rose-700" x-text="formatMoney((item.cantidad_solicitada - (item.cantidad_entregada || 0)) * item.precio_unitario * 1.15)"></td>
+                                                    <td class="py-3 px-4">
+                                                        <span class="inline-block bg-rose-100 border border-rose-200 text-rose-800 px-2 py-0.5 rounded text-[10px] font-extrabold"
+                                                              x-text="item.motivo_devolucion || pedidoSeleccionado.motivo_cancelacion || 'Otro motivo'"></span>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Totales del Pedido -->
+                        <div class="flex justify-end mb-6">
+                            <div class="w-full sm:w-1/2 bg-gray-50/80 p-4 rounded-2xl border border-gray-100 space-y-2 text-xs">
+                                <div class="flex justify-between font-semibold text-gray-600">
+                                    <span>Subtotal:</span>
+                                    <span x-text="formatMoney(pedidoSeleccionado?.subtotal)"></span>
+                                </div>
+                                <div class="flex justify-between font-semibold text-gray-600">
+                                    <span>Descuento Aplicado:</span>
+                                    <span class="text-rose-600" x-text="'-' + formatMoney(pedidoSeleccionado?.descuento)"></span>
+                                </div>
+                                <div class="flex justify-between font-semibold text-gray-600">
+                                    <span>IVA (15%):</span>
+                                    <span x-text="formatMoney(pedidoSeleccionado?.iva)"></span>
+                                </div>
+                                <div class="border-t border-gray-200 pt-2 flex justify-between font-black text-gray-900 text-base">
+                                    <span>Total Final:</span>
+                                    <span class="text-slate-900" x-text="formatMoney(pedidoSeleccionado?.total)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acciones Modal -->
+                        <div class="flex justify-end pt-4 border-t border-gray-100">
+                            <button @click="pedidoSeleccionado = null" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -234,6 +414,8 @@
             tabEstado: 'todos',
             cargando: false,
             guardando: false,
+            pedidoSeleccionado: null,
+            loadingDetallePedido: false,
 
             get pedidosFiltrados() {
                 if (this.tabEstado === 'todos') return this.pedidos;
@@ -242,6 +424,23 @@
 
             async init() {
                 await this.cargarDetalle();
+            },
+
+            async verDetallePedido(pedidoItem) {
+                this.pedidoSeleccionado = { id: pedidoItem.id, estado: pedidoItem.estado, cliente: pedidoItem.cliente, direccion: pedidoItem.direccion, metodo_pago: pedidoItem.metodo_pago, total: pedidoItem.total };
+                this.loadingDetallePedido = true;
+
+                try {
+                    const res = await window.api(`/api/pedidos/${pedidoItem.id}`);
+                    const fullObj = res?.data || res;
+                    if (fullObj && fullObj.id) {
+                        this.pedidoSeleccionado = fullObj;
+                    }
+                } catch (e) {
+                    console.warn("Utilizando datos básicos del pedido:", e);
+                } finally {
+                    this.loadingDetallePedido = false;
+                }
             },
 
             async cargarDetalle() {
