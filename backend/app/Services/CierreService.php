@@ -54,40 +54,44 @@ class CierreService
 
     public function procesarMercaderiaDevuelta(int $guiaRutaId, array $mercaderias, int $operadorId): void
     {
-        foreach ($mercaderias as $mercaderia) {
-            if ($mercaderia['estado'] === 'buen_estado') {
-                $this->inventarioService->ingresoMaestro($mercaderia['producto_id'], $mercaderia['cantidad'], $mercaderia['motivo'] ?? 'Devolución en buen estado');
-            } else {
-                DB::table('mercaderia_mal_estado')->insert([
-                    'guia_ruta_id' => $guiaRutaId,
-                    'producto_id' => $mercaderia['producto_id'],
-                    'cantidad' => $mercaderia['cantidad'],
-                    'motivo' => $mercaderia['motivo'],
-                    'reportado_por' => $operadorId,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
+        DB::transaction(function () use ($guiaRutaId, $mercaderias, $operadorId) {
+            foreach ($mercaderias as $mercaderia) {
+                if ($mercaderia['estado'] === 'buen_estado') {
+                    $this->inventarioService->ingresoMaestro($mercaderia['producto_id'], $mercaderia['cantidad'], $mercaderia['motivo'] ?? 'Devolución en buen estado');
+                } else {
+                    DB::table('mercaderia_mal_estado')->insert([
+                        'guia_ruta_id' => $guiaRutaId,
+                        'producto_id' => $mercaderia['producto_id'],
+                        'cantidad' => $mercaderia['cantidad'],
+                        'motivo' => $mercaderia['motivo'],
+                        'reportado_por' => $operadorId,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
             }
-        }
+        });
     }
 
     public function cerrarGuia(int $guiaRemisionId, float $efectivoRecibido, int $operadorId): object
     {
-        $guia = $this->guiaRepository->findByIdRemision($guiaRemisionId);
-        if (!$guia || $guia->estado !== 'confirmacion_cierre') {
-            throw new Exception('La guía no está lista para cierre.');
-        }
+        return DB::transaction(function () use ($guiaRemisionId, $efectivoRecibido, $operadorId) {
+            $guia = $this->guiaRepository->findByIdRemision($guiaRemisionId);
+            if (!$guia || $guia->estado !== 'confirmacion_cierre') {
+                throw new Exception('La guía no está lista para cierre.');
+            }
 
-        $guia = $this->guiaRepository->updateRemision($guiaRemisionId, [
-            'estado' => 'cerrada',
-            'efectivo_recibido' => $efectivoRecibido
-        ]);
+            $guia = $this->guiaRepository->updateRemision($guiaRemisionId, [
+                'estado' => 'cerrada',
+                'efectivo_recibido' => $efectivoRecibido
+            ]);
 
-        $this->inventarioService->encerarBodegaCamion($guia->camion_id);
+            $this->inventarioService->encerarBodegaCamion($guia->camion_id);
 
-        $this->auditoriaService->logSimple('cierre_guia', 'Se cerró la guía de remisión ' . $guiaRemisionId, $operadorId);
+            $this->auditoriaService->logSimple('cierre_guia', 'Se cerró la guía de remisión ' . $guiaRemisionId, $operadorId);
 
-        return $guia;
+            return $guia;
+        });
     }
 
     public function getPendientesCierre(): Collection

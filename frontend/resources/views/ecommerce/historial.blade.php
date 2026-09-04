@@ -681,7 +681,7 @@ document.addEventListener('alpine:init', () => {
                 iva: Number(pedido.iva).toFixed(2),
                 total: Number(pedido.total).toFixed(2),
                 items: (pedido.items || []).map(item => ({
-                    nombre: item.producto ? item.producto.nombre : 'Producto ' + item.producto_id,
+                    nombre: item.nombre_producto || (item.producto ? item.producto.nombre : 'Producto ' + item.producto_id),
                     cantidad: item.cantidad_solicitada,
                     precioUnitario: item.precio_unitario
                 }))
@@ -714,7 +714,7 @@ document.addEventListener('alpine:init', () => {
                 iva: Number(pedido.iva).toFixed(2),
                 total: Number(nc.valor_total || pedido.total).toFixed(2),
                 items: (pedido.items || []).map(item => ({
-                    nombre: item.producto ? item.producto.nombre : 'Producto ' + item.producto_id,
+                    nombre: item.nombre_producto || (item.producto ? item.producto.nombre : 'Producto ' + item.producto_id),
                     cantidad: item.cantidad_solicitada,
                     precioUnitario: item.precio_unitario
                 }))

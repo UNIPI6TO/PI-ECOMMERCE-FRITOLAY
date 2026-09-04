@@ -259,7 +259,7 @@ class EntregaService
                         'id' => $item->id,
                         'item_pedido_id' => $item->id,
                         'producto_id' => $item->producto_id,
-                        'producto' => $item->producto->nombre ?? 'Producto',
+                        'producto' => $item->nombre_producto ?? ($item->producto->nombre ?? 'Producto'),
                         'cantidad' => $cant,
                         'cantidad_solicitada' => $cant,
                         'precio_unitario' => $precio,
