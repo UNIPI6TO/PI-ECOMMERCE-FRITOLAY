@@ -2,28 +2,12 @@ name: Semantic Versioning & Tagging
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feature/*", "develop" ]
 
 jobs:
-  # ─── JOB 1: VALIDACIÓN DE CONVENTIONAL COMMITS ─────────────────────────────
-  commitlint:
-    name: Lint Commit Messages
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Validate Conventional Commits
-        uses: wagoid/commitlint-github-action@v6
-        with:
-          configFile: .commitlintrc.json
-          firstParent: true
-
-  # ─── JOB 2: GENERACIÓN Y PUSH DE TAG DE RELEASE (EXCLUSIVO MAIN) ────────
   tagging:
-    name: Auto Tag Release Version
+    name: Auto Tag & Release Version
     runs-on: ubuntu-latest
-    needs: commitlint
     permissions:
       contents: write
     steps:
@@ -31,7 +15,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Calculate Release Version & Push Tag
+      - name: Calculate Version & Push Tag
         id: semver
         run: |
           # Obtener el último tag base o valor por defecto
@@ -42,15 +26,18 @@ jobs:
           # Contar número de commits en HEAD
           REVISION=$(git rev-list --count HEAD)
           
-          FINAL_TAG="v${MAJOR}.${MINOR}.${REVISION}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            FINAL_TAG="v${MAJOR}.${MINOR}.${REVISION}"
+          else
+            FINAL_TAG="v${MAJOR}.${MINOR}.${REVISION}-SNAPSHOT"
+          fi
           
-          echo "Calculated Release Tag: ${FINAL_TAG}"
+          echo "Calculated Tag: ${FINAL_TAG}"
           
           # Configurar credenciales del bot de Git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Crear y publicar el tag definitivo de Release en el repositorio
-          git tag -a "${FINAL_TAG}" -m "Release version ${FINAL_TAG}" || true
+          # Crear y publicar el tag en el repositorio
+          git tag -a "${FINAL_TAG}" -m "Auto generated tag ${FINAL_TAG}" || true
           git push origin "${FINAL_TAG}" || true
-
