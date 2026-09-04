@@ -19,36 +19,49 @@
         </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs mb-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
-            <div>
-                <label class="block text-xs font-black uppercase text-gray-400 mb-1.5">Fecha Inicio</label>
-                <input type="date" x-model="filtros.fecha_inicio" @change="cargarGuias()"
-                       class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 focus:outline-none focus:border-red-500 transition-colors">
+    <!-- Filtros de Fecha y Estado -->
+    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Rango de Fechas + Presets estilo Dashboard -->
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">DESDE:</span>
+                <input type="date" 
+                       x-model="filtros.fecha_inicio" 
+                       @change="cargarGuias()" 
+                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs">
             </div>
-            <div>
-                <label class="block text-xs font-black uppercase text-gray-400 mb-1.5">Fecha Fin</label>
-                <input type="date" x-model="filtros.fecha_fin" @change="cargarGuias()"
-                       class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 focus:outline-none focus:border-red-500 transition-colors">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">HASTA:</span>
+                <input type="date" 
+                       x-model="filtros.fecha_fin" 
+                       @change="cargarGuias()" 
+                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-800 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none shadow-xs">
             </div>
-            <div>
-                <label class="block text-xs font-black uppercase text-gray-400 mb-1.5">Estado</label>
-                <select x-model="filtros.estado" @change="cargarGuias()"
-                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 focus:outline-none focus:border-red-500 transition-colors">
-                    <option value="">Todos los estados</option>
-                    <option value="abierta">Abierta</option>
-                    <option value="cerrada">Cerrada</option>
-                    <option value="revisada">Revisada</option>
-                </select>
+
+            <!-- Presets (Último Mes, Última Semana, Hoy) -->
+            <div class="flex items-center bg-gray-100 p-1 rounded-xl text-xs font-semibold">
+                <button @click="presetPeriodo('MES')" 
+                        class="px-3 py-1.5 rounded-lg transition-all cursor-pointer" 
+                        :class="esPeriodo('MES') ? 'bg-white text-gray-900 shadow-xs font-black' : 'text-gray-600 hover:text-gray-900 font-bold'">Último Mes</button>
+                <button @click="presetPeriodo('SEMANA')" 
+                        class="px-3 py-1.5 rounded-lg transition-all cursor-pointer" 
+                        :class="esPeriodo('SEMANA') ? 'bg-white text-gray-900 shadow-xs font-black' : 'text-gray-600 hover:text-gray-900 font-bold'">Última Semana</button>
+                <button @click="presetPeriodo('HOY')" 
+                        class="px-3 py-1.5 rounded-lg transition-all cursor-pointer" 
+                        :class="esPeriodo('HOY') ? 'bg-white text-gray-900 shadow-xs font-black' : 'text-gray-600 hover:text-gray-900 font-bold'">Hoy</button>
             </div>
-            <div>
-                <button @click="limpiarFiltros()" 
-                        class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-xs py-2 px-4 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    Limpiar Filtros
-                </button>
-            </div>
+        </div>
+
+        <!-- Filtro por Estado de la Guía -->
+        <div class="flex items-center gap-2 w-full md:w-auto">
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-500 whitespace-nowrap">ESTADO:</span>
+            <select x-model="filtros.estado" @change="cargarGuias()"
+                    class="w-full md:w-48 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:border-red-500 transition-colors">
+                <option value="">Todos los estados</option>
+                <option value="abierta">Abierta</option>
+                <option value="cerrada">Cerrada</option>
+                <option value="revisada">Revisada</option>
+            </select>
         </div>
     </div>
 
@@ -138,6 +151,13 @@
 </div>
 
 <script>
+    function getFormattedDateStr(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     document.addEventListener('alpine:init', () => {
         Alpine.data('cierreGuiasApp', () => ({
             guias: [],
@@ -148,7 +168,47 @@
                 estado: ''
             },
             async init() {
+                this.presetPeriodo('SEMANA', false);
                 await this.cargarGuias();
+            },
+            presetPeriodo(tipo, triggerCargar = true) {
+                const hoyObj = new Date();
+                const hoyStrVal = getFormattedDateStr(hoyObj);
+                this.filtros.fecha_fin = hoyStrVal;
+
+                if (tipo === 'MES') {
+                    const haceUnMes = new Date();
+                    haceUnMes.setMonth(hoyObj.getMonth() - 1);
+                    this.filtros.fecha_inicio = getFormattedDateStr(haceUnMes);
+                } else if (tipo === 'SEMANA') {
+                    const haceUnaSemana = new Date();
+                    haceUnaSemana.setDate(hoyObj.getDate() - 7);
+                    this.filtros.fecha_inicio = getFormattedDateStr(haceUnaSemana);
+                } else if (tipo === 'HOY') {
+                    this.filtros.fecha_inicio = hoyStrVal;
+                }
+
+                if (triggerCargar) {
+                    this.cargarGuias();
+                }
+            },
+            esPeriodo(tipo) {
+                const hoyObj = new Date();
+                const hoyStrVal = getFormattedDateStr(hoyObj);
+                if (this.filtros.fecha_fin !== hoyStrVal) return false;
+
+                if (tipo === 'HOY') return this.filtros.fecha_inicio === hoyStrVal;
+                if (tipo === 'SEMANA') {
+                    const haceUnaSemana = new Date();
+                    haceUnaSemana.setDate(hoyObj.getDate() - 7);
+                    return this.filtros.fecha_inicio === getFormattedDateStr(haceUnaSemana);
+                }
+                if (tipo === 'MES') {
+                    const haceUnMes = new Date();
+                    haceUnMes.setMonth(hoyObj.getMonth() - 1);
+                    return this.filtros.fecha_inicio === getFormattedDateStr(haceUnMes);
+                }
+                return false;
             },
             async cargarGuias() {
                 this.cargando = true;
@@ -166,12 +226,6 @@
                 } finally {
                     this.cargando = false;
                 }
-            },
-            limpiarFiltros() {
-                this.filtros.fecha_inicio = '';
-                this.filtros.fecha_fin = '';
-                this.filtros.estado = '';
-                this.cargarGuias();
             },
             formatearFecha(fechaStr) {
                 if (!fechaStr) return 'N/A';
