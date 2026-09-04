@@ -285,7 +285,7 @@
 
             <!-- Tabla de Ítems Solicitados -->
             <div class="mb-6">
-                <h4 class="font-extrabold text-xs uppercase tracking-wider text-gray-500 mb-3">Productos Comprados</h4>
+                <h4 class="font-extrabold text-xs uppercase tracking-wider text-gray-500 mb-3">Productos Comprados (Pedido Original)</h4>
                 <div class="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-2xs">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-gray-50 border-b border-gray-100 text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
@@ -303,7 +303,7 @@
                             </template>
                             <template x-for="item in (pedidoSeleccionado?.items || [])" :key="item.id">
                                 <tr>
-                                    <td class="py-3 px-4 font-bold text-gray-900" x-text="item.producto ? item.producto.nombre : `Producto #${item.producto_id}`"></td>
+                                    <td class="py-3 px-4 font-bold text-gray-900" x-text="item.nombre_producto || (item.producto ? item.producto.nombre : `Producto #${item.producto_id}`)"></td>
                                     <td class="py-3 px-4 text-center font-bold text-gray-800" x-text="item.cantidad_solicitada"></td>
                                     <td class="py-3 px-4 text-center font-bold text-emerald-700" x-text="item.cantidad_entregada || 0"></td>
                                     <td class="py-3 px-4 text-right text-gray-600 font-medium" x-text="formatMoney(item.precio_unitario)"></td>
@@ -314,6 +314,45 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Tabla de Detalle de Devolución (Mismo diseño y estructura visual si existen devoluciones) -->
+            <template x-if="pedidoSeleccionado?.items && pedidoSeleccionado.items.some(i => (i.cantidad_solicitada - (i.cantidad_entregada || 0)) > 0)">
+                <div class="mb-6">
+                    <div class="flex items-center gap-2 mb-3">
+                        <svg class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
+                        </svg>
+                        <h4 class="font-extrabold text-xs uppercase tracking-wider text-rose-700">Detalle de Devolución</h4>
+                    </div>
+                    <div class="bg-rose-50/40 rounded-xl border border-rose-200 overflow-hidden shadow-2xs">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-rose-100/60 border-b border-rose-200 text-[10px] font-extrabold uppercase tracking-wider text-rose-800">
+                                <tr>
+                                    <th class="py-2.5 px-4">Producto Devuelto</th>
+                                    <th class="py-2.5 px-4 text-center">Cant. Devuelta</th>
+                                    <th class="py-2.5 px-4 text-right">Precio Unit.</th>
+                                    <th class="py-2.5 px-4 text-right">Valor Devuelto ($)</th>
+                                    <th class="py-2.5 px-4">Motivo de Devolución</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-rose-100">
+                                <template x-for="item in (pedidoSeleccionado?.items || []).filter(i => (i.cantidad_solicitada - (i.cantidad_entregada || 0)) > 0)" :key="'dev_' + item.id">
+                                    <tr class="hover:bg-rose-50/80">
+                                        <td class="py-3 px-4 font-bold text-gray-900" x-text="item.nombre_producto || (item.producto ? item.producto.nombre : `Producto #${item.producto_id}`)"></td>
+                                        <td class="py-3 px-4 text-center font-black text-rose-700" x-text="item.cantidad_solicitada - (item.cantidad_entregada || 0)"></td>
+                                        <td class="py-3 px-4 text-right text-gray-600 font-medium" x-text="formatMoney(item.precio_unitario)"></td>
+                                        <td class="py-3 px-4 text-right font-black text-rose-700" x-text="formatMoney((item.cantidad_solicitada - (item.cantidad_entregada || 0)) * item.precio_unitario * 1.15)"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-block bg-rose-100 border border-rose-200 text-rose-800 px-2 py-0.5 rounded text-[10px] font-extrabold"
+                                                  x-text="item.motivo_devolucion || pedidoSeleccionado.motivo_cancelacion || 'Otro motivo'"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </template>
 
             <!-- Resumen Financiero y Comprobante (Idéntico a Gestión de Pedidos) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mb-6">
