@@ -72,12 +72,49 @@ class ReporteRepository
             ->toArray();
     }
 
+    public function getGuiasCountPorEstado(Carbon $inicio, Carbon $fin): array
+    {
+        return DB::table('guias_remision')
+            ->select('estado', DB::raw('COUNT(*) as cantidad'))
+            ->whereBetween('fecha_generacion', [$inicio, $fin])
+            ->groupBy('estado')
+            ->pluck('cantidad', 'estado')
+            ->toArray();
+    }
+
     public function getStockMaestro(): Collection
     {
         return DB::table('productos')
-            ->select('id', 'nombre', 'cantidad_fisica', 'en_pedidos',
-                DB::raw('(cantidad_fisica - en_pedidos) as disponible'))
+            ->select('id', 'nombre', 'marca', 'categoria', 'precio', 'cantidad_fisica', 'en_pedidos',
+                DB::raw('(cantidad_fisica - en_pedidos) as disponible'),
+                DB::raw('((cantidad_fisica - en_pedidos) * precio) as valor_total'))
             ->orderBy('disponible', 'asc')
+            ->get();
+    }
+
+    public function getStockPorMarca(): Collection
+    {
+        return DB::table('productos')
+            ->select(
+                DB::raw('COALESCE(NULLIF(marca, ""), "Sin Marca") as marca'),
+                DB::raw('SUM(cantidad_fisica - en_pedidos) as total_unidades'),
+                DB::raw('SUM((cantidad_fisica - en_pedidos) * precio) as valor_total')
+            )
+            ->groupBy(DB::raw('COALESCE(NULLIF(marca, ""), "Sin Marca")'))
+            ->orderByDesc('total_unidades')
+            ->get();
+    }
+
+    public function getStockPorCategoria(): Collection
+    {
+        return DB::table('productos')
+            ->select(
+                DB::raw('COALESCE(NULLIF(categoria, ""), "Sin Categoría") as categoria'),
+                DB::raw('SUM(cantidad_fisica - en_pedidos) as total_unidades'),
+                DB::raw('SUM((cantidad_fisica - en_pedidos) * precio) as valor_total')
+            )
+            ->groupBy(DB::raw('COALESCE(NULLIF(categoria, ""), "Sin Categoría")'))
+            ->orderByDesc('total_unidades')
             ->get();
     }
 
@@ -86,7 +123,8 @@ class ReporteRepository
         return DB::table('bodega_camion')
             ->join('camiones', 'bodega_camion.camion_id', '=', 'camiones.id')
             ->join('productos', 'bodega_camion.producto_id', '=', 'productos.id')
-            ->select('camiones.placa', 'productos.nombre', 'bodega_camion.cantidad_actual')
+            ->select('camiones.placa', 'productos.nombre', 'productos.precio', 'bodega_camion.cantidad_actual',
+                DB::raw('(bodega_camion.cantidad_actual * productos.precio) as valor_total'))
             ->where('bodega_camion.cantidad_actual', '>', 0)
             ->orderBy('camiones.placa')
             ->orderBy('productos.nombre')

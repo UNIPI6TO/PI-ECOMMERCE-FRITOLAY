@@ -20,10 +20,12 @@ class DashboardService
         $fin = Carbon::parse($filtrosFecha['fecha_fin'] ?? now())->endOfDay();
 
         $porEstado = $this->reporteRepository->getPedidosCountPorEstado($inicio, $fin);
+        $guiasPorEstado = $this->reporteRepository->getGuiasCountPorEstado($inicio, $fin);
         $kpisGenerales = $this->reporteRepository->getKpisGenerales($inicio, $fin);
 
         return [
             'pedidos_por_estado' => $porEstado,
+            'guias_por_estado' => $guiasPorEstado,
             'efectividad_general' => $kpisGenerales['efectividad_porcentaje'],
             'cantidad_total_pedidos' => $kpisGenerales['cantidad_total_pedidos'],
             'valor_total_pedidos' => $kpisGenerales['valor_total_pedidos'],
@@ -87,9 +89,15 @@ class DashboardService
 
     public function getStock(): array
     {
+        $maestro = $this->reporteRepository->getStockMaestro();
+        $valorTotalInmovilizado = $maestro->sum('valor_total');
+
         return [
-            'maestro' => $this->reporteRepository->getStockMaestro(),
-            'por_camion' => $this->reporteRepository->getStockPorCamion()
+            'maestro' => $maestro,
+            'por_marca' => $this->reporteRepository->getStockPorMarca(),
+            'por_categoria' => $this->reporteRepository->getStockPorCategoria(),
+            'por_camion' => $this->reporteRepository->getStockPorCamion(),
+            'valor_total_inventario' => round((float)$valorTotalInmovilizado, 2)
         ];
     }
 }

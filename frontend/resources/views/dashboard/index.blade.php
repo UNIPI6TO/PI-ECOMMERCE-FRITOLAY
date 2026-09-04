@@ -189,13 +189,137 @@
         </div>
     </div>
 
-    <!-- Stock Section -->
+    <!-- Sección 1: KPIs de Estados de Guías -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Estado de Guías de Remisión
+            </h2>
+            <span class="text-xs font-bold text-gray-400">Total en Periodo</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-amber-500 border-y border-r border-gray-100 flex items-center justify-between">
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Guías Abiertas</div>
+                    <div class="text-2xl font-black text-amber-600 mt-1" x-text="guiasPorEstado.abierta || 0"></div>
+                </div>
+                <div class="bg-amber-50 p-2.5 rounded-xl">
+                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-blue-500 border-y border-r border-gray-100 flex items-center justify-between">
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Guías Cerradas</div>
+                    <div class="text-2xl font-black text-blue-600 mt-1" x-text="guiasPorEstado.cerrada || 0"></div>
+                </div>
+                <div class="bg-blue-50 p-2.5 rounded-xl">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-emerald-500 border-y border-r border-gray-100 flex items-center justify-between">
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Guías Revisadas / Aprobadas</div>
+                    <div class="text-2xl font-black text-emerald-600 mt-1" x-text="guiasPorEstado.revisada || 0"></div>
+                </div>
+                <div class="bg-emerald-50 p-2.5 rounded-xl">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección 2: KPIs de Stock por Marca y Categoría -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Stock por Marca -->
+        <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="font-bold text-gray-900 text-base">Inventario por Marca</h3>
+                    <p class="text-xs text-gray-400">Unidades en stock y valor inmovilizado</p>
+                </div>
+                <span class="px-2.5 py-1 text-xs font-black rounded-full bg-indigo-50 text-indigo-700" x-text="(stock.por_marca || []).length + ' Marcas'"></span>
+            </div>
+            <div class="overflow-y-auto max-h-[220px]">
+                <table class="w-full text-xs text-left">
+                    <thead>
+                        <tr class="bg-gray-50 border-b text-gray-500 uppercase font-bold text-[10px]">
+                            <th class="p-2.5">Marca</th>
+                            <th class="p-2.5 text-center">Unidades Disp.</th>
+                            <th class="p-2.5 text-right">Valorizado ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <template x-if="!stock.por_marca || stock.por_marca.length === 0">
+                            <tr><td colspan="3" class="p-4 text-center text-gray-400">Sin datos de marcas</td></tr>
+                        </template>
+                        <template x-for="m in stock.por_marca" :key="m.marca">
+                            <tr class="hover:bg-gray-50/80 transition-colors">
+                                <td class="p-2.5 font-bold text-slate-800" x-text="m.marca"></td>
+                                <td class="p-2.5 text-center font-extrabold text-gray-900" x-text="parseFloat(m.total_unidades || 0).toFixed(0)"></td>
+                                <td class="p-2.5 text-right font-black text-emerald-600" x-text="'$' + Number(m.valor_total || 0).toFixed(2)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Stock por Categoría -->
+        <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="font-bold text-gray-900 text-base">Inventario por Categoría</h3>
+                    <p class="text-xs text-gray-400">Segmentación por líneas de producto</p>
+                </div>
+                <span class="px-2.5 py-1 text-xs font-black rounded-full bg-amber-50 text-amber-700" x-text="(stock.por_categoria || []).length + ' Categorías'"></span>
+            </div>
+            <div class="overflow-y-auto max-h-[220px]">
+                <table class="w-full text-xs text-left">
+                    <thead>
+                        <tr class="bg-gray-50 border-b text-gray-500 uppercase font-bold text-[10px]">
+                            <th class="p-2.5">Categoría</th>
+                            <th class="p-2.5 text-center">Unidades Disp.</th>
+                            <th class="p-2.5 text-right">Valorizado ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <template x-if="!stock.por_categoria || stock.por_categoria.length === 0">
+                            <tr><td colspan="3" class="p-4 text-center text-gray-400">Sin datos de categorías</td></tr>
+                        </template>
+                        <template x-for="c in stock.por_categoria" :key="c.categoria">
+                            <tr class="hover:bg-gray-50/80 transition-colors">
+                                <td class="p-2.5 font-bold text-slate-800" x-text="c.categoria"></td>
+                                <td class="p-2.5 text-center font-extrabold text-gray-900" x-text="parseFloat(c.total_unidades || 0).toFixed(0)"></td>
+                                <td class="p-2.5 text-right font-black text-emerald-600" x-text="'$' + Number(c.valor_total || 0).toFixed(2)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección 3: Stock Section Valorizado -->
     <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold text-gray-900">Control de Stock en Ruta</h3>
-            <div class="flex gap-2">
-                <button @click="stockTab = 'maestro'" :class="stockTab === 'maestro' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-700'" class="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors">Bodega Central</button>
-                <button @click="stockTab = 'camiones'" :class="stockTab === 'camiones' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-700'" class="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors">Por Camión</button>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            <div>
+                <h3 class="font-black text-gray-900 text-lg">Control de Stock y Capital Inmovilizado</h3>
+                <p class="text-xs text-gray-500">Valorización financiera del inventario disponible en bodega y vehículos.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <span class="text-[10px] font-black uppercase text-emerald-800 tracking-wider">VALOR TOTAL INVENTARIO:</span>
+                    <span class="text-sm font-black text-emerald-700" x-text="'$' + Number(stock.valor_total_inventario || 0).toFixed(2)"></span>
+                </div>
+                <div class="flex gap-2">
+                    <button @click="stockTab = 'maestro'" :class="stockTab === 'maestro' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-700'" class="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer">Bodega Central</button>
+                    <button @click="stockTab = 'camiones'" :class="stockTab === 'camiones' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-700'" class="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer">Por Camión</button>
+                </div>
             </div>
         </div>
 
@@ -209,18 +333,24 @@
                     <thead>
                         <tr class="text-xs text-gray-500 border-b uppercase">
                             <th class="text-left py-2">Producto</th>
+                            <th class="text-left py-2">Marca / Cat.</th>
+                            <th class="text-right py-2">Precio Unit.</th>
                             <th class="text-right py-2">Disponible</th>
                             <th class="text-right py-2">En Pedidos</th>
+                            <th class="text-right py-2">Valor Total ($)</th>
                             <th class="text-right py-2">Estado</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-gray-100">
                         <template x-for="p in stock.maestro" :key="p.id">
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-2 font-bold text-gray-800" x-text="p.nombre"></td>
-                                <td class="py-2 text-right font-bold text-gray-900" x-text="parseFloat(p.disponible || p.cantidad_fisica || 0).toFixed(0)"></td>
-                                <td class="py-2 text-right text-gray-500" x-text="parseFloat(p.en_pedidos || 0).toFixed(0)"></td>
-                                <td class="py-2 text-right">
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-2.5 font-bold text-gray-800" x-text="p.nombre"></td>
+                                <td class="py-2.5 text-xs text-gray-500 font-semibold" x-text="(p.marca || 'N/A') + ' / ' + (p.categoria || 'N/A')"></td>
+                                <td class="py-2.5 text-right font-medium text-gray-600" x-text="'$' + Number(p.precio || 0).toFixed(2)"></td>
+                                <td class="py-2.5 text-right font-bold text-gray-900" x-text="parseFloat(p.disponible || p.cantidad_fisica || 0).toFixed(0)"></td>
+                                <td class="py-2.5 text-right text-gray-500" x-text="parseFloat(p.en_pedidos || 0).toFixed(0)"></td>
+                                <td class="py-2.5 text-right font-black text-emerald-600" x-text="'$' + Number(p.valor_total || ((p.disponible || p.cantidad_fisica || 0) * p.precio)).toFixed(2)"></td>
+                                <td class="py-2.5 text-right">
                                     <span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full uppercase"
                                            :class="parseFloat(p.disponible || p.cantidad_fisica || 0) < 10 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
                                            x-text="parseFloat(p.disponible || p.cantidad_fisica || 0) < 10 ? 'BAJO' : 'OK'">
@@ -229,6 +359,13 @@
                             </tr>
                         </template>
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-gray-50 border-t-2 border-gray-200 font-black text-xs text-gray-900">
+                            <td colspan="5" class="py-3 px-2 text-right uppercase">Total Capital Inmovilizado (Bodega Central):</td>
+                            <td class="py-3 text-right text-emerald-700 text-sm" x-text="'$' + Number(stock.valor_total_inventario || 0).toFixed(2)"></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -244,15 +381,19 @@
                         <tr class="text-xs text-gray-500 border-b uppercase">
                             <th class="text-left py-2">Camión</th>
                             <th class="text-left py-2">Producto</th>
+                            <th class="text-right py-2">Precio Unit.</th>
                             <th class="text-right py-2">Cantidad</th>
+                            <th class="text-right py-2">Valor Total ($)</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-gray-100">
                         <template x-for="(r, idx) in stock.por_camion" :key="idx">
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-2 font-bold text-gray-600" x-text="r.placa"></td>
-                                <td class="py-2" x-text="r.nombre"></td>
-                                <td class="py-2 text-right font-semibold" x-text="parseFloat(r.cantidad_actual || r.cantidad_fisica || 0).toFixed(0)"></td>
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-2.5 font-bold text-slate-700" x-text="r.placa"></td>
+                                <td class="py-2.5 font-medium text-gray-800" x-text="r.nombre"></td>
+                                <td class="py-2.5 text-right font-medium text-gray-600" x-text="'$' + Number(r.precio || 0).toFixed(2)"></td>
+                                <td class="py-2.5 text-right font-bold text-gray-900" x-text="parseFloat(r.cantidad_actual || r.cantidad_fisica || 0).toFixed(0)"></td>
+                                <td class="py-2.5 text-right font-black text-emerald-600" x-text="'$' + Number(r.valor_total || ((r.cantidad_actual || 0) * r.precio)).toFixed(2)"></td>
                             </tr>
                         </template>
                     </tbody>
@@ -291,9 +432,14 @@ document.addEventListener('alpine:init', () => {
                 pedidos_entregados: 0,
                 recaudacion_efectivo: '0.00'
             },
+            guiasPorEstado: {
+                abierta: 0,
+                cerrada: 0,
+                revisada: 0
+            },
             totalPerdido: 0,
             carritos: [],
-            stock: { maestro: [], por_camion: [] },
+            stock: { maestro: [], por_marca: [], por_categoria: [], por_camion: [], valor_total_inventario: 0 },
             stockTab: 'maestro',
 
             chartVentasDia: null,
@@ -408,10 +554,11 @@ document.addEventListener('alpine:init', () => {
                     recData = await window.api(`/api/dashboard/recaudacion${params}`).catch(() => null);
                     perdidasData = await window.api(`/api/dashboard/perdidas${params}`).catch(() => null);
                     const carritosData = await window.api(`/api/dashboard/carritos-abandonados${params}`).catch(() => []);
-                    const stockData = await window.api('/api/dashboard/stock').catch(() => ({ maestro: [], por_camion: [] }));
+                    const stockData = await window.api('/api/dashboard/stock').catch(() => ({ maestro: [], por_marca: [], por_categoria: [], por_camion: [], valor_total_inventario: 0 }));
                     
                     this.carritos = carritosData || [];
-                    this.stock = stockData || { maestro: [], por_camion: [] };
+                    this.stock = stockData || { maestro: [], por_marca: [], por_categoria: [], por_camion: [], valor_total_inventario: 0 };
+                    this.guiasPorEstado = kpisData && kpisData.guias_por_estado ? kpisData.guias_por_estado : { abierta: 0, cerrada: 0, revisada: 0 };
                     this.totalPerdido = perdidasData ? (perdidasData.total_acumulado_perdido || 0) : 0;
 
                     let ventasTotales = '0.00';
