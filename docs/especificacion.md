@@ -2260,10 +2260,12 @@ Detalle de los productos incluidos en cada pedido.
 |---|---|---|---|
 | `id` | INT | PK, Auto Increment | Identificador del ítem. |
 | `pedido_id` | INT | FK (PEDIDOS.id) | Pedido al que pertenece. |
-| `producto_id` | INT | FK (PRODUCTOS.id) | Producto solicitado. |
+| `producto_id` | INT | FK (PRODUCTOS.id) | Producto solicitado (referencia al catálogo). |
+| `nombre_producto` | VARCHAR(255) | NULL | **Snapshot estático:** Nombre del producto al momento de crear la orden (Inmutabilidad). |
+| `descripcion_producto` | TEXT | NULL | **Snapshot estático:** Descripción del producto al momento de crear la orden (Inmutabilidad). |
 | `cantidad_solicitada`| INT | NOT NULL | Unidades pedidas por el cliente. |
 | `cantidad_entregada`| INT | DEFAULT 0 | Unidades realmente entregadas (para entregas parciales). |
-| `precio_unitario`| DECIMAL(10,2) | NOT NULL | Precio al momento de la compra. |
+| `precio_unitario`| DECIMAL(10,2) | NOT NULL | Precio al momento de la compra (Snapshot de valor). |
 | `descuento_aplicado`| DECIMAL(10,2)| DEFAULT 0 | Descuento específico de la línea. |
 
 **Tabla: `CAMIONES`**
@@ -2455,6 +2457,17 @@ Tanto el cliente como el operador (desde el modal de revisión) pueden cancelar 
 ### 2.3 Visibilidad en el Historial del Cliente
 - Al entrar a `/ecommerce/pedidos`, el endpoint `getHistorial` carga la relación anidada `factura.notaCredito`.
 - Si el pedido está anulado y cuenta con una nota de crédito, el usuario verá una caja de alerta roja detallando los montos legales (SRI), número de nota, fecha de emisión y el motivo específico (Información Adicional) por el cual el operador anuló su pedido.
+
+### 2.4 Inmutabilidad de Documentos y Snapshots de Productos (Patrón Snapshot)
+Para garantizar el cumplimiento de normativas tributarias y de auditoría contable/logística, los documentos emitidos (Facturas, Guías de Remisión, Notas de Crédito e Historial de Pedidos) deben ser **inmutables en el tiempo**.
+
+- **Desacoplamiento del Catálogo:** Se incorporaron los campos `nombre_producto` (`VARCHAR(255)`) y `descripcion_producto` (`TEXT`) en la tabla `items_pedido`.
+- **Captura en Creación de Orden:** Al procesar un pedido (`PedidoService::crearPedido`), el sistema extrae el `nombre`, `descripcion` y `precio` vigentes del producto en ese momento exacto y los congela como un snapshot estático en el registro del ítem.
+- **Herencia en Documentos Derivados:**
+  - **Facturas (`facturas`):** Heredan los datos del ítem del pedido sin consultar el catálogo en tiempo real.
+  - **Notas de Crédito (`notas_credito`):** Se vinculan a la factura y a sus ítems estáticos, garantizando que una devolución futura preserve la descripción e importe original.
+  - **Guías de Remisión / Guías de Ruta:** Muestran los ítems y descripciones exactos congelados al momento de generar la orden.
+- **Paridad Multi-entorno:** La migración masiva de estructura y backfill de datos históricos fue ejecutada tanto en el servidor local **MySQL (`127.0.0.1:3306`)** como en la base de datos de producción **GCP Cloud SQL (`34.72.182.198:3306`)**.
 
 ## 3. Arquitectura y Correcciones de Sistema Core
 

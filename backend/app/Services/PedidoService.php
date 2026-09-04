@@ -68,6 +68,8 @@ class PedidoService
                 $itemData = [
                     'pedido_id' => $pedido->id,
                     'producto_id' => $productoId,
+                    'nombre_producto' => $producto->nombre,
+                    'descripcion_producto' => $producto->descripcion,
                     'cantidad_solicitada' => $cantidad,
                     'cantidad_entregada' => 0,
                     'precio_unitario' => $producto->precio,
