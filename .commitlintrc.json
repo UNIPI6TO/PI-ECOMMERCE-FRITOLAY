@@ -20,7 +20,7 @@
       ]
     ],
     "subject-case": [0],
-    "body-max-line-length": [0, "always", Infinity],
-    "footer-max-line-length": [0, "always", Infinity]
+    "body-max-line-length": [0],
+    "footer-max-line-length": [0]
   }
 }
