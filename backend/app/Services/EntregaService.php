@@ -123,6 +123,8 @@ class EntregaService
                     'updated_at' => now()
                 ]);
 
+            $fechaPedido = $pedido->creado_en ?? $pedido->created_at ?? now();
+
             $factura = DB::table('facturas')->where('pedido_id', $pedido->id)->first();
             if (!$factura) {
                 $numeroFactura = 'FAC-' . date('Y') . '-' . str_pad((string)$pedido->id, 6, '0', STR_PAD_LEFT);
@@ -132,6 +134,7 @@ class EntregaService
                     'subtotal' => $pedido->subtotal,
                     'iva' => $pedido->iva,
                     'total' => $pedido->total,
+                    'fecha_pedido' => $fechaPedido,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
@@ -150,6 +153,7 @@ class EntregaService
                         'fecha_emision' => now()->toDateString(),
                         'valor_total' => $valorNota,
                         'motivo' => 'Devolución en entrega - ' . $motivoPrincipal,
+                        'fecha_pedido' => $fechaPedido,
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);

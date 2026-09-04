@@ -72,6 +72,7 @@ class PedidoService
                     'cantidad_entregada' => 0,
                     'precio_unitario' => $producto->precio,
                     'descuento_aplicado' => 0,
+                    'fecha_pedido' => $pedido->creado_en ?? $pedido->created_at ?? now(),
                 ];
                 
                 $items[] = $pedido->items()->create($itemData);
@@ -88,6 +89,7 @@ class PedidoService
                 'subtotal' => $subtotal,
                 'iva' => $iva,
                 'total' => $total,
+                'fecha_pedido' => $pedido->creado_en ?? $pedido->created_at ?? now(),
             ]);
             $pedido->setRelation('factura', $factura);
 
@@ -138,7 +140,8 @@ class PedidoService
                     'numero_nota' => \App\Models\NotaCredito::generarNumero($factura->id),
                     'fecha_emision' => now(),
                     'valor_total' => $factura->total,
-                    'motivo' => 'Cancelación: ' . $motivoTexto
+                    'motivo' => 'Cancelación: ' . $motivoTexto,
+                    'fecha_pedido' => $pedido->creado_en ?? $pedido->created_at ?? now()
                 ]);
             }
 

@@ -215,11 +215,11 @@ class ReporteRepository
                 ELSE 0 
             END'));
 
-        // 3. $ Devoluciones (Notas de credito creadas o devoluciones parciales/totales)
+        // 3. $ Devoluciones (Filtrado ultra-rápido por fecha_pedido indexado)
         $totalDevoluciones = (float) DB::table('notas_credito as nc')
             ->join('facturas as f', 'f.id', '=', 'nc.factura_id')
             ->join('pedidos as p', 'p.id', '=', 'f.pedido_id')
-            ->whereBetween('p.creado_en', [$inicio, $fin])
+            ->whereBetween('nc.fecha_pedido', [$inicio, $fin])
             ->where('p.estado', '!=', 'cancelado')
             ->sum('nc.valor_total');
 
