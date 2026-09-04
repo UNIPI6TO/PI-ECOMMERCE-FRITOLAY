@@ -164,13 +164,12 @@
                                 <td class="py-3.5 px-4 text-gray-500 font-medium" x-text="timeAgo(p.fecha)"></td>
                                 <td class="py-3.5 px-4 text-center">
                                     <button @click="verDetalle(p)" 
-                                            class="py-1.5 px-3 rounded-xl font-bold text-xs shadow-2xs transition-all cursor-pointer"
+                                            class="py-1.5 px-3 rounded-xl font-bold text-xs shadow-2xs transition-all"
                                             :class="{
-                                                'bg-amber-500 text-slate-950 hover:bg-amber-400': p.estado === 'PENDIENTE',
-                                                'bg-slate-900 text-white hover:bg-slate-800': p.estado === 'APROBADO',
-                                                'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200': p.estado !== 'PENDIENTE' && p.estado !== 'APROBADO'
-                                            }" 
-                                            x-text="p.estado === 'PENDIENTE' ? 'Revisión' : (p.estado === 'APROBADO' ? 'Asignar Ruta' : 'Ver Detalle')"></button>
+                                                 'bg-amber-500 text-slate-950 hover:bg-amber-400': p.estado === 'PENDIENTE',
+                                                 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200': p.estado !== 'PENDIENTE'
+                                             }"
+                                            x-text="p.estado === 'PENDIENTE' ? 'Revisión' : 'Ver Detalle'"></button>
                                 </td>
                             </tr>
                         </template>
