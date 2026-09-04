@@ -89,21 +89,10 @@
                         <div class="text-sm text-gray-500 mt-1">Solicitado: <span class="font-bold text-gray-700" x-text="item.solicitado"></span> | Precio: $<span x-text="item.precio"></span></div>
                         
                         <div x-show="item.entregado < item.solicitado" 
-                             class="mt-2 space-y-2">
-                            <div class="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded text-sm font-semibold">
+                             class="mt-2">
+                            <div class="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-lg text-xs font-semibold">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" /></svg>
-                                Devuelve: <span x-text="item.solicitado - item.entregado"></span> unidades
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-red-800 mb-1">Motivo de Devolución <span class="text-red-600">*</span></label>
-                                <select x-model="item.motivo_devolucion" class="w-full border-2 border-red-300 rounded-lg p-2 text-xs font-medium focus:ring focus:ring-red-200 focus:outline-none bg-white">
-                                    <option value="">-- Seleccione un motivo --</option>
-                                    <option value="Producto dañado / mal estado">Producto dañado / mal estado</option>
-                                    <option value="Pedido incompleto / equivocado">Pedido incompleto / equivocado</option>
-                                    <option value="Rechazado por cliente">Rechazado por cliente</option>
-                                    <option value="Fecha de caducidad corta">Fecha de caducidad corta</option>
-                                    <option value="Otro motivo">Otro motivo</option>
-                                </select>
+                                Devuelve: <span class="font-black" x-text="item.solicitado - item.entregado"></span> unidades
                             </div>
                         </div>
                     </div>
@@ -117,6 +106,23 @@
                 </div>
             </template>
         </div>
+    </div>
+
+    {{-- SECCIÓN MOTIVO DE DEVOLUCIÓN DE LA ENTREGA (Solo si hay ítems devueltos) --}}
+    <div class="bg-red-50 border-2 border-red-200 p-5 rounded-xl shadow-sm mb-5" x-show="hayDevoluciones">
+        <div class="flex items-center gap-2 mb-2 text-red-800 font-extrabold text-sm">
+            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span>Motivo de Devolución de la Entrega <span class="text-red-600">*</span></span>
+        </div>
+        <p class="text-xs text-red-600 font-medium mb-3">Se han detectado productos no entregados en su totalidad. Por favor seleccione el motivo global de la devolución:</p>
+        <select x-model="motivoDevolucionGeneral" class="w-full border-2 border-red-300 rounded-xl p-3 text-xs font-bold text-gray-800 focus:ring focus:ring-red-200 focus:outline-none bg-white">
+            <option value="">-- Seleccione un motivo de devolución --</option>
+            <option value="Producto dañado / mal estado">Producto dañado / mal estado</option>
+            <option value="Pedido incompleto / equivocado">Pedido incompleto / equivocado</option>
+            <option value="Rechazado por cliente">Rechazado por cliente</option>
+            <option value="Fecha de caducidad corta">Fecha de caducidad corta</option>
+            <option value="Otro motivo">Otro motivo</option>
+        </select>
     </div>
 
     {{-- TOTAL --}}
@@ -149,7 +155,12 @@ document.addEventListener('alpine:init', () => {
         factura: null,
         dataLoaded: false,
         submitting: false,
+        motivoDevolucionGeneral: '',
         items: [],
+
+        get hayDevoluciones() {
+            return this.items.some(i => i.entregado < i.solicitado);
+        },
 
         async init() {
             try {
@@ -184,8 +195,7 @@ document.addEventListener('alpine:init', () => {
                     nombre: i.producto ? i.producto.nombre : 'Producto ' + i.producto_id,
                     precio: parseFloat(i.precio_unitario),
                     solicitado: parseFloat(i.cantidad_solicitada),
-                    entregado: parseFloat(i.cantidad_solicitada),
-                    motivo_devolucion: ''
+                    entregado: parseFloat(i.cantidad_solicitada)
                 }));
 
                 if (this.metodoPago !== 'EFECTIVO') {
@@ -214,26 +224,25 @@ document.addEventListener('alpine:init', () => {
         async confirmarEntrega() {
             if (this.submitting) return;
             
-            // Validar que cada producto devuelto tenga un motivo de devolución obligatorio
-            for (const item of this.items) {
-                if (item.entregado < item.solicitado && (!item.motivo_devolucion || !item.motivo_devolucion.trim())) {
-                    Swal.fire({ 
-                        icon: 'warning', 
-                        title: 'Motivo Requerido', 
-                        text: `Por favor seleccione el motivo de devolución para ${item.nombre}.`, 
-                        toast: true, 
-                        position: 'bottom', 
-                        showConfirmButton: false, 
-                        timer: 3500 
-                    });
-                    return;
-                }
+            // Validar motivo de devolución global si hay ítems no entregados en su totalidad
+            if (this.hayDevoluciones && (!this.motivoDevolucionGeneral || !this.motivoDevolucionGeneral.trim())) {
+                Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'Motivo de Devolución Requerido', 
+                    text: 'Por favor seleccione el motivo de devolución al momento de confirmar la entrega.', 
+                    toast: true, 
+                    position: 'bottom', 
+                    showConfirmButton: false, 
+                    timer: 3500 
+                });
+                return;
             }
 
             this.submitting = true;
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const guiaId = urlParams.get('guia');
+                const motivo = this.motivoDevolucionGeneral || 'Otro motivo';
                 
                 const payload = {
                     pedido_id: parseInt(this.pedidoId),
@@ -241,8 +250,8 @@ document.addEventListener('alpine:init', () => {
                         item_pedido_id: i.id,
                         cantidad_entregada: i.entregado,
                         cantidad_devuelta: i.solicitado - i.entregado,
-                        motivo_devolucion: i.solicitado > i.entregado ? (i.motivo_devolucion || 'Otro motivo') : null,
-                        estado_mercaderia: i.solicitado > i.entregado ? (i.motivo_devolucion === 'Producto dañado / mal estado' ? 'mal_estado' : 'buen_estado') : null
+                        motivo_devolucion: i.solicitado > i.entregado ? motivo : null,
+                        estado_mercaderia: i.solicitado > i.entregado ? (motivo === 'Producto dañado / mal estado' ? 'mal_estado' : 'buen_estado') : null
                     }))
                 };
                 
