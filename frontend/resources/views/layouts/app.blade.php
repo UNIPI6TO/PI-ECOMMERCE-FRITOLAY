@@ -19,9 +19,62 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <!-- Estilos compactos responsivos para Toast flotante en móviles (Fondo Blanco) -->
+    <style>
+        .swal2-container.swal2-bottom {
+            bottom: 16px !important;
+        }
+        .swal2-popup.swal2-toast {
+            padding: 8px 16px !important;
+            font-size: 12px !important;
+            max-width: calc(100vw - 32px) !important;
+            width: auto !important;
+            border-radius: 9999px !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            display: inline-flex !important;
+            align-items: center !important;
+        }
+        .swal2-popup.swal2-toast .swal2-title,
+        .swal2-popup.swal2-toast .swal2-html-container {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            color: #0f172a !important;
+            margin: 0 4px !important;
+            padding: 0 !important;
+            line-height: 1.2 !important;
+        }
+        .swal2-popup.swal2-toast .swal2-icon {
+            width: 18px !important;
+            height: 18px !important;
+            margin: 0 6px 0 0 !important;
+            min-width: 18px !important;
+        }
+    </style>
+
     <!-- Backend API config & helper centralizado -->
     <script>
         window.BACKEND_URL = '{{ env("BACKEND_API_URL", "http://localhost:8000") }}';
+
+        /**
+         * window.toast(message, icon, position) - Toast flotante compacto y responsivo al centro inferior
+         */
+        window.toast = function(message, icon = 'error', position = 'bottom') {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: icon,
+                    text: message,
+                    toast: true,
+                    position: position,
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            } else {
+                console.log(`[Toast ${icon}]`, message);
+            }
+        };
 
         /**
          * api(path, options) - Wrapper centralizado para todas las llamadas al backend.
@@ -46,7 +99,7 @@
             const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                if (response.status === 401) {
+                if (response.status === 401 && !path.includes('/auth/login')) {
                     localStorage.removeItem('jwt_token');
                     localStorage.removeItem('role');
                     window.location.replace('/auth/login');
@@ -67,10 +120,26 @@
                     throw new Error('Acceso denegado a este recurso.');
                 }
 
-                const message = data.message
-                    || data.error
-                    || (data.errors ? Object.values(data.errors).flat().join(' ') : null)
-                    || `Error ${response.status}`;
+                let message = data.message;
+                if (!message && data.error) {
+                    message = data.error;
+                }
+                if (!message && data.errors) {
+                    if (typeof data.errors === 'object') {
+                        message = Object.values(data.errors).flat().join(' ');
+                    } else {
+                        message = String(data.errors);
+                    }
+                }
+
+                if (!message || message === 'Unprocessable Content' || message.includes('422')) {
+                    if (response.status === 422 || response.status === 401) {
+                        message = 'Credenciales no válidas o datos incorrectos. Revisa la información e inténtalo de nuevo.';
+                    } else {
+                        message = `Error al procesar la solicitud (${response.status}).`;
+                    }
+                }
+
                 throw Object.assign(new Error(message), { status: response.status, data });
             }
 

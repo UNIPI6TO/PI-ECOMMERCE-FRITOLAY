@@ -2260,10 +2260,12 @@ Detalle de los productos incluidos en cada pedido.
 |---|---|---|---|
 | `id` | INT | PK, Auto Increment | Identificador del ítem. |
 | `pedido_id` | INT | FK (PEDIDOS.id) | Pedido al que pertenece. |
-| `producto_id` | INT | FK (PRODUCTOS.id) | Producto solicitado. |
+| `producto_id` | INT | FK (PRODUCTOS.id) | Producto solicitado (referencia al catálogo). |
+| `nombre_producto` | VARCHAR(255) | NULL | **Snapshot estático:** Nombre del producto al momento de crear la orden (Inmutabilidad). |
+| `descripcion_producto` | TEXT | NULL | **Snapshot estático:** Descripción del producto al momento de crear la orden (Inmutabilidad). |
 | `cantidad_solicitada`| INT | NOT NULL | Unidades pedidas por el cliente. |
 | `cantidad_entregada`| INT | DEFAULT 0 | Unidades realmente entregadas (para entregas parciales). |
-| `precio_unitario`| DECIMAL(10,2) | NOT NULL | Precio al momento de la compra. |
+| `precio_unitario`| DECIMAL(10,2) | NOT NULL | Precio al momento de la compra (Snapshot de valor). |
 | `descuento_aplicado`| DECIMAL(10,2)| DEFAULT 0 | Descuento específico de la línea. |
 
 **Tabla: `CAMIONES`**
@@ -2455,6 +2457,15 @@ Tanto el cliente como el operador (desde el modal de revisión) pueden cancelar 
 ### 2.3 Visibilidad en el Historial del Cliente
 - Al entrar a `/ecommerce/pedidos`, el endpoint `getHistorial` carga la relación anidada `factura.notaCredito`.
 - Si el pedido está anulado y cuenta con una nota de crédito, el usuario verá una caja de alerta roja detallando los montos legales (SRI), número de nota, fecha de emisión y el motivo específico (Información Adicional) por el cual el operador anuló su pedido.
+
+### 2.4 Inmutabilidad de Documentos, Generación de PDFs y Transacciones Atómicas (Patrón Snapshot & DB Atomicity)
+Para garantizar el cumplimiento de normativas tributarias (SRI) y de auditoría contable/logística, los documentos emitidos (Facturas, Guías de Remisión, Notas de Crédito e Historial de Pedidos) son **completamente inmutables en el tiempo** y la ejecución de cambios es estrictamente **atómica**:
+
+- **Independencia Total de PDFs:** La lógica de generación de PDFs cliente-servidor (`pdf-generator.js`, `historial.blade.php`, `guias.blade.php`, `EntregaService::getPedidosGuiaChofer`) consume de forma aislada los atributos `nombre_producto` y `precio_unitario` capturados en el detalle del documento (`items_pedido`). Se eliminó cualquier consulta o dependencia en tiempo real hacia la tabla maestra `productos`.
+- **Garantía de Inmutabilidad:** Si un producto cambia de precio o descripción en el catálogo principal, los PDFs generados previamente mantienen la información y los importes exactamente como fueron emitidos.
+- **Transacciones Atómicas de Base de Datos (`DB::transaction`):** Se aseguró que todas las operaciones donde un evento o botón desencadena múltiples escrituras/actualizaciones (`PedidoService::crearPedido`, `PedidoService::cancelarPedido`, `AprobacionService::aprobar`, `AprobacionService::rechazar`, `RutaService::crearAsignacion`, `RutaService::cancelarAsignacion`, `RutaService::cerrarRuta`, `EntregaService::registrarEntrega`, `CierreService::declararArqueo`, `CierreService::procesarMercaderiaDevuelta`, `CierreService::cerrarGuia`, `InventarioService`) estén envueltas en bloques de transacción relacional.
+- **Rollback Automático:** Ante cualquier excepción o fallo imprevisto durante una secuencia multi-tabla (ej: error en registro de mercadería o actualización de inventario), la base de datos aborta y revierte automáticamente (`rollback`) todas las escrituras sin dejar registros parciales o huérfanos.
+- **Paridad Multi-entorno:** La migración masiva de estructura y backfill de datos históricos fue ejecutada tanto en el servidor local **MySQL (`127.0.0.1:3306`)** como en la base de datos de producción **GCP Cloud SQL (`34.72.182.198:3306`)**.
 
 ## 3. Arquitectura y Correcciones de Sistema Core
 

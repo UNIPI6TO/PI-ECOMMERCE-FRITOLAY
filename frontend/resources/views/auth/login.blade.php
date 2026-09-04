@@ -155,13 +155,12 @@ function loginForm() {
                     window.location.href = '/dashboard';
                 }
             } catch (e) {
-                this.error = e.message || 'Credenciales inválidas. Verifica tu email y contraseña.';
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error al iniciar sesión',
-                    text: this.error,
-                    confirmButtonColor: '#E3001B'
-                });
+                let msg = e.message;
+                if (!msg || msg.includes('422') || msg.includes('Unprocessable')) {
+                    msg = 'Credenciales no válidas. Revisa tu correo y contraseña.';
+                }
+                this.error = msg;
+                window.toast(msg, 'error', 'bottom');
             } finally {
                 this.loading = false;
             }

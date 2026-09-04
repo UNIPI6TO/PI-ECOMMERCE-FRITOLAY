@@ -12,24 +12,45 @@ class ReporteRepository
 {
     public function getVentasPorDia(Carbon $inicio, Carbon $fin): Collection
     {
-        return DB::table('pedidos')
-            ->select(DB::raw('DATE(creado_en) as fecha'), DB::raw('SUM(total) as total'))
-            ->whereIn('estado', ['entregado', 'entregado_parcialmente'])
-            ->whereBetween('creado_en', [$inicio, $fin])
-            ->groupBy(DB::raw('DATE(creado_en)'))
+        return DB::table('pedidos as p')
+            ->select(
+                DB::raw('DATE(p.creado_en) as fecha'),
+                DB::raw('SUM(CASE 
+                    WHEN p.estado = "entregado" THEN p.total
+                    WHEN p.estado = "entregado_parcialmente" THEN (
+                        SELECT COALESCE(SUM(ip.cantidad_entregada * ip.precio_unitario * 1.15), 0)
+                        FROM items_pedido ip WHERE ip.pedido_id = p.id
+                    )
+                    ELSE 0 
+                END) as total')
+            )
+            ->whereIn('p.estado', ['entregado', 'entregado_parcialmente'])
+            ->whereBetween('p.creado_en', [$inicio, $fin])
+            ->groupBy(DB::raw('DATE(p.creado_en)'))
             ->get();
     }
 
     public function getVentasPorCamion(Carbon $inicio, Carbon $fin): Collection
     {
-        return DB::table('pedidos')
-            ->join('asignacion_pedido_camion', 'pedidos.id', '=', 'asignacion_pedido_camion.pedido_id')
+        return DB::table('pedidos as p')
+            ->join('asignacion_pedido_camion', 'p.id', '=', 'asignacion_pedido_camion.pedido_id')
             ->join('guias_ruta', 'asignacion_pedido_camion.guia_ruta_id', '=', 'guias_ruta.id')
             ->join('guias_remision', 'guias_ruta.guia_remision_id', '=', 'guias_remision.id')
             ->leftJoin('camiones', 'guias_remision.camion_id', '=', 'camiones.id')
-            ->select('guias_remision.camion_id', 'camiones.placa', DB::raw('SUM(pedidos.total) as total'))
-            ->whereIn('pedidos.estado', ['entregado', 'entregado_parcialmente'])
-            ->whereBetween('pedidos.creado_en', [$inicio, $fin])
+            ->select(
+                'guias_remision.camion_id',
+                'camiones.placa',
+                DB::raw('SUM(CASE 
+                    WHEN p.estado = "entregado" THEN p.total
+                    WHEN p.estado = "entregado_parcialmente" THEN (
+                        SELECT COALESCE(SUM(ip.cantidad_entregada * ip.precio_unitario * 1.15), 0)
+                        FROM items_pedido ip WHERE ip.pedido_id = p.id
+                    )
+                    ELSE 0 
+                END) as total')
+            )
+            ->whereIn('p.estado', ['entregado', 'entregado_parcialmente'])
+            ->whereBetween('p.creado_en', [$inicio, $fin])
             ->groupBy('guias_remision.camion_id', 'camiones.placa')
             ->get();
     }
@@ -143,43 +164,84 @@ class ReporteRepository
 
     public function getTendenciaVolumenYVentas(Carbon $inicio, Carbon $fin): Collection
     {
-        return DB::table('pedidos')
+        return DB::table('pedidos as p')
             ->select(
-                DB::raw('DATE(creado_en) as fecha'),
+                DB::raw('DATE(p.creado_en) as fecha'),
                 DB::raw('COUNT(*) as cantidad_pedidos'),
-                DB::raw('SUM(CASE WHEN estado IN ("entregado", "entregado_parcialmente") THEN total ELSE 0 END) as ventas_entregadas'),
-                DB::raw('SUM(total) as ventas_totales')
+                DB::raw('SUM(CASE 
+                    WHEN p.estado = "entregado" THEN p.total
+                    WHEN p.estado = "entregado_parcialmente" THEN (
+                        SELECT COALESCE(SUM(ip.cantidad_entregada * ip.precio_unitario * 1.15), 0)
+                        FROM items_pedido ip WHERE ip.pedido_id = p.id
+                    )
+                    ELSE 0 
+                END) as ventas_entregadas'),
+                DB::raw('SUM(p.total) as ventas_totales')
             )
-            ->whereBetween('creado_en', [$inicio, $fin])
-            ->groupBy(DB::raw('DATE(creado_en)'))
+            ->whereBetween('p.creado_en', [$inicio, $fin])
+            ->where('p.estado', '!=', 'cancelado')
+            ->groupBy(DB::raw('DATE(p.creado_en)'))
             ->orderBy('fecha', 'asc')
             ->get();
     }
 
     public function getKpisGenerales(Carbon $inicio, Carbon $fin): array
     {
+        // 1. # Pedidos y $ Total Pedidos (excluyendo cancelados por clientes)
         $stats = DB::table('pedidos')
             ->select(
                 DB::raw('COUNT(*) as cantidad_total'),
                 DB::raw('SUM(total) as valor_total'),
-                DB::raw('SUM(CASE WHEN estado IN ("entregado", "entregado_parcialmente") THEN total ELSE 0 END) as total_entregado'),
                 DB::raw('SUM(CASE WHEN estado IN ("entregado", "entregado_parcialmente") THEN 1 ELSE 0 END) as pedidos_entregados')
             )
             ->whereBetween('creado_en', [$inicio, $fin])
+            ->where('estado', '!=', 'cancelado')
             ->first();
 
         $cantidadTotal = (int) ($stats->cantidad_total ?? 0);
         $valorTotal = (float) ($stats->valor_total ?? 0);
-        $totalEntregado = (float) ($stats->total_entregado ?? 0);
         $pedidosEntregados = (int) ($stats->pedidos_entregados ?? 0);
+
+        // 2. $ Entregado (Exclusivamente lo entregado de forma efectiva)
+        $totalEntregado = (float) DB::table('pedidos as p')
+            ->whereBetween('p.creado_en', [$inicio, $fin])
+            ->where('p.estado', '!=', 'cancelado')
+            ->sum(DB::raw('CASE 
+                WHEN p.estado = "entregado" THEN p.total
+                WHEN p.estado = "entregado_parcialmente" THEN (
+                    SELECT COALESCE(SUM(ip.cantidad_entregada * ip.precio_unitario * 1.15), 0)
+                    FROM items_pedido ip WHERE ip.pedido_id = p.id
+                )
+                ELSE 0 
+            END'));
+
+        // 3. $ Devoluciones (Filtrado ultra-rápido por fecha_pedido indexado)
+        $totalDevoluciones = (float) DB::table('notas_credito as nc')
+            ->join('facturas as f', 'f.id', '=', 'nc.factura_id')
+            ->join('pedidos as p', 'p.id', '=', 'f.pedido_id')
+            ->whereBetween('nc.fecha_pedido', [$inicio, $fin])
+            ->where('p.estado', '!=', 'cancelado')
+            ->sum('nc.valor_total');
+
+        // 4. Efectividad Entrega
         $efectividad = $cantidadTotal > 0 ? round(($pedidosEntregados / $cantidadTotal) * 100, 2) : 0;
+
+        // 5. Recaudación Efectivo
+        $recaudacionEfectivo = (float) DB::table('pedidos')
+            ->whereBetween('creado_en', [$inicio, $fin])
+            ->where('estado', '!=', 'cancelado')
+            ->where('metodo_pago', 'efectivo')
+            ->whereIn('estado', ['entregado', 'entregado_parcialmente'])
+            ->sum('total');
 
         return [
             'cantidad_total_pedidos' => $cantidadTotal,
             'valor_total_pedidos' => round($valorTotal, 2),
             'ventas_entregadas_total' => round($totalEntregado, 2),
+            'total_devoluciones' => round($totalDevoluciones, 2),
             'pedidos_entregados_count' => $pedidosEntregados,
-            'efectividad_porcentaje' => $efectividad
+            'efectividad_porcentaje' => $efectividad,
+            'recaudacion_efectivo' => round($recaudacionEfectivo, 2)
         ];
     }
 
