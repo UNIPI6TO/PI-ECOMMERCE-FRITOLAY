@@ -28,6 +28,8 @@ class DashboardService
             'cantidad_total_pedidos' => $kpisGenerales['cantidad_total_pedidos'],
             'valor_total_pedidos' => $kpisGenerales['valor_total_pedidos'],
             'ventas_entregadas_total' => $kpisGenerales['ventas_entregadas_total'],
+            'total_devoluciones' => $kpisGenerales['total_devoluciones'],
+            'recaudacion_efectivo' => $kpisGenerales['recaudacion_efectivo'],
             'pedidos_entregados_count' => $kpisGenerales['pedidos_entregados_count'],
             'efectividad_por_camion' => []
         ];

@@ -49,30 +49,30 @@
     <!-- Contenido del Dashboard -->
     <div x-show="!loading" x-transition.opacity>
 
-    <!-- Top KPIs Grid -->
+    <!-- Top KPIs Grid (6 Tarjetas Reorganizadas) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-blue-500 border-y border-r border-gray-100">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Total Pedidos (#)</div>
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400"># Pedidos</div>
             <div class="text-2xl font-black text-gray-900 mt-1" x-text="kpis.cantidad_total_pedidos || '0'"></div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-indigo-500 border-y border-r border-gray-100">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Valor Total Pedidos</div>
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">$ Total Pedidos</div>
             <div class="text-2xl font-black text-gray-900 mt-1">$<span x-text="kpis.valor_total_pedidos || '0.00'"></span></div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-emerald-500 border-y border-r border-gray-100">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Ventas Entregadas</div>
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">$ Entregado</div>
             <div class="text-2xl font-black text-gray-900 mt-1">$<span x-text="kpis.ventas_totales || '0.00'"></span></div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-purple-500 border-y border-r border-gray-100">
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">$ Devoluciones</div>
+            <div class="text-2xl font-black text-gray-900 mt-1">$<span x-text="kpis.total_devoluciones || '0.00'"></span></div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-teal-500 border-y border-r border-gray-100">
             <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Efectividad Entrega</div>
             <div class="text-2xl font-black text-gray-900 mt-1"><span x-text="kpis.efectividad || '0'"></span>%</div>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-amber-500 border-y border-r border-gray-100">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Pedidos Entregados</div>
-            <div class="text-2xl font-black text-gray-900 mt-1" x-text="kpis.pedidos_entregados || '0'"></div>
-        </div>
         <div class="bg-white p-4 rounded-xl shadow-xs border-l-4 border-rose-500 border-y border-r border-gray-100">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Recaudación Efectivo</div>
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">$ Efectivo</div>
             <div class="text-2xl font-black text-gray-900 mt-1">$<span x-text="kpis.recaudacion_efectivo || '0.00'"></span></div>
         </div>
     </div>
@@ -417,7 +417,7 @@ document.addEventListener('alpine:init', () => {
 
                     if (kpisData) {
                         efectividad = kpisData.efectividad_general || 0;
-                        pedidosEntregados = (kpisData.pedidos_por_estado?.entregado || 0) + (kpisData.pedidos_por_estado?.entregado_parcialmente || 0);
+                        pedidosEntregados = kpisData.pedidos_entregados_count || 0;
                     }
 
                     if (recData && recData.por_metodo_pago) {
@@ -427,13 +427,26 @@ document.addEventListener('alpine:init', () => {
                         }
                     }
 
+                    const ventasEntregadasVal = kpisData && kpisData.ventas_entregadas_total !== undefined 
+                        ? Number(kpisData.ventas_entregadas_total).toFixed(2) 
+                        : (ventasData && ventasData.total_periodo !== undefined ? Number(ventasData.total_periodo).toFixed(2) : '0.00');
+
+                    const totalDevolucionesVal = kpisData && kpisData.total_devoluciones !== undefined 
+                        ? Number(kpisData.total_devoluciones).toFixed(2) 
+                        : '0.00';
+
+                    const recaudacionEfectivoVal = kpisData && kpisData.recaudacion_efectivo !== undefined 
+                        ? Number(kpisData.recaudacion_efectivo).toFixed(2) 
+                        : recEfvo;
+
                     this.kpis = {
-                        ventas_totales: ventasTotales,
                         cantidad_total_pedidos: kpisData ? (kpisData.cantidad_total_pedidos || 0) : 0,
                         valor_total_pedidos: kpisData ? Number(kpisData.valor_total_pedidos || 0).toFixed(2) : '0.00',
+                        ventas_totales: ventasEntregadasVal,
+                        total_devoluciones: totalDevolucionesVal,
                         efectividad: efectividad,
                         pedidos_entregados: pedidosEntregados,
-                        recaudacion_efectivo: recEfvo
+                        recaudacion_efectivo: recaudacionEfectivoVal
                     };
                 } catch (error) {
                     console.error("Error al cargar el dashboard", error);
