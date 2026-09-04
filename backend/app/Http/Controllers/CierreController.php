@@ -73,4 +73,34 @@ class CierreController extends Controller
     {
         return response()->json($this->cierreService->getPendientesCierre());
     }
+
+    public function listGuias(Request $request)
+    {
+        $filtros = [
+            'fecha_inicio' => $request->query('fecha_inicio'),
+            'fecha_fin' => $request->query('fecha_fin'),
+            'estado' => $request->query('estado'),
+        ];
+        return response()->json($this->cierreService->getGuiasResumen($filtros));
+    }
+
+    public function detalleCierre(int $id)
+    {
+        try {
+            return response()->json($this->cierreService->getDetalleGuiaCierre($id));
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        }
+    }
+
+    public function aprobarRevision(int $id, Request $request)
+    {
+        try {
+            $userId = (int) $request->input('user_id');
+            $ok = $this->cierreService->aprobarRevisionGuia($id, $userId);
+            return response()->json(['message' => 'Revisión aprobada exitosamente', 'success' => $ok]);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
 }

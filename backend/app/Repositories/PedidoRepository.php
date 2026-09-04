@@ -15,7 +15,7 @@ class PedidoRepository implements PedidoRepositoryInterface
 
     public function findById(int $id): ?Pedido
     {
-        return Pedido::with(['items.producto', 'cliente.usuario', 'direccion', 'factura'])->find($id);
+        return Pedido::with(['items.producto', 'cliente.usuario', 'direccion', 'factura.notaCredito'])->find($id);
     }
 
     public function update(int $id, array $data): Pedido
@@ -28,7 +28,7 @@ class PedidoRepository implements PedidoRepositoryInterface
     public function findByCliente(int $clienteId): Collection
     {
         return Pedido::where('cliente_id', $clienteId)
-            ->with(['items'])
+            ->with(['items.producto', 'factura.notaCredito', 'direccion'])
             ->orderBy('id', 'desc')
             ->get();
     }

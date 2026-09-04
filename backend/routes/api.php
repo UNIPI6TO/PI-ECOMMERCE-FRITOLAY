@@ -26,6 +26,7 @@ Route::get('/info', function () {
     return response()->json([
         'status' => 'ok',
         'api_name' => config('app.name', 'Fritolay Backend API'),
+        'app_version' => env('APP_VERSION', 'v1.0.0-dev'),
         'environment' => config('app.env'),
         'timestamp' => now()->toIso8601String(),
         'db_socket' => env('DB_SOCKET', 'MISSING'),
@@ -147,9 +148,12 @@ Route::middleware('jwt')->group(function () {
 
     // ── Guías de Remisión ────────────────────────────────────────────────────
     Route::prefix('guias-remision')->middleware('role:operador,administrador')->group(function () {
+        Route::get('/',                  [CierreController::class, 'listGuias']);
         Route::get('/pendientes-cierre', [CierreController::class, 'pendientesCierre']);
+        Route::get('/{id}/detalle-cierre',[CierreController::class, 'detalleCierre']);
         Route::get('/{id}/detalle',      [CierreController::class, 'detalle']);
         Route::patch('/{id}/cerrar',     [CierreController::class, 'cerrar']);
+        Route::post('/{id}/aprobar-revision', [CierreController::class, 'aprobarRevision']);
     });
 
     // ── Guías de Ruta ────────────────────────────────────────────────────────

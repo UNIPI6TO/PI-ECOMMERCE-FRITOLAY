@@ -1,47 +1,46 @@
-name: Fritolay Frontend CI/CD
+name: Frontend Build & Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag de versión a construir y desplegar (Ej: v1.4.15)'
+        required: true
+        default: 'v1.0.0'
 
 jobs:
-  build-frontend:
-    name: Build & Push Frontend
+  build-and-deploy:
+    name: Build & Deploy Frontend App
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Install Frontend Dependencies
-        run: cd frontend && npm install
-      - name: Build Frontend Assets
-        run: cd frontend && npm run build
-      - name: Authenticate to GCP
+
+      - name: Authenticate to GCP via WIF
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - name: Setup Docker to use GCP Artifact Registry
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Build and Push Frontend Docker Image
         run: |
-          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
-      - name: Fetch Frontend Environment Variables
-        run: |
-          gcloud secrets versions access latest --secret="fritolay-frontend-env" > frontend/.env
-      - name: Build and Push Frontend
-        run: |
-          IMAGE_PATH=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fritolay/frontend
-          docker build -f infra/Dockerfile.frontend -t $IMAGE_PATH:${{ github.sha }} -t $IMAGE_PATH:latest ./frontend
-          docker push $IMAGE_PATH:${{ github.sha }}
-          docker push $IMAGE_PATH:latest
+          docker build \
+            --build-arg VITE_APP_VERSION=${{ github.event.inputs.tag_name }} \
+            --build-arg APP_VERSION=${{ github.event.inputs.tag_name }} \
+            -f infra/Dockerfile.frontend \
+            -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fritolay/frontend:${{ github.event.inputs.tag_name }} \
+            -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fritolay/frontend:latest \
+            ./frontend
+          docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fritolay/frontend:${{ github.event.inputs.tag_name }}
+          docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fritolay/frontend:latest
+
       - name: Deploy Frontend to Cloud Run
         run: |
-          IMAGE_PATH=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fritolay/frontend
           gcloud run deploy frontend-service \
-            --image=$IMAGE_PATH:latest \
+            --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fritolay/frontend:${{ github.event.inputs.tag_name }} \
             --region=${{ secrets.GCP_REGION }} \
             --platform=managed \
-            --allow-unauthenticated
-
+            --allow-unauthenticated \
+            --set-env-vars=APP_VERSION=${{ github.event.inputs.tag_name }},VITE_APP_VERSION=${{ github.event.inputs.tag_name }}

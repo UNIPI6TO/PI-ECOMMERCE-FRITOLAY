@@ -2251,6 +2251,7 @@ Registro de los pedidos de compra realizados por los clientes.
 | `descuento` | DECIMAL(10,2) | DEFAULT 0 | Valor descontado. |
 | `iva` | DECIMAL(10,2) | NOT NULL | Valor del impuesto. |
 | `total` | DECIMAL(10,2) | NOT NULL | Valor final a pagar. |
+| `valor_entrega` | DECIMAL(10,2) | NULL | Valor real recaudado en entrega parcial o total (Total - NC SRI). |
 | `creado_en` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha y hora del pedido. |
 
 **Tabla: `ITEMS_PEDIDO`**
@@ -2334,6 +2335,54 @@ Comprobantes legales de venta generados por pedido completado.
 | `subtotal` | DECIMAL(10,2) | NOT NULL | Valor base. |
 | `iva` | DECIMAL(10,2) | NOT NULL | Impuestos. |
 | `total` | DECIMAL(10,2) | NOT NULL | Total facturado. |
+
+**Tabla: `NOTAS_CREDITO`**
+Registro fiscal de anulaciones y devoluciones vinculadas a facturas emitidas (SRI).
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador único de la nota de crédito. |
+| `factura_id` | INT | FK (FACTURAS.id) | Factura original asociada. |
+| `numero_nota` | VARCHAR(50) | UNIQUE, NOT NULL | Número de comprobante legal (Ej. NC-YYYY-00000X). |
+| `fecha_emision` | DATETIME | NOT NULL | Fecha y hora de generación. |
+| `valor_total` | DECIMAL(10,2) | NOT NULL | Monto total acreditado/devuelto. |
+| `motivo` | TEXT | NOT NULL | Justificación del ajuste o anulación. |
+
+**Tabla: `TRANSACCIONES_INVENTARIO`**
+Movimientos de inventario (ingresos y egresos) registrados en la bodega master y bodegas de camiones.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador de la transacción. |
+| `producto_id` | INT | FK (PRODUCTOS.id) | Producto afectado. |
+| `camion_id` | INT | FK (CAMIONES.id), NULL | Vehículo asociado (si aplica). |
+| `tipo` | ENUM | NOT NULL | `ingreso` o `egreso`. |
+| `cantidad` | DECIMAL(10,2) | NOT NULL | Cantidad de unidades en movimiento. |
+| `motivo` | VARCHAR(255) | NOT NULL | Descripción del movimiento (ej. Aprobación de Cierre de Guía #X). |
+| `fecha_transaccion`| DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha del registro. |
+
+**Tabla: `CARRITOS_ABANDONADOS`**
+Registro analítico de intenciones de compra no concretadas o carritos vaciados.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador del carrito abandonado. |
+| `cliente_id` | INT | FK (CLIENTES.id), NULL | Cliente asociado (si estaba autenticado). |
+| `motivo_cancelacion`| VARCHAR(255)| NOT NULL | Razón reportada por el usuario o sistema. |
+| `valor_total` | DECIMAL(10,2) | NOT NULL | Suma monetaria estimada del carrito. |
+| `fecha_abandono` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha del evento. |
+
+**Tabla: `DESCUENTOS`**
+Configuración de promociones y descuentos asignados a clientes o globales.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `id` | INT | PK, Auto Increment | Identificador de la regla de descuento. |
+| `cliente_id` | INT | FK (CLIENTES.id), NULL | Cliente específico (NULL si es global). |
+| `tipo` | ENUM | NOT NULL | `individual` o `global`. |
+| `porcentaje` | DECIMAL(5,2) | NOT NULL | Porcentaje de descuento (0 a 100%). |
+| `metodo_pago` | ENUM | NOT NULL | Vía de pago aplicable (`efectivo`, `deposito`, `de_una`, `tc`, `td`, `todos`). |
+| `fecha_caducidad` | DATETIME | NOT NULL | Límite temporal de vigencia del descuento. |
 
 **Tabla: `EMPRESA_CONFIG`**
 Almacena la información legal del emisor, punto de emisión, código de establecimiento SRI, para usarse globalmente al generar facturas y guías.
@@ -2467,6 +2516,13 @@ Para garantizar el cumplimiento de normativas tributarias (SRI) y de auditoría 
 - **Rollback Automático:** Ante cualquier excepción o fallo imprevisto durante una secuencia multi-tabla (ej: error en registro de mercadería o actualización de inventario), la base de datos aborta y revierte automáticamente (`rollback`) todas las escrituras sin dejar registros parciales o huérfanos.
 - **Paridad Multi-entorno:** La migración masiva de estructura y backfill de datos históricos fue ejecutada tanto en el servidor local **MySQL (`127.0.0.1:3306`)** como en la base de datos de producción **GCP Cloud SQL (`34.72.182.198:3306`)**.
 
+### 2.5 Granularidad Dinámica y Control de Eje Temporal en Gráficos de Series de Tiempo (Timeline Series)
+Para mejorar la legibilidad visual y evitar que la segmentación automática por defecto de la librería arruine la tendencia de los gráficos del Dashboard Administrativo, se implementó una regla condicional según el rango de fechas seleccionado por el usuario:
+
+- **Rango Corto (Hasta 2 Días):** Si el intervalo entre la fecha inicial y la fecha final es de **1 o 2 días** (`diffInDays <= 2`), los registros son agrupados en backend estrictamente por horas mediante `DATE_FORMAT(fecha, '%Y-%m-%d %H:00')`.
+- **Rango Largo (3 Días o Más):** Si el intervalo es de **3 días en adelante**, la agrupación en la consulta backend cambia dinámicamente a días mediante `DATE(fecha)`.
+- **Forzado de Granularidad en Frontend (Chart.js):** En [index.blade.php](file:///d:/UNIANDES/8VO/HERRAMIENTAS%20DE%20DESARROLLO%20DE%20SOFTWARE/PI-ECOMMERCE-FRITOLAY/frontend/resources/views/dashboard/index.blade.php), se configuraron explícitamente las opciones del eje X (`scales.x`) asignando `type: 'category'` con `ticks.autoSkip: false` y títulos dinámicos (`Hora` o `Fecha`). Esto desactiva el auto-escalado conflictivo de Chart.js y garantiza que las tendencias de Ventas y Pérdidas se rendericen con la resolución exacta solcitada.
+
 ## 3. Arquitectura y Correcciones de Sistema Core
 
 ### 3.1 Middleware de Autenticación JWT Stateless
@@ -2564,4 +2620,60 @@ Y renderiza un PDF en formato horizontal (Landscape) utilizando los recursos loc
 ### 5.5 Paginación Estandarizada Slate
 - **Estructura Unificada de Tablas:** Todas las tablas administrativas (Usuarios, Camiones, Pedidos, Rutas, Historial) comparten la misma barra inferior de paginación Slate (`Mostrando X a Y de Z registros`).
 - **Controles Interactivos:** Botones de páginas numeradas con resaltado activo en Slate oscuro y selector de registros por página (`5`, `10`, `20`, `50`, `100`).
+
+## 6. Módulo "Administración de Ventas", Cierre de Guías y Arqueo Real (`valor_entrega`)
+
+### 6.1 Reestructuración del Menú (UI & RBAC)
+- **Menú "Administración de Ventas":** Creada una nueva categoría en el Navbar desplegable restringida estrictamente a los roles `administrador` y `operador`.
+- **Migración de Submenús:** Agrupa las opciones de *"Gestión de Pedidos"* (`/gestion-pedidos`), *"Asignación de Rutas"* (`/gestion-rutas`) y la nueva vista *"Cierre de Guías"* (`/admin/cierre-guias`).
+
+### 6.2 Cierre de Guías, Arqueo de Caja y Paridad Financiera (`pedidos.valor_entrega`)
+- **Valor Real Recaudado (`valor_entrega`):** Se formalizó el atributo `valor_entrega` en la base de datos (migrado y backfilled tanto en Local MySQL como en GCP Cloud SQL). Este valor representa la suma monetaria real cobrada en entregas parciales/totales (`SUM(cantidad_entregada * precio_unitario * 1.15)`).
+- **Paridad Matemática Verificada:** `Total Pedido Original - Valor Entrega = Nota de Crédito (SRI)`.
+- **Listado y Detalle de Guías (`/admin/cierre-guias` & `/admin/cierre-guias/{id}`):**
+  - **Filtro de Rango de Fechas:** Barra de filtros con presets (*Último Mes, Última Semana, Hoy*) donde por defecto se carga **1 semana de rango**.
+  - **Resumen Financiero por Guía:** Desglose de caja separando Efectivo, Bancos/Tarjetas y De Una/Depósitos.
+  - **Resumen de Productos Devueltos & Motivo Global:** Resumen de ítems no entregados agrupando por motivo global de devolución asignado en la confirmación de la entrega (`/entregas/entregar/{id}`).
+  - **Modal de Detalle del Pedido Paritario:** Se añadió el botón **"Detalles"** por cada fila de pedido en la vista de Cierre de Guías, renderizando el modal completo con paridad total al historial de clientes (sección de productos comprados + sección desplegable de *Detalle de Devolución*).
+
+### 6.3 Aprobación de Revisión e Inventario
+- **Reducción de `en_pedidos`:** Al aprobar la revisión de una guía de remisión (`POST /api/cierre-guias/{id}/aprobar-revision`), el sistema reduce de la tabla maestra `productos` la cantidad reservada en `en_pedidos` por el total de productos efectivamente entregados.
+- **Transacción de Inventario:** Se registra automáticamente la transacción de egreso en `transacciones_inventario` asociando el camión, producto, cantidad entregada y motivo `'Aprobación de Cierre de Guía #X'`.
+
+## 7. Expansión del Dashboard Gerencial y Formato Financiero
+
+### 7.1 Nuevos KPIs Logísticos y Financieros
+- **KPIs de Estados de Guías de Remisión:** Fila de tarjetas indicadoras agrupando el conteo de guías por estado (*Abiertas, Cerradas, Revisadas/Aprobadas*) conectadas al rango de fechas global.
+- **Segmentación de Inventario por Marca y Categoría:** Nuevos totalizadores agregados en base de datos (`ReporteRepository::getStockPorMarca`, `ReporteRepository::getStockPorCategoria`) que calculan unidades disponibles y su valorización en dólares.
+
+### 7.2 Valorización Financiera del Inventario (Capital Inmovilizado)
+- Modificado el panel de *"Control de Stock"* para incorporar las columnas **Precio Unitario ($)** y **Valor Total ($)** por producto en Bodega Central y Por Camión.
+- **KPI Global de Capital Inmovilizado:** Muestra el total de dinero representado en el inventario disponible en bodega central (`$ valor_total_inventario`).
+
+### 7.3 Separadores de Miles y Millones Estandarizados
+- Refactorizados los helpers globales `window.formatMoney(value)` y `window.formatNumber(value)` utilizando `Intl.NumberFormat('en-US')`.
+- Todos los indicadores del Dashboard, gráficos, tablas de stock, totales de venta y cifras monetarias muestran separadores de miles y millones por comas (`$1,250.50`, `$12,450,000.00`, `1,500` unidades).
+
+## 8. Módulo Institucional, Accesibilidad y Legales
+
+### 8.1 Mapa del Sitio Dinámico (`/mapa-del-sitio`)
+- **Construcción Dinámica por Permisos:** La vista `/mapa-del-sitio` (`institucional/mapa-sitio.blade.php`) itera sobre la matriz de rutas y el **rol activo en sesión** (`administrador`, `operador`, `chofer`, `cliente`, `invitado`).
+- Muestra automáticamente las categorías y enlaces autorizados para cada usuario sin requerir modificaciones manuales si se agregan nuevas rutas al sistema.
+
+### 8.2 Sección "Acerca de Nosotros" (`/acerca-de`)
+- Vista institucional (`institucional/acerca-de.blade.php`) con diseño moderno, misión, visión, pilares operativos (Entregas Rápidas, Transparencia Financiera, Red Comercial) y datos de contacto de la planta en Ambato con horarios administrativos y de despacho.
+
+### 8.3 Políticas de Privacidad y Tratamiento de Datos Personales (`/politicas-privacidad`)
+- Redacción legal realista basada en la Ley Orgánica de Protección de Datos Personales del Ecuador y normativas de comercio electrónico.
+- **Secciones Estructuradas Obligatorias:**
+  1. *Recopilación de Datos Personales y Geolocalización* (pines Leaflet, coordenadas GPS de choferes, RUC, historial transaccional).
+  2. *Uso y Finalidad de la Información* (procesamiento de órdenes, algoritmo TSP de rutas, arqueo de caja y analítica).
+  3. *Cookies, Almacenamiento Local y Sesiones* (cookies seguras JWT, carrito `fritolay_cart` y `sessionStorage`).
+  4. *Seguridad, Terceros y No Comercialización* (garantía estricta de no cesión a terceros y cifrado SSL).
+  5. *Derechos ARCO del Titular* (procedimientos de consulta, rectificación o eliminación de datos).
+
+### 8.4 Navegación e Integración de Menús
+- Agregado el desplegable **"Ayuda / Info"** en la barra de navegación principal para dar acceso limpio a Mapa del Sitio, Acerca de Nosotros y Políticas de Privacidad.
+- Enriquecido el pie de página global (Footer) con los enlaces corporativos en todas las vistas del sistema.
+
 

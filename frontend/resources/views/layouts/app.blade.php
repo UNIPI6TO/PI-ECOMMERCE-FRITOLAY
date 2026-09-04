@@ -149,7 +149,13 @@
         window.formatMoney = function(value) {
             let num = Number(value);
             if (isNaN(num)) return '$0.00';
-            return '$' + num.toFixed(2);
+            return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        window.formatNumber = function(value, decimals = 0) {
+            let num = Number(value);
+            if (isNaN(num)) return '0';
+            return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
         };
 
         // Guardian de rutas basado en roles (Role-Based Routing)
@@ -197,7 +203,7 @@
                     window.location.replace(homePages['chofer']);
                 }
             } else if (role === 'operador') {
-                const allowedForOperador = ['/dashboard', '/gestion-pedidos', '/gestion-rutas', '/perfil'];
+                const allowedForOperador = ['/dashboard', '/gestion-pedidos', '/gestion-rutas', '/admin/cierre-guias', '/perfil'];
                 if (!allowedForOperador.some(prefix => path.startsWith(prefix))) {
                     window.location.replace(homePages['operador']);
                 }
@@ -258,12 +264,28 @@
                                 <a href="/dashboard" 
                                    :class="isActive('/dashboard') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
                                    class="px-3.5 py-2 rounded-xl text-xs transition-all">Dashboard</a>
-                                <a href="/gestion-pedidos" 
-                                   :class="isActive('/gestion-pedidos') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
-                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Gestión Pedidos</a>
-                                <a href="/gestion-rutas" 
-                                   :class="isActive('/gestion-rutas') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
-                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Asignación Rutas</a>
+                                
+                                <!-- Dropdown Administración de Ventas -->
+                                <div class="relative" x-data="{ openVentas: false }">
+                                    <button @click="openVentas = !openVentas" @click.away="openVentas = false"
+                                            :class="(isActive('/gestion-pedidos') || isActive('/gestion-rutas') || isActive('/admin/cierre-guias')) ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                            class="px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1 cursor-pointer">
+                                        <span>Administración de Ventas</span>
+                                        <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': openVentas }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="openVentas" x-transition.opacity style="display: none;"
+                                         class="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl py-2 z-50 border border-gray-100">
+                                        <a href="/gestion-pedidos" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                            Gestión Pedidos
+                                        </a>
+                                        <a href="/gestion-rutas" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                            Asignación Rutas
+                                        </a>
+                                        <a href="/admin/cierre-guias" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                            Cierre de Guías
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </template>
 
@@ -277,6 +299,31 @@
                                    class="px-3.5 py-2 rounded-xl text-xs transition-all">Camiones</a>
                             </div>
                         </template>
+
+                        <!-- Dropdown Ayuda / Información Corporativa -->
+                        <div class="relative" x-data="{ openAyuda: false }">
+                            <button @click="openAyuda = !openAyuda" @click.away="openAyuda = false"
+                                    :class="(isActive('/mapa-del-sitio') || isActive('/acerca-de') || isActive('/politicas-privacidad')) ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                    class="px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1 cursor-pointer">
+                                <span>Ayuda / Info</span>
+                                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': openAyuda }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="openAyuda" x-transition.opacity style="display: none;"
+                                 class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl py-2 z-50 border border-gray-100 text-left">
+                                <a href="/mapa-del-sitio" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                                    Mapa del Sitio
+                                </a>
+                                <a href="/acerca-de" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Acerca de Nosotros
+                                </a>
+                                <a href="/politicas-privacidad" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                    Políticas de Privacidad
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Cart Icon -->
@@ -370,12 +417,16 @@
                         <a href="/dashboard" 
                            :class="isActive('/dashboard') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
                            class="block px-3 py-2 rounded-xl text-sm transition-all">Dashboard</a>
+                        <div class="px-3 py-1 text-[11px] font-black uppercase text-gray-400">Administración de Ventas</div>
                         <a href="/gestion-pedidos" 
                            :class="isActive('/gestion-pedidos') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
-                           class="block px-3 py-2 rounded-xl text-sm transition-all">Gestión Pedidos</a>
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Gestión Pedidos</a>
                         <a href="/gestion-rutas" 
                            :class="isActive('/gestion-rutas') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
-                           class="block px-3 py-2 rounded-xl text-sm transition-all">Asignación Rutas</a>
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Asignación Rutas</a>
+                        <a href="/admin/cierre-guias" 
+                           :class="isActive('/admin/cierre-guias') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Cierre de Guías</a>
                     </div>
                 </template>
                 <template x-if="role === 'admin' || role === 'administrador'">
@@ -424,8 +475,17 @@
         @yield('content')
     </main>
 
-    <footer class="bg-neutral-dark text-white text-center py-4 mt-auto">
-        <p class="text-sm">&copy; {{ date('Y') }} Fritolay Ambato. Todos los derechos reservados.</p>
+    <footer class="bg-slate-900 text-white py-8 mt-auto border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-semibold text-gray-400">
+            <div>
+                <p>&copy; {{ date('Y') }} Fritolay Ambato. Todos los derechos reservados.</p>
+            </div>
+            <div class="flex items-center space-x-6">
+                <a href="/mapa-del-sitio" class="hover:text-white transition-colors">Mapa del Sitio</a>
+                <a href="/acerca-de" class="hover:text-white transition-colors">Acerca de Nosotros</a>
+                <a href="/politicas-privacidad" class="hover:text-white transition-colors">Políticas de Privacidad</a>
+            </div>
+        </div>
     </footer>
 
     @include('ecommerce.catalogo._mini_carrito')

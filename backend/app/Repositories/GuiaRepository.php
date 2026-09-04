@@ -94,10 +94,10 @@ class GuiaRepository implements GuiaRepositoryInterface
         $recaudacion = DB::table('pedidos')
             ->whereIn('id', $entregadosIds)
             ->selectRaw("
-                SUM(CASE WHEN metodo_pago = 'efectivo' THEN total ELSE 0 END) as efectivo,
-                SUM(CASE WHEN metodo_pago IN ('tc','td','tarjeta') THEN total ELSE 0 END) as bancos,
-                SUM(CASE WHEN metodo_pago IN ('de_una','deposito') THEN total ELSE 0 END) as de_una,
-                SUM(total) as total_general
+                SUM(CASE WHEN metodo_pago = 'efectivo' THEN COALESCE(valor_entrega, total) ELSE 0 END) as efectivo,
+                SUM(CASE WHEN metodo_pago IN ('tc','td','tarjeta') THEN COALESCE(valor_entrega, total) ELSE 0 END) as bancos,
+                SUM(CASE WHEN metodo_pago IN ('de_una','deposito') THEN COALESCE(valor_entrega, total) ELSE 0 END) as de_una,
+                SUM(COALESCE(valor_entrega, total)) as total_general
             ")
             ->first();
 
@@ -116,4 +116,161 @@ class GuiaRepository implements GuiaRepositoryInterface
             ],
         ];
     }
+
+    public function getGuiasResumen(array $filtros): Collection
+    {
+        $query = GuiaRemision::with(['camion.chofer', 'operador', 'revisor', 'guiasRuta.asignaciones.pedido']);
+
+        if (!empty($filtros['fecha_inicio'])) {
+            $query->whereDate('fecha_generacion', '>=', $filtros['fecha_inicio']);
+        }
+        if (!empty($filtros['fecha_fin'])) {
+            $query->whereDate('fecha_generacion', '<=', $filtros['fecha_fin']);
+        }
+        if (!empty($filtros['estado'])) {
+            $query->where('estado', $filtros['estado']);
+        }
+
+        $guias = $query->orderBy('fecha_generacion', 'desc')->get();
+
+        return $guias->map(function ($guia) {
+            $pedidoIds = $guia->guiasRuta->flatMap(function ($r) {
+                return $r->asignaciones->pluck('pedido_id');
+            })->unique();
+
+            $totalPedidos = $pedidoIds->count();
+
+            if ($totalPedidos > 0) {
+                $pedidos = DB::table('pedidos')->whereIn('id', $pedidoIds)->get();
+                $entregadosIds = $pedidos->whereIn('estado', ['entregado', 'entregado_parcialmente'])->pluck('id');
+
+                $totalEntregado = (float) DB::table('pedidos')
+                    ->whereIn('id', $entregadosIds)
+                    ->sum(DB::raw('COALESCE(valor_entrega, total)'));
+
+                // Partial returns calculation from items_pedido: (solicitada - entregada) * precio_unitario * 1.15
+                $totalDevolucionesParciales = (float) DB::table('items_pedido')
+                    ->whereIn('pedido_id', $pedidoIds)
+                    ->whereRaw('cantidad_entregada < cantidad_solicitada')
+                    ->sum(DB::raw('(cantidad_solicitada - cantidad_entregada) * precio_unitario * 1.15'));
+
+                // Total returns for full cancellations / not delivered if any
+                $totalDevolucionesFull = (float) DB::table('pedidos')
+                    ->whereIn('id', $pedidoIds)
+                    ->whereIn('estado', ['no_entregado', 'cancelado'])
+                    ->sum('total');
+
+                $totalDevoluciones = round($totalDevolucionesParciales + $totalDevolucionesFull, 2);
+                $totalEntregado = round($totalEntregado, 2);
+            } else {
+                $totalDevoluciones = 0.0;
+                $totalEntregado = 0.0;
+            }
+
+            return [
+                'id' => $guia->id,
+                'fecha_generacion' => $guia->fecha_generacion,
+                'estado' => $guia->estado,
+                'total_pedidos' => $totalPedidos,
+                'total_entregado' => $totalEntregado,
+                'total_devoluciones' => $totalDevoluciones,
+                'chofer_nombre' => $guia->camion?->chofer?->nombre ?? 'Sin asignar',
+                'camion_placa' => $guia->camion?->placa ?? 'N/A',
+                'revisada_por' => $guia->revisor?->nombre,
+                'fecha_revision' => $guia->fecha_revision,
+            ];
+        });
+    }
+
+    public function getDetalleGuiaCierre(int $guiaId): array
+    {
+        $guia = GuiaRemision::with(['camion.chofer', 'operador', 'revisor', 'guiasRuta.asignaciones.pedido.cliente.usuario', 'guiasRuta.asignaciones.pedido.direccion', 'guiasRuta.asignaciones.pedido.items.producto'])->findOrFail($guiaId);
+
+        $pedidoIds = $guia->guiasRuta->flatMap(function ($r) {
+            return $r->asignaciones->pluck('pedido_id');
+        })->unique();
+
+        $pedidos = DB::table('pedidos')->whereIn('id', $pedidoIds)->get();
+
+        $entregadosIds = $pedidos->whereIn('estado', ['entregado', 'entregado_parcialmente'])->pluck('id');
+
+        $recaudacion = DB::table('pedidos')
+            ->whereIn('id', $entregadosIds)
+            ->selectRaw("
+                SUM(CASE WHEN metodo_pago = 'efectivo' THEN COALESCE(valor_entrega, total) ELSE 0 END) as efectivo,
+                SUM(CASE WHEN metodo_pago IN ('tc','td','tarjeta') THEN COALESCE(valor_entrega, total) ELSE 0 END) as bancos,
+                SUM(CASE WHEN metodo_pago IN ('de_una','deposito') THEN COALESCE(valor_entrega, total) ELSE 0 END) as de_una,
+                SUM(COALESCE(valor_entrega, total)) as total_general
+            ")
+            ->first();
+
+        // Summary of returned products
+        $devueltos = DB::table('items_pedido')
+            ->join('productos', 'items_pedido.producto_id', '=', 'productos.id')
+            ->whereIn('items_pedido.pedido_id', $pedidoIds)
+            ->whereRaw('items_pedido.cantidad_entregada < items_pedido.cantidad_solicitada')
+            ->selectRaw("
+                productos.nombre as producto,
+                SUM(items_pedido.cantidad_solicitada - items_pedido.cantidad_entregada) as cantidad_devuelta,
+                SUM((items_pedido.cantidad_solicitada - items_pedido.cantidad_entregada) * items_pedido.precio_unitario * 1.15) as total_usd,
+                COALESCE(items_pedido.motivo_devolucion, 'Otro motivo') as motivo
+            ")
+            ->groupBy('productos.nombre', 'items_pedido.motivo_devolucion')
+            ->get();
+
+        // Orders list mapped
+        $pedidosLista = $guia->guiasRuta->flatMap(function ($r) {
+            return $r->asignaciones->map(function ($asig) {
+                $p = $asig->pedido;
+                if (!$p) return null;
+                return [
+                    'id' => $p->id,
+                    'idPedido' => $p->idPedido ?? ('PED-' . str_pad((string)$p->id, 5, '0', STR_PAD_LEFT)),
+                    'cliente' => $p->cliente?->razon_social ?? $p->cliente?->usuario?->nombre ?? 'Cliente',
+                    'direccion' => $p->direccion?->descripcion ?? 'N/A',
+                    'metodo_pago' => strtoupper($p->metodo_pago ?? 'EFECTIVO'),
+                    'total' => round((float)$p->total, 2),
+                    'estado' => $p->estado,
+                ];
+            })->filter();
+        })->values();
+
+        return [
+            'guia' => [
+                'id' => $guia->id,
+                'fecha_generacion' => $guia->fecha_generacion,
+                'estado' => $guia->estado,
+                'efectivo_declarado' => (float)$guia->efectivo_declarado,
+                'chofer_nombre' => $guia->camion?->chofer?->nombre ?? 'Sin asignar',
+                'camion_placa' => $guia->camion?->placa ?? 'N/A',
+                'revisada_por' => $guia->revisor?->nombre,
+                'fecha_revision' => $guia->fecha_revision,
+            ],
+            'resumen_caja' => [
+                'efectivo' => round((float)($recaudacion->efectivo ?? 0), 2),
+                'bancos' => round((float)($recaudacion->bancos ?? 0), 2),
+                'de_una' => round((float)($recaudacion->de_una ?? 0), 2),
+                'total' => round((float)($recaudacion->total_general ?? 0), 2),
+            ],
+            'productos_devueltos' => $devueltos->map(function ($d) {
+                return [
+                    'producto' => $d->producto,
+                    'cantidad_devuelta' => (int)$d->cantidad_devuelta,
+                    'total_usd' => round((float)$d->total_usd, 2),
+                    'motivo' => $d->motivo,
+                ];
+            }),
+            'pedidos' => $pedidosLista,
+        ];
+    }
+
+    public function aprobarRevisionGuia(int $guiaId, int $userId): bool
+    {
+        return (bool) GuiaRemision::where('id', $guiaId)->update([
+            'estado' => GuiaRemision::ESTADO_REVISADA,
+            'revisada_por' => $userId,
+            'fecha_revision' => now(),
+        ]);
+    }
 }
+

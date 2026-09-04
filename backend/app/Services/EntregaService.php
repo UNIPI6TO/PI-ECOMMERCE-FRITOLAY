@@ -67,9 +67,13 @@ class EntregaService
             $motivoPrincipal = $data['motivo_no_entrega'] ?? ($data['items'][0]['motivo_devolucion'] ?? 'Devolución de pedido');
 
             foreach ($data['items'] as $itemData) {
+                $motivoItem = $itemData['motivo_devolucion'] ?? $motivoPrincipal;
                 DB::table('items_pedido')
                     ->where('id', $itemData['item_pedido_id'])
-                    ->update(['cantidad_entregada' => $itemData['cantidad_entregada']]);
+                    ->update([
+                        'cantidad_entregada' => $itemData['cantidad_entregada'],
+                        'motivo_devolucion' => ($itemData['cantidad_devuelta'] ?? 0) > 0 ? $motivoItem : null
+                    ]);
 
                 $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
                 if (!$item) continue;
@@ -83,7 +87,7 @@ class EntregaService
                             'guia_ruta_id' => $asignacion->guia_ruta_id,
                             'producto_id' => $item->producto_id,
                             'cantidad' => $item->cantidad_solicitada - $itemData['cantidad_entregada'],
-                            'motivo' => $itemData['motivo_devolucion'] ?? $motivoPrincipal,
+                            'motivo' => $motivoItem,
                             'created_at' => now(),
                             'updated_at' => now()
                         ]);
@@ -97,6 +101,7 @@ class EntregaService
 
             if ($todosDevueltos) {
                 $nuevoEstado = 'no_entregado';
+                $valorEntregaCalculado = 0.0;
                 // Restaurar el inventario reservado en pedidos
                 foreach ($data['items'] as $itemData) {
                     $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
@@ -106,11 +111,17 @@ class EntregaService
                 }
             } else {
                 $nuevoEstado = $todosEntregados ? 'entregado' : 'entregado_parcialmente';
+                // Calcular valor real entregado: suma de (cantidad_entregada * precio_unitario * 1.15)
+                $subtotalEntregado = (float) DB::table('items_pedido')
+                    ->where('pedido_id', $pedido->id)
+                    ->sum(DB::raw('cantidad_entregada * precio_unitario * 1.15'));
+                $valorEntregaCalculado = round($subtotalEntregado, 2);
             }
 
             $pedido = $this->pedidoRepository->update($pedido->id, [
                 'estado' => $nuevoEstado,
                 'fecha_entrega' => now(),
+                'valor_entrega' => $valorEntregaCalculado,
                 'motivo_cancelacion' => $motivoPrincipal
             ]);
             
@@ -144,17 +155,25 @@ class EntregaService
             }
             
             if ($tieneDevoluciones || $todosDevueltos) {
-                $valorNota = $todosDevueltos ? $pedido->total : ($montoDevuelto * 1.15);
+                $valorNota = $todosDevueltos ? $pedido->total : round($montoDevuelto * 1.15, 2);
                 $existente = DB::table('notas_credito')->where('factura_id', $facturaId)->first();
                 if (!$existente) {
                     DB::table('notas_credito')->insert([
                         'factura_id' => $facturaId,
+                        'pedido_id' => $pedido->id,
                         'numero_nota' => 'NC-' . date('Y') . '-' . str_pad((string)$facturaId, 6, '0', STR_PAD_LEFT),
                         'fecha_emision' => now()->toDateString(),
                         'valor_total' => $valorNota,
                         'motivo' => 'Devolución en entrega - ' . $motivoPrincipal,
                         'fecha_pedido' => $fechaPedido,
                         'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    // Si ya existe la nota de crédito, actualiza el valor exacto devuelto
+                    DB::table('notas_credito')->where('id', $existente->id)->update([
+                        'valor_total' => $valorNota,
+                        'motivo' => 'Devolución en entrega - ' . $motivoPrincipal,
                         'updated_at' => now()
                     ]);
                 }

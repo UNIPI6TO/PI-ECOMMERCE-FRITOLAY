@@ -76,19 +76,37 @@ fetch_images.py
 insert_*.php
 seed_*.php
 
-# AI Agent directories
+# Secure local scratch & execution folders (never tracked by git)
+tmp_scripts/
+.temp_exec/
+temp/
+scratch/
+*_temp/
+
+# 🤖 AI Agent & IDE Assistant Exclusions (Strict Clean Repo)
 .gemini/
 brain/
 scratch/
+.cursor/
+.cursorrules
+.aider*
+.cline*
+.claude*
+.codex*
+.copilot*
+.supermaven*
+.windsurf*
+.continue/
+*.tmp
+*.bak
+*.swp
 
-# Extra temporary scripts
+# Extra temporary scripts & AI scratch outputs
 fix_logs.php
 revert.php
 revert_3.php
 test_state.php
-backend/.phpunit.result.cache
-
-# Sensitive script exclusions
+fix_direcciones_mapa.php
 backend/check_*.php
 backend/fix_*.php
 backend/migrate_*.php
@@ -96,15 +114,8 @@ backend/query_*.php
 backend/test_*.php
 backend/update_*.php
 backend/script_out.js
-fix_direcciones_mapa.php
-
-# Storage generated files and local databases
+backend/.phpunit.result.cache
 backend/storage/app/comprobantes/
 frontend/database/*.sqlite
 
-# Secure local scratch & execution folders (never tracked by git)
-tmp_scripts/
-.temp_exec/
-temp/
-scratch/
-*_temp/
+
