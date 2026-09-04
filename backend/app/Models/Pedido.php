@@ -12,7 +12,7 @@ class Pedido extends Model
     protected $table = 'pedidos';
     protected $fillable = [
         'cliente_id', 'direccion_id', 'estado', 'metodo_pago', 'comprobante_path', 
-        'subtotal', 'descuento', 'iva', 'total', 'motivo_cancelacion', 'creado_en'
+        'subtotal', 'descuento', 'iva', 'total', 'valor_entrega', 'motivo_cancelacion', 'creado_en'
     ];
 
     public const ESTADO_EN_ESPERA_APROBACION = 'en_espera_aprobacion';
@@ -35,6 +35,7 @@ class Pedido extends Model
         'descuento' => 'decimal:2',
         'iva' => 'decimal:2',
         'total' => 'decimal:2',
+        'valor_entrega' => 'decimal:2',
         'creado_en' => 'datetime',
     ];
 

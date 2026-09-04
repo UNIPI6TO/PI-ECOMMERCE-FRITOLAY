@@ -101,6 +101,7 @@ class EntregaService
 
             if ($todosDevueltos) {
                 $nuevoEstado = 'no_entregado';
+                $valorEntregaCalculado = 0.0;
                 // Restaurar el inventario reservado en pedidos
                 foreach ($data['items'] as $itemData) {
                     $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
@@ -110,11 +111,17 @@ class EntregaService
                 }
             } else {
                 $nuevoEstado = $todosEntregados ? 'entregado' : 'entregado_parcialmente';
+                // Calcular valor real entregado: suma de (cantidad_entregada * precio_unitario * 1.15)
+                $subtotalEntregado = (float) DB::table('items_pedido')
+                    ->where('pedido_id', $pedido->id)
+                    ->sum(DB::raw('cantidad_entregada * precio_unitario * 1.15'));
+                $valorEntregaCalculado = round($subtotalEntregado, 2);
             }
 
             $pedido = $this->pedidoRepository->update($pedido->id, [
                 'estado' => $nuevoEstado,
                 'fecha_entrega' => now(),
+                'valor_entrega' => $valorEntregaCalculado,
                 'motivo_cancelacion' => $motivoPrincipal
             ]);
             

@@ -94,10 +94,10 @@ class GuiaRepository implements GuiaRepositoryInterface
         $recaudacion = DB::table('pedidos')
             ->whereIn('id', $entregadosIds)
             ->selectRaw("
-                SUM(CASE WHEN metodo_pago = 'efectivo' THEN total ELSE 0 END) as efectivo,
-                SUM(CASE WHEN metodo_pago IN ('tc','td','tarjeta') THEN total ELSE 0 END) as bancos,
-                SUM(CASE WHEN metodo_pago IN ('de_una','deposito') THEN total ELSE 0 END) as de_una,
-                SUM(total) as total_general
+                SUM(CASE WHEN metodo_pago = 'efectivo' THEN COALESCE(valor_entrega, total) ELSE 0 END) as efectivo,
+                SUM(CASE WHEN metodo_pago IN ('tc','td','tarjeta') THEN COALESCE(valor_entrega, total) ELSE 0 END) as bancos,
+                SUM(CASE WHEN metodo_pago IN ('de_una','deposito') THEN COALESCE(valor_entrega, total) ELSE 0 END) as de_una,
+                SUM(COALESCE(valor_entrega, total)) as total_general
             ")
             ->first();
 
@@ -116,6 +116,7 @@ class GuiaRepository implements GuiaRepositoryInterface
             ],
         ];
     }
+
     public function getGuiasResumen(array $filtros): Collection
     {
         $query = GuiaRemision::with(['camion.chofer', 'operador', 'revisor', 'guiasRuta.asignaciones.pedido']);
@@ -145,7 +146,7 @@ class GuiaRepository implements GuiaRepositoryInterface
 
                 $totalEntregado = (float) DB::table('pedidos')
                     ->whereIn('id', $entregadosIds)
-                    ->sum('total');
+                    ->sum(DB::raw('COALESCE(valor_entrega, total)'));
 
                 // Partial returns calculation from items_pedido: (solicitada - entregada) * precio_unitario * 1.15
                 $totalDevolucionesParciales = (float) DB::table('items_pedido')
@@ -196,10 +197,10 @@ class GuiaRepository implements GuiaRepositoryInterface
         $recaudacion = DB::table('pedidos')
             ->whereIn('id', $entregadosIds)
             ->selectRaw("
-                SUM(CASE WHEN metodo_pago = 'efectivo' THEN total ELSE 0 END) as efectivo,
-                SUM(CASE WHEN metodo_pago IN ('tc','td','tarjeta') THEN total ELSE 0 END) as bancos,
-                SUM(CASE WHEN metodo_pago IN ('de_una','deposito') THEN total ELSE 0 END) as de_una,
-                SUM(total) as total_general
+                SUM(CASE WHEN metodo_pago = 'efectivo' THEN COALESCE(valor_entrega, total) ELSE 0 END) as efectivo,
+                SUM(CASE WHEN metodo_pago IN ('tc','td','tarjeta') THEN COALESCE(valor_entrega, total) ELSE 0 END) as bancos,
+                SUM(CASE WHEN metodo_pago IN ('de_una','deposito') THEN COALESCE(valor_entrega, total) ELSE 0 END) as de_una,
+                SUM(COALESCE(valor_entrega, total)) as total_general
             ")
             ->first();
 

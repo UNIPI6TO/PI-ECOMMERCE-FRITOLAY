@@ -21,11 +21,7 @@ class ReporteRepository
             ->select(
                 DB::raw("{$groupByRaw} as fecha"),
                 DB::raw('SUM(CASE 
-                    WHEN p.estado = "entregado" THEN p.total
-                    WHEN p.estado = "entregado_parcialmente" THEN (
-                        SELECT COALESCE(SUM(ip.cantidad_entregada * ip.precio_unitario * 1.15), 0)
-                        FROM items_pedido ip WHERE ip.pedido_id = p.id
-                    )
+                    WHEN p.estado IN ("entregado", "entregado_parcialmente") THEN COALESCE(p.valor_entrega, p.total)
                     ELSE 0 
                 END) as total')
             )
@@ -46,11 +42,7 @@ class ReporteRepository
                 'guias_remision.camion_id',
                 'camiones.placa',
                 DB::raw('SUM(CASE 
-                    WHEN p.estado = "entregado" THEN p.total
-                    WHEN p.estado = "entregado_parcialmente" THEN (
-                        SELECT COALESCE(SUM(ip.cantidad_entregada * ip.precio_unitario * 1.15), 0)
-                        FROM items_pedido ip WHERE ip.pedido_id = p.id
-                    )
+                    WHEN p.estado IN ("entregado", "entregado_parcialmente") THEN COALESCE(p.valor_entrega, p.total)
                     ELSE 0 
                 END) as total')
             )
@@ -63,7 +55,7 @@ class ReporteRepository
     public function getRecaudacionPorMetodo(Carbon $inicio, Carbon $fin): Collection
     {
         return DB::table('pedidos')
-            ->select('metodo_pago', DB::raw('SUM(total) as total'))
+            ->select('metodo_pago', DB::raw('SUM(COALESCE(valor_entrega, total)) as total'))
             ->whereIn('estado', ['entregado', 'entregado_parcialmente'])
             ->whereBetween('creado_en', [$inicio, $fin])
             ->groupBy('metodo_pago')
@@ -214,11 +206,7 @@ class ReporteRepository
                 DB::raw("{$groupByRaw} as fecha"),
                 DB::raw('COUNT(*) as cantidad_pedidos'),
                 DB::raw('SUM(CASE 
-                    WHEN p.estado = "entregado" THEN p.total
-                    WHEN p.estado = "entregado_parcialmente" THEN (
-                        SELECT COALESCE(SUM(ip.cantidad_entregada * ip.precio_unitario * 1.15), 0)
-                        FROM items_pedido ip WHERE ip.pedido_id = p.id
-                    )
+                    WHEN p.estado IN ("entregado", "entregado_parcialmente") THEN COALESCE(p.valor_entrega, p.total)
                     ELSE 0 
                 END) as ventas_entregadas'),
                 DB::raw('SUM(p.total) as ventas_totales')
@@ -247,20 +235,16 @@ class ReporteRepository
         $valorTotal = (float) ($stats->valor_total ?? 0);
         $pedidosEntregados = (int) ($stats->pedidos_entregados ?? 0);
 
-        // 2. $ Entregado (Exclusivamente lo entregado de forma efectiva)
+        // 2. $ Entregado (Consumiendo estrictamente el valor_entrega real recaudado)
         $totalEntregado = (float) DB::table('pedidos as p')
             ->whereBetween('p.creado_en', [$inicio, $fin])
             ->where('p.estado', '!=', 'cancelado')
             ->sum(DB::raw('CASE 
-                WHEN p.estado = "entregado" THEN p.total
-                WHEN p.estado = "entregado_parcialmente" THEN (
-                    SELECT COALESCE(SUM(ip.cantidad_entregada * ip.precio_unitario * 1.15), 0)
-                    FROM items_pedido ip WHERE ip.pedido_id = p.id
-                )
+                WHEN p.estado IN ("entregado", "entregado_parcialmente") THEN COALESCE(p.valor_entrega, p.total)
                 ELSE 0 
             END'));
 
-        // 3. $ Devoluciones (Filtrado ultra-rápido por fecha_pedido indexado)
+        // 3. $ Devoluciones (Filtrado por notas de crédito emitidas)
         $totalDevoluciones = (float) DB::table('notas_credito as nc')
             ->join('facturas as f', 'f.id', '=', 'nc.factura_id')
             ->join('pedidos as p', 'p.id', '=', 'f.pedido_id')
@@ -271,13 +255,13 @@ class ReporteRepository
         // 4. Efectividad Entrega
         $efectividad = $cantidadTotal > 0 ? round(($pedidosEntregados / $cantidadTotal) * 100, 2) : 0;
 
-        // 5. Recaudación Efectivo
+        // 5. Recaudación Efectivo Real (Suma del valor_entrega de pedidos pagados en efectivo)
         $recaudacionEfectivo = (float) DB::table('pedidos')
             ->whereBetween('creado_en', [$inicio, $fin])
             ->where('estado', '!=', 'cancelado')
             ->where('metodo_pago', 'efectivo')
             ->whereIn('estado', ['entregado', 'entregado_parcialmente'])
-            ->sum('total');
+            ->sum(DB::raw('COALESCE(valor_entrega, total)'));
 
         return [
             'cantidad_total_pedidos' => $cantidadTotal,
