@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class TransaccionInventario extends Model
 {
     protected $table = 'transacciones_inventario';
-    protected $fillable = ['producto_id', 'camion_id', 'tipo', 'cantidad', 'motivo', 'fecha_transaccion'];
+    protected $fillable = ['producto_id', 'camion_id', 'pedido_id', 'tipo', 'cantidad', 'motivo', 'fecha_transaccion', 'fecha_pedido'];
 
     public const TIPO_INGRESO = 'ingreso';
     public const TIPO_EGRESO = 'egreso';
@@ -16,11 +16,17 @@ class TransaccionInventario extends Model
     protected $casts = [
         'cantidad' => 'float',
         'fecha_transaccion' => 'datetime',
+        'fecha_pedido' => 'datetime',
     ];
 
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class, 'producto_id');
+    }
+
+    public function pedido(): BelongsTo
+    {
+        return $this->belongsTo(Pedido::class, 'pedido_id');
     }
 
     public function camion(): BelongsTo

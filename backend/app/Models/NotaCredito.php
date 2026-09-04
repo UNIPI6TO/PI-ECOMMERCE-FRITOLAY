@@ -10,15 +10,22 @@ class NotaCredito extends Model
 
     protected $fillable = [
         'factura_id',
+        'pedido_id',
         'numero_nota',
         'fecha_emision',
         'valor_total',
         'motivo',
+        'fecha_pedido',
     ];
 
     public function factura()
     {
         return $this->belongsTo(Factura::class);
+    }
+
+    public function pedido()
+    {
+        return $this->belongsTo(Pedido::class);
     }
 
     public static function generarNumero(int $facturaId)
