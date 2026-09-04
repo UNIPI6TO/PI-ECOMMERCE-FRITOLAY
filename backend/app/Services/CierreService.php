@@ -98,4 +98,23 @@ class CierreService
     {
         return $this->guiaRepository->getPendientesCierre();
     }
+
+    public function getGuiasResumen(array $filtros): Collection
+    {
+        return $this->guiaRepository->getGuiasResumen($filtros);
+    }
+
+    public function getDetalleGuiaCierre(int $guiaId): array
+    {
+        return $this->guiaRepository->getDetalleGuiaCierre($guiaId);
+    }
+
+    public function aprobarRevisionGuia(int $guiaId, int $operadorId): bool
+    {
+        $res = $this->guiaRepository->aprobarRevisionGuia($guiaId, $operadorId);
+        if ($res) {
+            $this->auditoriaService->logSimple('revision_guia_aprobada', 'Se aprobó la revisión de la guía ' . $guiaId, $operadorId);
+        }
+        return $res;
+    }
 }

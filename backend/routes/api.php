@@ -147,9 +147,12 @@ Route::middleware('jwt')->group(function () {
 
     // ── Guías de Remisión ────────────────────────────────────────────────────
     Route::prefix('guias-remision')->middleware('role:operador,administrador')->group(function () {
+        Route::get('/',                  [CierreController::class, 'listGuias']);
         Route::get('/pendientes-cierre', [CierreController::class, 'pendientesCierre']);
+        Route::get('/{id}/detalle-cierre',[CierreController::class, 'detalleCierre']);
         Route::get('/{id}/detalle',      [CierreController::class, 'detalle']);
         Route::patch('/{id}/cerrar',     [CierreController::class, 'cerrar']);
+        Route::post('/{id}/aprobar-revision', [CierreController::class, 'aprobarRevision']);
     });
 
     // ── Guías de Ruta ────────────────────────────────────────────────────────

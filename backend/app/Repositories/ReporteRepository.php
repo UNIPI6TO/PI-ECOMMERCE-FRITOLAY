@@ -124,7 +124,20 @@ class ReporteRepository
             ->whereBetween('creado_en', [$inicio, $fin])
             ->groupBy('motivo', 'estado');
 
-        $unificado = $carritos->unionAll($pedidosPerdidos)->get();
+        $devolucionesParciales = DB::table('items_pedido as ip')
+            ->join('pedidos as p', 'p.id', '=', 'ip.pedido_id')
+            ->select(
+                DB::raw('COALESCE(ip.motivo_devolucion, p.motivo_cancelacion, "Devolución Parcial") as motivo'),
+                DB::raw('"Devolución Parcial" as origen'),
+                DB::raw('COUNT(*) as conteo'),
+                DB::raw('SUM((ip.cantidad_solicitada - ip.cantidad_entregada) * ip.precio_unitario * 1.15) as total_perdido')
+            )
+            ->where('p.estado', 'entregado_parcialmente')
+            ->whereBetween('p.creado_en', [$inicio, $fin])
+            ->whereColumn('ip.cantidad_solicitada', '>', 'ip.cantidad_entregada')
+            ->groupBy('motivo');
+
+        $unificado = $carritos->unionAll($pedidosPerdidos)->unionAll($devolucionesParciales)->get();
 
         $agrupado = $unificado->groupBy('motivo')->map(function ($items, $motivo) {
             return [
@@ -147,6 +160,9 @@ class ReporteRepository
         $groupByPedidos = $diasDiff <= 2 
             ? "DATE_FORMAT(creado_en, '%Y-%m-%d %H:00')" 
             : "DATE(creado_en)";
+        $groupByItems = $diasDiff <= 2 
+            ? "DATE_FORMAT(p.creado_en, '%Y-%m-%d %H:00')" 
+            : "DATE(p.creado_en)";
 
         $carritos = DB::table('carritos_abandonados')
             ->select(
@@ -165,7 +181,18 @@ class ReporteRepository
             ->whereBetween('creado_en', [$inicio, $fin])
             ->groupBy(DB::raw($groupByPedidos));
 
-        $unificado = $carritos->unionAll($pedidos)->get();
+        $devolucionesParciales = DB::table('items_pedido as ip')
+            ->join('pedidos as p', 'p.id', '=', 'ip.pedido_id')
+            ->select(
+                DB::raw("{$groupByItems} as fecha"),
+                DB::raw('SUM((ip.cantidad_solicitada - ip.cantidad_entregada) * ip.precio_unitario * 1.15) as total_perdido')
+            )
+            ->where('p.estado', 'entregado_parcialmente')
+            ->whereBetween('p.creado_en', [$inicio, $fin])
+            ->whereColumn('ip.cantidad_solicitada', '>', 'ip.cantidad_entregada')
+            ->groupBy(DB::raw($groupByItems));
+
+        $unificado = $carritos->unionAll($pedidos)->unionAll($devolucionesParciales)->get();
 
         return $unificado->groupBy('fecha')->map(function ($items, $fecha) {
             return [

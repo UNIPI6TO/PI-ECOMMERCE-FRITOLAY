@@ -19,5 +19,7 @@ interface GuiaRepositoryInterface
     public function getPendientesCierre(): Collection;
     public function getRutasByChofer(int $choferId): Collection;
 
-    public function getResumenCaja(int $guiaRutaId): array;
+    public function getGuiasResumen(array $filtros): Collection;
+    public function getDetalleGuiaCierre(int $guiaId): array;
+    public function aprobarRevisionGuia(int $guiaId, int $userId): bool;
 }

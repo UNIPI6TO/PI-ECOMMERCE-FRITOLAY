@@ -56,4 +56,6 @@ Route::prefix('admin')->group(function () {
     Route::get('/', [AdminFrontController::class, 'index']);
     Route::get('/usuarios', [AdminFrontController::class, 'usuarios']);
     Route::get('/camiones', [AdminFrontController::class, 'camiones']);
+    Route::get('/cierre-guias', fn() => view('admin.cierre-guias'));
+    Route::get('/cierre-guias/{id}', fn($id) => view('admin.cierre-guias-detalle', ['id' => $id]));
 });

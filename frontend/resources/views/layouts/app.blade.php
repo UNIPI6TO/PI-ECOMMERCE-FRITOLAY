@@ -197,7 +197,7 @@
                     window.location.replace(homePages['chofer']);
                 }
             } else if (role === 'operador') {
-                const allowedForOperador = ['/dashboard', '/gestion-pedidos', '/gestion-rutas', '/perfil'];
+                const allowedForOperador = ['/dashboard', '/gestion-pedidos', '/gestion-rutas', '/admin/cierre-guias', '/perfil'];
                 if (!allowedForOperador.some(prefix => path.startsWith(prefix))) {
                     window.location.replace(homePages['operador']);
                 }
@@ -258,12 +258,28 @@
                                 <a href="/dashboard" 
                                    :class="isActive('/dashboard') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
                                    class="px-3.5 py-2 rounded-xl text-xs transition-all">Dashboard</a>
-                                <a href="/gestion-pedidos" 
-                                   :class="isActive('/gestion-pedidos') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
-                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Gestión Pedidos</a>
-                                <a href="/gestion-rutas" 
-                                   :class="isActive('/gestion-rutas') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
-                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Asignación Rutas</a>
+                                
+                                <!-- Dropdown Administración de Ventas -->
+                                <div class="relative" x-data="{ openVentas: false }">
+                                    <button @click="openVentas = !openVentas" @click.away="openVentas = false"
+                                            :class="(isActive('/gestion-pedidos') || isActive('/gestion-rutas') || isActive('/admin/cierre-guias')) ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                            class="px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1 cursor-pointer">
+                                        <span>Administración de Ventas</span>
+                                        <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': openVentas }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="openVentas" x-transition.opacity style="display: none;"
+                                         class="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl py-2 z-50 border border-gray-100">
+                                        <a href="/gestion-pedidos" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                            Gestión Pedidos
+                                        </a>
+                                        <a href="/gestion-rutas" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                            Asignación Rutas
+                                        </a>
+                                        <a href="/admin/cierre-guias" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                            Cierre de Guías
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </template>
 
@@ -370,12 +386,16 @@
                         <a href="/dashboard" 
                            :class="isActive('/dashboard') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
                            class="block px-3 py-2 rounded-xl text-sm transition-all">Dashboard</a>
+                        <div class="px-3 py-1 text-[11px] font-black uppercase text-gray-400">Administración de Ventas</div>
                         <a href="/gestion-pedidos" 
                            :class="isActive('/gestion-pedidos') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
-                           class="block px-3 py-2 rounded-xl text-sm transition-all">Gestión Pedidos</a>
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Gestión Pedidos</a>
                         <a href="/gestion-rutas" 
                            :class="isActive('/gestion-rutas') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
-                           class="block px-3 py-2 rounded-xl text-sm transition-all">Asignación Rutas</a>
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Asignación Rutas</a>
+                        <a href="/admin/cierre-guias" 
+                           :class="isActive('/admin/cierre-guias') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Cierre de Guías</a>
                     </div>
                 </template>
                 <template x-if="role === 'admin' || role === 'administrador'">

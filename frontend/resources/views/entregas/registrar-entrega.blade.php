@@ -88,10 +88,23 @@
                         <div class="font-bold text-lg text-gray-800" x-text="item.nombre"></div>
                         <div class="text-sm text-gray-500 mt-1">Solicitado: <span class="font-bold text-gray-700" x-text="item.solicitado"></span> | Precio: $<span x-text="item.precio"></span></div>
                         
-                        <div x-show="metodoPago === 'EFECTIVO' && item.entregado < item.solicitado" 
-                             class="mt-2 inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded text-sm font-semibold">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" /></svg>
-                            Devuelve: <span x-text="item.solicitado - item.entregado"></span>
+                        <div x-show="item.entregado < item.solicitado" 
+                             class="mt-2 space-y-2">
+                            <div class="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded text-sm font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" /></svg>
+                                Devuelve: <span x-text="item.solicitado - item.entregado"></span> unidades
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-red-800 mb-1">Motivo de Devolución <span class="text-red-600">*</span></label>
+                                <select x-model="item.motivo_devolucion" class="w-full border-2 border-red-300 rounded-lg p-2 text-xs font-medium focus:ring focus:ring-red-200 focus:outline-none bg-white">
+                                    <option value="">-- Seleccione un motivo --</option>
+                                    <option value="Producto dañado / mal estado">Producto dañado / mal estado</option>
+                                    <option value="Pedido incompleto / equivocado">Pedido incompleto / equivocado</option>
+                                    <option value="Rechazado por cliente">Rechazado por cliente</option>
+                                    <option value="Fecha de caducidad corta">Fecha de caducidad corta</option>
+                                    <option value="Otro motivo">Otro motivo</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="flex gap-4 items-center">
@@ -200,6 +213,23 @@ document.addEventListener('alpine:init', () => {
 
         async confirmarEntrega() {
             if (this.submitting) return;
+            
+            // Validar que cada producto devuelto tenga un motivo de devolución obligatorio
+            for (const item of this.items) {
+                if (item.entregado < item.solicitado && (!item.motivo_devolucion || !item.motivo_devolucion.trim())) {
+                    Swal.fire({ 
+                        icon: 'warning', 
+                        title: 'Motivo Requerido', 
+                        text: `Por favor seleccione el motivo de devolución para ${item.nombre}.`, 
+                        toast: true, 
+                        position: 'bottom', 
+                        showConfirmButton: false, 
+                        timer: 3500 
+                    });
+                    return;
+                }
+            }
+
             this.submitting = true;
             try {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -211,8 +241,8 @@ document.addEventListener('alpine:init', () => {
                         item_pedido_id: i.id,
                         cantidad_entregada: i.entregado,
                         cantidad_devuelta: i.solicitado - i.entregado,
-                        motivo_devolucion: i.motivo_devolucion || (i.solicitado > i.entregado ? 'Rechazado por cliente' : null),
-                        estado_mercaderia: i.solicitado > i.entregado ? 'buen_estado' : null
+                        motivo_devolucion: i.solicitado > i.entregado ? (i.motivo_devolucion || 'Otro motivo') : null,
+                        estado_mercaderia: i.solicitado > i.entregado ? (i.motivo_devolucion === 'Producto dañado / mal estado' ? 'mal_estado' : 'buen_estado') : null
                     }))
                 };
                 
