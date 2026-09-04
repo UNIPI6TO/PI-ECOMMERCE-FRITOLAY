@@ -299,6 +299,31 @@
                                    class="px-3.5 py-2 rounded-xl text-xs transition-all">Camiones</a>
                             </div>
                         </template>
+
+                        <!-- Dropdown Ayuda / Información Corporativa -->
+                        <div class="relative" x-data="{ openAyuda: false }">
+                            <button @click="openAyuda = !openAyuda" @click.away="openAyuda = false"
+                                    :class="(isActive('/mapa-del-sitio') || isActive('/acerca-de') || isActive('/politicas-privacidad')) ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                    class="px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1 cursor-pointer">
+                                <span>Ayuda / Info</span>
+                                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': openAyuda }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="openAyuda" x-transition.opacity style="display: none;"
+                                 class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl py-2 z-50 border border-gray-100 text-left">
+                                <a href="/mapa-del-sitio" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                                    Mapa del Sitio
+                                </a>
+                                <a href="/acerca-de" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Acerca de Nosotros
+                                </a>
+                                <a href="/politicas-privacidad" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center transition-colors">
+                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                    Políticas de Privacidad
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Cart Icon -->
@@ -450,8 +475,17 @@
         @yield('content')
     </main>
 
-    <footer class="bg-neutral-dark text-white text-center py-4 mt-auto">
-        <p class="text-sm">&copy; {{ date('Y') }} Fritolay Ambato. Todos los derechos reservados.</p>
+    <footer class="bg-slate-900 text-white py-8 mt-auto border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-semibold text-gray-400">
+            <div>
+                <p>&copy; {{ date('Y') }} Fritolay Ambato. Todos los derechos reservados.</p>
+            </div>
+            <div class="flex items-center space-x-6">
+                <a href="/mapa-del-sitio" class="hover:text-white transition-colors">Mapa del Sitio</a>
+                <a href="/acerca-de" class="hover:text-white transition-colors">Acerca de Nosotros</a>
+                <a href="/politicas-privacidad" class="hover:text-white transition-colors">Políticas de Privacidad</a>
+            </div>
+        </div>
     </footer>
 
     @include('ecommerce.catalogo._mini_carrito')

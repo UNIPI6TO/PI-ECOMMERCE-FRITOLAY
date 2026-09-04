@@ -52,6 +52,11 @@ Route::prefix('entregas')->group(function () {
 
 Route::get('/dashboard', [DashboardFrontController::class, 'index']);
 
+// Rutas Corporativas e Informativas
+Route::get('/mapa-del-sitio', fn() => view('institucional.mapa-sitio'));
+Route::get('/acerca-de', fn() => view('institucional.acerca-de'));
+Route::get('/politicas-privacidad', fn() => view('institucional.politicas-privacidad'));
+
 Route::prefix('admin')->group(function () {
     Route::get('/', [AdminFrontController::class, 'index']);
     Route::get('/usuarios', [AdminFrontController::class, 'usuarios']);
