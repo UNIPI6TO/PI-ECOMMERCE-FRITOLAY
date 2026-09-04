@@ -13,7 +13,7 @@
                 </span>
                 <span class="bg-white/10 backdrop-blur-md text-white font-mono font-bold text-xs px-3 py-1 rounded-full border border-white/20 shadow-2xs flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    Versión: <span class="text-[#F5C518]">{{ env('APP_VERSION', env('VITE_APP_VERSION', 'v1.0.0-SNAPSHOT')) }}</span>
+                    Versión: <span class="text-[#F5C518]">{{ env('APP_VERSION', env('VITE_APP_VERSION', 'v1.0.0')) }}</span>
                 </span>
             </div>
             <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight mb-4">

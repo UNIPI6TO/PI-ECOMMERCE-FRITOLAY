@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Tag de versión a construir y desplegar (Ej: v1.4.15 o v1.4.15-SNAPSHOT)'
+        description: 'Tag de versión a construir y desplegar (Ej: v1.4.15)'
         required: true
-        default: 'v1.0.0-SNAPSHOT'
+        default: 'v1.0.0'
 
 jobs:
   test-backend:
