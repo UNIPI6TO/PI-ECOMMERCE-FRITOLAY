@@ -23,6 +23,7 @@ Plataforma integral web y PWA para la captación de pedidos e-commerce, gestión
 9. [Principios SOLID y Buenas Prácticas](#-principios-solid-y-buenas-prácticas)
 10. [Optimización con Ponytail para IA](#-optimización-con-ponytail-para-ia)
 11. [Seguridad](#-seguridad)
+12. [Registro de Cambios (Changelog)](#-registro-de-cambios-changelog)
 
 ---
 
@@ -244,3 +245,10 @@ Para el desarrollo colaborativo y construcción de características con agentes 
 - **Gestión de Secretos:** Cero credenciales sensibles en el código fuente. En producción se integran mediante **Google Cloud Secret Manager** y **Cloud KMS**.
 - **Control de Acceso Basado en Roles (RBAC):** Middleware de autorización para roles `Administrador`, `Operador de Ruta`, `Chofer` y `Cliente`.
 - **Cookies y Sesiones:** Flags `Secure`, `HttpOnly` y `SameSite=Strict` habilitados para la persistencia temporal del carrito y tokens.
+
+---
+
+## 📜 Registro de Cambios (Changelog)
+
+Para consultar el historial detallado de versiones, características implementadas, refactorizaciones y correcciones en cada commit, revisa el archivo [CHANGELOG.md](file:///d:/UNIANDES/8VO/HERRAMIENTAS%20DE%20DESARROLLO%20DE%20SOFTWARE/PI-ECOMMERCE-FRITOLAY/CHANGELOG.md).
+

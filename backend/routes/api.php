@@ -26,6 +26,7 @@ Route::get('/info', function () {
     return response()->json([
         'status' => 'ok',
         'api_name' => config('app.name', 'Fritolay Backend API'),
+        'app_version' => env('APP_VERSION', 'v1.0.0-dev'),
         'environment' => config('app.env'),
         'timestamp' => now()->toIso8601String(),
         'db_socket' => env('DB_SOCKET', 'MISSING'),

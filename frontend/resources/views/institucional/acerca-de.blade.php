@@ -7,9 +7,15 @@
     <!-- Hero Banner -->
     <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-[#E3001B] rounded-3xl p-8 sm:p-12 text-white shadow-xl mb-12 relative overflow-hidden">
         <div class="relative z-10 max-w-3xl">
-            <span class="bg-[#F5C518] text-slate-900 font-black text-xs px-3.5 py-1 rounded-full uppercase tracking-wider mb-4 inline-block shadow-2xs">
-                Distribución y Logística de Excelencia
-            </span>
+            <div class="flex items-center gap-3 mb-4 flex-wrap">
+                <span class="bg-[#F5C518] text-slate-900 font-black text-xs px-3.5 py-1 rounded-full uppercase tracking-wider shadow-2xs">
+                    Distribución y Logística de Excelencia
+                </span>
+                <span class="bg-white/10 backdrop-blur-md text-white font-mono font-bold text-xs px-3 py-1 rounded-full border border-white/20 shadow-2xs flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Versión: <span class="text-[#F5C518]">{{ env('APP_VERSION', env('VITE_APP_VERSION', 'v1.0.0-SNAPSHOT')) }}</span>
+                </span>
+            </div>
             <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight mb-4">
                 Llevamos el sabor y frescura de <span class="text-[#F5C518]">Fritolay</span> a toda la región.
             </h1>
