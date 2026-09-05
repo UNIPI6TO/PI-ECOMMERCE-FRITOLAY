@@ -378,7 +378,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        seleccionar(id) {
+        async seleccionar(id, triggerCheckpoint = true) {
             this.pedidos.forEach(p => {
                 if (p.ui_estado === 'SELECCIONADO') p.ui_estado = p.estado;
             });
@@ -388,6 +388,18 @@ document.addEventListener('alpine:init', () => {
                 this.renderMarkers();
                 if (p.lat && p.lng && this.map) {
                     this.map.flyTo([p.lat, p.lng], 16);
+                }
+
+                // Disparo de Evento de Estado: En Camino (Punto de Control Firestore)
+                if (triggerCheckpoint && typeof window.saveEventCheckpointLocation === 'function') {
+                    try {
+                        const guias = await window.api('/api/guias-ruta');
+                        if (guias && guias.length > 0 && guias[0].camion_id) {
+                            await window.saveEventCheckpointLocation(guias[0].camion_id, 'En Camino');
+                        }
+                    } catch (e) {
+                        console.warn("No se pudo enviar punto de control En Camino:", e);
+                    }
                 }
             }
         },

@@ -274,6 +274,18 @@ document.addEventListener('alpine:init', () => {
                     solicitado: parseFloat(i.cantidad_solicitada),
                     entregado: parseFloat(i.cantidad_solicitada)
                 }));
+
+                // Disparo de Evento de Estado: Entregando (Punto de Control Auditoría Firestore)
+                if (typeof window.saveEventCheckpointLocation === 'function') {
+                    try {
+                        const guias = await window.api('/api/guias-ruta');
+                        if (guias && guias.length > 0 && guias[0].camion_id) {
+                            await window.saveEventCheckpointLocation(guias[0].camion_id, 'Entregando');
+                        }
+                    } catch (e) {
+                        console.warn("No se pudo enviar punto de control Entregando:", e);
+                    }
+                }
             } catch (e) {
                 console.error("Error al cargar datos de pedido:", e);
             }

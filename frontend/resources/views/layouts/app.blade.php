@@ -291,10 +291,6 @@
 
                         <template x-if="role === 'admin' || role === 'administrador'">
                             <div class="flex items-center space-x-1">
-                                <a href="/admin/usuarios" 
-                                   :class="isActive('/admin/usuarios') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
-                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Usuarios</a>
-
                                 <!-- Dropdown Categoría Flota -->
                                 <div class="relative" x-data="{ openFlota: false }">
                                     <button @click="openFlota = !openFlota" @click.away="openFlota = false"
@@ -315,6 +311,10 @@
                                         </a>
                                     </div>
                                 </div>
+
+                                <a href="/admin/usuarios" 
+                                   :class="isActive('/admin/usuarios') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Usuarios</a>
                             </div>
                         </template>
 
@@ -459,12 +459,12 @@
                 </template>
                 <template x-if="role === 'admin' || role === 'administrador'">
                     <div class="space-y-1 pt-1 border-t border-gray-100">
+                        <a href="/admin/camiones" 
+                           :class="isActive('/admin/camiones') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 rounded-xl text-sm transition-all">Flota (Camiones)</a>
                         <a href="/admin/usuarios" 
                            :class="isActive('/admin/usuarios') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
                            class="block px-3 py-2 rounded-xl text-sm transition-all">Usuarios</a>
-                        <a href="/admin/camiones" 
-                           :class="isActive('/admin/camiones') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
-                           class="block px-3 py-2 rounded-xl text-sm transition-all">Camiones</a>
                     </div>
                 </template>
             </div>

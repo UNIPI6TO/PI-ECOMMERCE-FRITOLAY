@@ -138,6 +138,46 @@
                     <span class="text-xs font-mono font-extrabold text-gray-700" x-text="`camion_${camionId}`"></span>
                 </div>
             </div>
+
+            <!-- Timeline de Eventos de Estado (Auditoría en Tiempo Real) -->
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Timeline de Estados</span>
+                    </h3>
+                    <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold" x-text="`${puntosFiltrados.length} eventos`"></span>
+                </div>
+
+                <div class="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    <template x-for="(pt, idx) in puntosFiltrados.slice().reverse()" :key="idx">
+                        <div class="p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 transition-all hover:bg-slate-50"
+                             :class="{
+                                 'bg-amber-50/70 border-amber-200': pt.estado === 'En Camino',
+                                 'bg-blue-50/70 border-blue-200': pt.estado === 'Entregando',
+                                 'bg-slate-50 border-slate-200/80': !['En Camino', 'Entregando'].includes(pt.estado)
+                             }">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full shrink-0"
+                                          :class="{
+                                              'bg-amber-500': pt.estado === 'En Camino',
+                                              'bg-blue-500': pt.estado === 'Entregando',
+                                              'bg-slate-400': !['En Camino', 'Entregando'].includes(pt.estado)
+                                          }"></span>
+                                    <span class="font-extrabold text-slate-900 truncate" x-text="pt.estado || 'En Ruta'"></span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 font-mono mt-0.5" x-text="`[${pt.lat}, ${pt.lng}]`"></div>
+                            </div>
+                            <span class="text-[10px] font-bold text-gray-500 shrink-0" x-text="formatearHora(pt.timestamp)"></span>
+                        </div>
+                    </template>
+
+                    <template x-if="puntosFiltrados.length === 0">
+                        <p class="text-xs text-gray-400 italic text-center py-4">No hay marcas de tiempo en el período.</p>
+                    </template>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -228,19 +268,58 @@ document.addEventListener('alpine:init', () => {
         },
 
         async cargarHistorialFirestore() {
-            const docId = `camion_${this.camionId}`;
             try {
                 if (window.firestoreDb && window.firestoreDoc && window.firestoreGetDoc) {
-                    const docRef = window.firestoreDoc(window.firestoreDb, 'ubicaciones_camion', docId);
-                    const docSnap = await window.firestoreGetDoc(docRef);
+                    // Generar lista de fechas YYYY-MM-DD entre fechaInicio y fechaFin
+                    const fechas = [];
+                    const dCur = new Date(this.fechaInicio);
+                    dCur.setHours(0, 0, 0, 0);
+                    const dEnd = new Date(this.fechaFin);
+                    dEnd.setHours(23, 59, 59, 999);
 
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        this.historialPuntos = Array.isArray(data.historial) ? data.historial : [];
-                        this.ultimaUbicacion = data.ultima_ubicacion || (this.historialPuntos.length > 0 ? this.historialPuntos[this.historialPuntos.length - 1] : null);
+                    while (dCur <= dEnd) {
+                        const isoFecha = dCur.toISOString().split('T')[0];
+                        fechas.push(isoFecha);
+                        dCur.setDate(dCur.getDate() + 1);
+                    }
+
+                    // Consultar cada documento diario de la subcolección camiones/{idCamion}/historial/{YYYY-MM-DD}
+                    const promesas = fechas.map(f => {
+                        const ref = window.firestoreDoc(window.firestoreDb, 'camiones', String(this.camionId), 'historial', f);
+                        return window.firestoreGetDoc(ref);
+                    });
+
+                    const snaps = await Promise.all(promesas);
+                    let todosPuntos = [];
+
+                    snaps.forEach(snap => {
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            if (Array.isArray(data.puntos)) {
+                                todosPuntos = todosPuntos.concat(data.puntos);
+                            }
+                        }
+                    });
+
+                    // Si se encontraron puntos en la estructura particionada por fecha
+                    if (todosPuntos.length > 0) {
+                        // Ordenar cronológicamente por timestamp
+                        todosPuntos.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                        this.historialPuntos = todosPuntos;
+                        this.ultimaUbicacion = todosPuntos[todosPuntos.length - 1];
                     } else {
-                        this.historialPuntos = [];
-                        this.ultimaUbicacion = null;
+                        // Fallback de compatibilidad: consultar el documento legacy ubicaciones_camion/camion_{idCamion}
+                        const legacyRef = window.firestoreDoc(window.firestoreDb, 'ubicaciones_camion', `camion_${this.camionId}`);
+                        const legacySnap = await window.firestoreGetDoc(legacyRef);
+
+                        if (legacySnap.exists()) {
+                            const data = legacySnap.data();
+                            this.historialPuntos = Array.isArray(data.historial) ? data.historial : [];
+                            this.ultimaUbicacion = data.ultima_ubicacion || (this.historialPuntos.length > 0 ? this.historialPuntos[this.historialPuntos.length - 1] : null);
+                        } else {
+                            this.historialPuntos = [];
+                            this.ultimaUbicacion = null;
+                        }
                     }
                 }
             } catch (err) {
@@ -357,15 +436,34 @@ document.addEventListener('alpine:init', () => {
                     // Marcador Punto de Inicio (Verde)
                     const iconInicio = L.divIcon({
                         className: 'custom-start-pin',
-                        html: `<div style="background-color: #10b981; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid white;">A</div>`,
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
+                        html: `<div style="background-color: #10b981; color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">A</div>`,
+                        iconSize: [26, 26],
+                        iconAnchor: [13, 13]
                     });
                     L.marker([p.lat, p.lng], { icon: iconInicio })
-                        .bindPopup(`<div class="text-xs"><strong>Punto Inicial de Ruta</strong><br>${this.formatearFecha(p.timestamp)}</div>`)
+                        .bindPopup(`<div class="text-xs font-sans"><strong>Punto Inicial de Ruta</strong><br>${this.formatearFecha(p.timestamp)}</div>`)
+                        .addTo(this.markersLayerGroup);
+                } else if (p.estado === 'En Camino' || p.estado === 'Entregando') {
+                    // Puntos de Control Especiales por Eventos de Estado
+                    const isEnCamino = p.estado === 'En Camino';
+                    const iconEvent = L.divIcon({
+                        className: 'custom-event-pin',
+                        html: `<div style="background-color: ${isEnCamino ? '#f59e0b' : '#3b82f6'}; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; border: 2px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);">${isEnCamino ? '🎯' : '📦'}</div>`,
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14]
+                    });
+
+                    L.marker([p.lat, p.lng], { icon: iconEvent })
+                        .bindPopup(`
+                            <div class="p-1 text-xs font-sans">
+                                <strong style="color: ${isEnCamino ? '#d97706' : '#2563eb'}; font-size: 13px;" class="block mb-0.5">${isEnCamino ? '🎯 En Camino' : '📦 Entregando'}</strong>
+                                <div><span class="text-gray-500">Hora:</span> <strong>${this.formatearHora(p.timestamp)}</strong></div>
+                                <div><span class="text-gray-500">Posición:</span> [${p.lat}, ${p.lng}]</div>
+                            </div>
+                        `)
                         .addTo(this.markersLayerGroup);
                 } else {
-                    // Círculos intermedios sutiles
+                    // Círculos intermedios sutiles de telemetría pasiva
                     L.circleMarker([p.lat, p.lng], {
                         radius: 4,
                         fillColor: '#3b82f6',
@@ -373,7 +471,7 @@ document.addEventListener('alpine:init', () => {
                         weight: 1,
                         opacity: 1,
                         fillOpacity: 0.8
-                    }).bindPopup(`<div class="text-xs">Hora: ${this.formatearFecha(p.timestamp)}</div>`)
+                    }).bindPopup(`<div class="text-xs font-sans"><strong>En Ruta (GPS Pasivo)</strong><br>Hora: ${this.formatearHora(p.timestamp)}</div>`)
                     .addTo(this.markersLayerGroup);
                 }
             });
@@ -383,6 +481,12 @@ document.addEventListener('alpine:init', () => {
             if (!isoStr) return 'N/A';
             const d = new Date(isoStr);
             return d.toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
+        },
+
+        formatearHora(isoStr) {
+            if (!isoStr) return 'N/A';
+            const d = new Date(isoStr);
+            return d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
     }));
 });
