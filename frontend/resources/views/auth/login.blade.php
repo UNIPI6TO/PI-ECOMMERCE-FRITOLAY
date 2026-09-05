@@ -8,8 +8,8 @@
         
         <!-- Header con Logo Fritolay -->
         <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-red-50 text-[#E3001B] font-black text-2xl mb-3 shadow-2xs border border-red-100">
-                F
+            <div class="inline-flex items-center justify-center mb-3">
+                <img src="/apple-touch-icon.png" alt="Fritolay" class="w-16 h-16 object-contain drop-shadow-sm">
             </div>
             <h1 class="text-2xl font-black text-gray-900 tracking-tight">
                 Frito<span class="text-[#F5C518]">lay</span>
