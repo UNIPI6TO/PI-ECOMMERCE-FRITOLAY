@@ -31,9 +31,9 @@ Plataforma integral web y PWA para la captación de pedidos e-commerce, gestión
 
 El sistema **Fritolay Ambato** resuelve la cadena completa de valor de distribución de snacks y productos de consumo masivo:
 
-- **E-commerce B2B/B2C (Módulo Clientes):** Catálogo dinámico con optimización de caché para imágenes desde Google Cloud Storage (GCS), carrito de compras reactivo, cálculo automático de IVA (15%) y validación de stock disponible.
-- **Gestión Logística y Despacho (Módulo Operador de Ruta):** Asignación de pedidos a camiones, generación automática de guías de remisión (formato SRI) y guías de ruta, validación de comprobantes de pago (De Una, transferencias bancarias).
-- **Entregas y Liquidación (Módulo Chofer):** Visualización de ruta optimizada, integración directa con Google Maps y Waze, tracking GPS periódico hacia Cloud Firestore y arqueo de caja con encerado de bodega móvil.
+- **E-commerce B2B/B2C (Módulo Clientes):** Catálogo dinámico con optimización de caché para imágenes desde Google Cloud Storage (GCS), carrito de compras reactivo, cálculo automático de IVA (15%), validación de stock disponible, rastreo en vivo de entregas en mapa Leaflet con notificaciones push nativas del SO, y sesión extendida de 15 días con opción "Recuérdame".
+- **Gestión Logística y Despacho (Módulo Operador de Ruta):** Asignación de pedidos a camiones, generación automática de guías de remisión y notas de crédito en formato estándar del SRI (15 dígitos: `EST-PTO-SECUENCIAL`), guías de ruta, validación de comprobantes de pago (De Una, transferencias bancarias) y control de navegación con guardián de ruta.
+- **Entregas y Liquidación (Módulo Chofer):** Visualización de ruta optimizada, integración directa con Google Maps y Waze, tracking GPS periódico hacia Cloud Firestore con partición diaria, emisión de estados de entrega y arqueo de caja con encerado de bodega móvil.
 - **Métricas y Analítica (Dashboard Administrativo):** KPIs de efectividad de entrega, tiempos promedio, ventas por sector/camión, conciliación de recaudación multicanal y análisis de carritos abandonados.
 
 ---

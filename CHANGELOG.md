@@ -4,6 +4,30 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 
 ---
 
+## [Unreleased]
+
+---
+
+## [1.5.0] - 2026-09-05
+
+### 🚚 Rastreo de Entrega en Vivo para Clientes & Notificaciones Push Nativas del SO
+- **Feat (Rastreo Cliente Live):** Implementada la vista `/ecommerce/rastreo` con mapa interactivo Leaflet para clientes con pedidos en estado `en_ruta`. Muestra la ubicación GPS en tiempo real del chofer, marcador del destino de entrega y cálculo dinámico de distancia restante por fórmula Haversine.
+- **Feat (Notificaciones Push del SO):** Integración de alertas nativas del SO mediante `ServiceWorkerRegistration.showNotification()` y Web Notifications API. Al activarse o hacer clic en la notificación del sistema operativo, el usuario es redirigido automáticamente a la vista de rastreo en vivo de la entrega (`/ecommerce/rastreo`).
+- **Feat (Guardián de Navegación & Expulsión):** Implementada protección contra el botón "Atrás" (`history.replaceState`) y redirección automática/expulsión hacia la vista de historial (`/ecommerce/historial`) una vez que el pedido es entregado o finalizado.
+- **Feat (Botón Reactivo Navbar):** Agregado botón animado *"🚚 Ver entrega"* en el Navbar para clientes autenticados que posean un pedido activo en ruta (`/api/clientes/entrega-activa`).
+
+### 📑 Formato Fiscal SRI & Correcciones en Historial de Pedidos
+- **Fix (Notas de Crédito SRI):** Estandarizada la codificación de notas de crédito en backend (`NotaCredito::generarNumero`) y frontend (`pdf-generator.js`) al formato oficial de 15 dígitos exigido por el SRI: `EST-PTO-SECUENCIAL` (ej. `003-001-000000037`).
+- **Fix (Historial de Clientes):** Corregida la condición `x-if` en el modal de detalle de `historial.blade.php` para asegurar que los pedidos con estado `ENTREGADO` no muestren por error alertas o banners de devolución/cancelación.
+- **Feat (Puntos de Control Firestore):** Emisión de eventos de entrega (`Entregado` y `Entregado (Parcial)`) en Firestore al registrar la entrega, permitiendo visualizarlos con insignias y marcadores de color en el Timeline de Flota.
+
+### 🔒 Autenticación, Títulos & Seguridad
+- **Fix (Duración Recuérdame):** Ajustada la función `AuthService::calculateTtl` para otorgar un token JWT con vigencia de **15 días (1,296,000 segundos)** únicamente cuando el usuario marca la casilla *"Recuérdame"*. Si no la marca, se mantiene la sesión estándar de 1 hora.
+- **Style (Títulos de Ventana):** Estandarizadas las etiquetas `<title>` en `app.blade.php` y todas las vistas hijas bajo el formato unificado `Fritolay - VISTA` (ej. `Fritolay - Catálogo`, `Fritolay - Rastreo de Entrega`).
+- **Security (Hardening GCP):** Eliminación total de credenciales en duro en `firebase-config.js` y sincronización con GCP Secret Manager (`fritolay-frontend-env`, `fritolay-backend-env`).
+
+---
+
 ## [Unreleased] - 2026-09-03
 
 ### 📌 Módulos Recientes e Institucionales
