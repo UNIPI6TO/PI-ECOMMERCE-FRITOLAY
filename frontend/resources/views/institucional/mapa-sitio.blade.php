@@ -83,6 +83,7 @@
                         roles: ['guest', 'cliente', 'admin', 'administrador', 'operador'],
                         items: [
                             { nombre: 'Catálogo de Productos', url: '/ecommerce/catalogo' },
+                            { nombre: 'Rastreo de Entrega en Vivo', url: '/ecommerce/rastreo', roles: ['cliente', 'admin', 'administrador'] },
                             { nombre: 'Historial de Pedidos', url: '/ecommerce/historial', roles: ['cliente', 'admin', 'administrador'] }
                         ]
                     },

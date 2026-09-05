@@ -6,7 +6,10 @@
     <title>Fritolay - @yield('title', 'Ambato')</title>
     
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#FFFFFF">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#E3001B">
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
