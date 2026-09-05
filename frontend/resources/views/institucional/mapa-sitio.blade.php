@@ -122,7 +122,8 @@
                         roles: ['admin', 'administrador'],
                         items: [
                             { nombre: 'Gestión de Usuarios', url: '/admin/usuarios' },
-                            { nombre: 'Gestión de Camiones', url: '/admin/camiones' }
+                            { nombre: 'Flota - Camiones', url: '/admin/camiones' },
+                            { nombre: 'Flota - Ubicaciones (GPS)', url: '/admin/flota/ubicaciones' }
                         ]
                     },
                     {

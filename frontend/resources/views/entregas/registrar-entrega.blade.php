@@ -19,14 +19,23 @@
                     <p class="text-[11px] sm:text-xs text-slate-300 font-semibold truncate max-w-[150px] sm:max-w-md" x-text="clienteNombre"></p>
                 </div>
             </div>
-            <span class="px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border shadow-2xs shrink-0 whitespace-nowrap"
-                  :class="{
-                      'bg-emerald-500/20 text-emerald-300 border-emerald-500/30': metodoPago === 'EFECTIVO',
-                      'bg-blue-500/20 text-blue-300 border-blue-500/30': metodoPago === 'TC' || metodoPago === 'TD',
-                      'bg-purple-500/20 text-purple-300 border-purple-500/30': metodoPago === 'DE_UNA' || metodoPago === 'DEPOSITO',
-                      'bg-slate-700 text-slate-300 border-slate-600': !['EFECTIVO','TC','TD','DE_UNA','DEPOSITO'].includes(metodoPago)
-                  }"
-                  x-text="metodoPago"></span>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <!-- Badge Estado Fase: Entregando (Ponytail Logistics) -->
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/40 animate-pulse flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                    <span>Fase: Entregando</span>
+                </span>
+                
+                <span class="px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border shadow-2xs shrink-0 whitespace-nowrap"
+                      :class="{
+                          'bg-emerald-500/20 text-emerald-300 border-emerald-500/30': metodoPago === 'EFECTIVO',
+                          'bg-blue-500/20 text-blue-300 border-blue-500/30': metodoPago === 'TC' || metodoPago === 'TD',
+                          'bg-purple-500/20 text-purple-300 border-purple-500/30': metodoPago === 'DE_UNA' || metodoPago === 'DEPOSITO',
+                          'bg-slate-700 text-slate-300 border-slate-600': !['EFECTIVO','TC','TD','DE_UNA','DEPOSITO'].includes(metodoPago)
+                      }"
+                      x-text="metodoPago"></span>
+            </div>
         </div>
     </div>
 

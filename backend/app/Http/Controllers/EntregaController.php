@@ -22,9 +22,8 @@ class EntregaController extends Controller
 
     public function misGuias(Request $request)
     {
-        \Illuminate\Support\Facades\DB::table('guias_remision')->where('id', 8)->update(['estado' => 'cerrada', 'efectivo_declarado' => 158.98]);
-        \Illuminate\Support\Facades\DB::table('guias_ruta')->where('guia_remision_id', 8)->update(['estado' => 'cerrada']);
-        return response()->json($this->entregaService->getGuiasChofer((int)request('user_id')));
+        $userId = (int) ($request->user_id ?? $request->query('user_id') ?? 0);
+        return response()->json($this->entregaService->getGuiasChofer($userId));
     }
 
     public function inventarioCamion(int $id)
@@ -48,8 +47,14 @@ class EntregaController extends Controller
             $resultado = $this->entregaService->registrarEntrega($request->validated(), (int)request('user_id'));
             return response()->json(['message' => 'Entrega registrada', 'data' => $resultado], 201);
         } catch (Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Error registrando entrega: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
+            \Illuminate\Support\Facades\Log::error("Error registrando entrega: " . $e->getMessage());
             return response()->json(['message' => $e->getMessage()], 422);
         }
+    }
+
+    public function estadoFase(Request $request)
+    {
+        $userId = (int) ($request->user_id ?? $request->query('user_id') ?? 0);
+        return response()->json($this->entregaService->getFaseEstadoChofer($userId));
     }
 }

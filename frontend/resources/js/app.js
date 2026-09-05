@@ -7,6 +7,8 @@ import { initMap, addPin, movePinTo } from './mapa-leaflet.js';
 import { generateFactura, generateNotaCredito } from './pdf-generator.js';
 import { startTracking, stopTracking } from './gps-tracker.js';
 
+import { db, doc, getDoc, setDoc, collection, getDocs, query } from './firebase-config.js';
+
 window.Alpine = Alpine;
 window.CarritoManager = CarritoManager;
 window.dateFilterParser = dateFilterParser;
@@ -17,5 +19,12 @@ window.generateFactura = generateFactura;
 window.generateNotaCredito = generateNotaCredito;
 window.startTracking = startTracking;
 window.stopTracking = stopTracking;
+window.firestoreDb = db;
+window.firestoreDoc = doc;
+window.firestoreGetDoc = getDoc;
+window.firestoreSetDoc = setDoc;
+window.firestoreCollection = collection;
+window.firestoreGetDocs = getDocs;
+window.firestoreQuery = query;
 
 Alpine.start();

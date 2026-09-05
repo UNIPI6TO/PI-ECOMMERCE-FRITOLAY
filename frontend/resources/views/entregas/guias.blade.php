@@ -6,10 +6,28 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
 <div class="max-w-4xl mx-auto py-4 px-3 sm:px-6 pb-24" x-data="guiasActivas()">
-    <!-- Header Fijo con Indicador de Rol -->
-    <div class="mb-6">
-        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Mis Rutas Asignadas</h1>
-        <p class="text-xs text-slate-500 font-semibold mt-0.5">Seleccione la ruta activa para iniciar la navegación y entregas</p>
+    <!-- Header Fijo con Indicador de Rol y Estado del Chofer -->
+    <div class="mb-6 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Mis Rutas Asignadas</h1>
+            <p class="text-xs text-slate-500 font-semibold mt-0.5">Seleccione la ruta activa para iniciar la navegación y entregas</p>
+        </div>
+
+        <!-- Badge Estado Fase del Chofer -->
+        <div class="px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border shadow-2xs flex items-center gap-2"
+             :class="{
+                 'bg-emerald-100 text-emerald-800 border-emerald-300 animate-pulse': estadoChofer.fase === 'LIBRE',
+                 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse': estadoChofer.fase === 'EN_CAMINO',
+                 'bg-blue-100 text-blue-800 border-blue-300 animate-pulse': estadoChofer.fase === 'ENTREGANDO'
+             }">
+            <span class="w-2.5 h-2.5 rounded-full"
+                  :class="{
+                      'bg-emerald-500': estadoChofer.fase === 'LIBRE',
+                      'bg-amber-500': estadoChofer.fase === 'EN_CAMINO',
+                      'bg-blue-500': estadoChofer.fase === 'ENTREGANDO'
+                  }"></span>
+            <span x-text="`Estado: ${estadoChofer.label || 'Cargando...'}`"></span>
+        </div>
     </div>
 
     <!-- Lista de Rutas Asignadas en Tarjetas Mobile-First -->
@@ -102,10 +120,19 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('guiasActivas', () => ({
         guias: [],
         loadingPdf: null,
+        estadoChofer: { fase: 'LIBRE', label: 'Cargando...', mensaje: '' },
         
         async init() {
             try {
                 this.guias = await window.api('/api/guias-ruta');
+                if (this.guias && this.guias.length > 0 && typeof window.startTracking === 'function') {
+                    const primerCamionId = this.guias[0].camion_id;
+                    if (primerCamionId) {
+                        window.startTracking(primerCamionId);
+                    }
+                }
+                const resFase = await window.api('/api/chofer/fase');
+                if (resFase) this.estadoChofer = resFase;
             } catch (error) {
                 console.error("Error al cargar guias:", error);
             }

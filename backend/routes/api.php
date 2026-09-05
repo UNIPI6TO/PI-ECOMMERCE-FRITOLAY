@@ -171,6 +171,8 @@ Route::middleware('jwt')->group(function () {
     });
 
     // ── Entregas ─────────────────────────────────────────────────────────────
+    Route::get('/chofer/fase', [EntregaController::class, 'estadoFase'])
+        ->middleware('role:chofer');
     Route::post('/entregas', [EntregaController::class, 'registrarEntrega'])
         ->middleware('role:chofer');
 
