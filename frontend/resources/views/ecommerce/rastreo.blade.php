@@ -118,7 +118,7 @@ document.addEventListener('alpine:init', () => {
         camionId: null,
         camionPlaca: '',
         cargando: true,
-        refreshMinutes: parseFloat(import.meta.env.VITE_LOCATION_REFRESH_MINUTES || '5'),
+        refreshMinutes: parseFloat(window.VITE_LOCATION_REFRESH_MINUTES || '5'),
         distanciaRestanteKm: null,
         map: null,
         camionMarker: null,

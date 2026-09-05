@@ -26,6 +26,6 @@ window.firestoreGetDoc = getDoc;
 window.firestoreSetDoc = setDoc;
 window.firestoreCollection = collection;
 window.firestoreGetDocs = getDocs;
-window.firestoreQuery = query;
+window.VITE_LOCATION_REFRESH_MINUTES = import.meta.env.VITE_LOCATION_REFRESH_MINUTES || '5';
 
 Alpine.start();
