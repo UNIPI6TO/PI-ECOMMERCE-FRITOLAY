@@ -347,6 +347,19 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify(payload)
                 });
                 
+                // Disparo de Evento de Estado de Cierre: Entregado / Entregado (Parcial)
+                if (typeof window.saveEventCheckpointLocation === 'function') {
+                    try {
+                        const guias = await window.api('/api/guias-ruta');
+                        if (guias && guias.length > 0 && guias[0].camion_id) {
+                            const estadoFinalCheckpoint = this.hayDevoluciones ? 'Entregado (Parcial)' : 'Entregado';
+                            await window.saveEventCheckpointLocation(guias[0].camion_id, estadoFinalCheckpoint);
+                        }
+                    } catch (e) {
+                        console.warn("No se pudo enviar punto de control final:", e);
+                    }
+                }
+
                 window.toast('Entrega registrada exitosamente', 'success', 'bottom');
                 
                 setTimeout(() => {

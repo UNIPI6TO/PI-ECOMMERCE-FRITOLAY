@@ -155,7 +155,10 @@
                              :class="{
                                  'bg-amber-50/70 border-amber-200': pt.estado === 'En Camino',
                                  'bg-blue-50/70 border-blue-200': pt.estado === 'Entregando',
-                                 'bg-slate-50 border-slate-200/80': !['En Camino', 'Entregando'].includes(pt.estado)
+                                 'bg-emerald-50/70 border-emerald-200': pt.estado === 'Entregado',
+                                 'bg-purple-50/70 border-purple-200': pt.estado === 'Entregado (Parcial)',
+                                 'bg-rose-50/70 border-rose-200': pt.estado === 'Devuelto' || pt.estado === 'No Entregado',
+                                 'bg-slate-50 border-slate-200/80': !['En Camino', 'Entregando', 'Entregado', 'Entregado (Parcial)', 'Devuelto', 'No Entregado'].includes(pt.estado)
                              }">
                             <div class="min-w-0">
                                 <div class="flex items-center gap-1.5">
@@ -163,7 +166,10 @@
                                           :class="{
                                               'bg-amber-500': pt.estado === 'En Camino',
                                               'bg-blue-500': pt.estado === 'Entregando',
-                                              'bg-slate-400': !['En Camino', 'Entregando'].includes(pt.estado)
+                                              'bg-emerald-500': pt.estado === 'Entregado',
+                                              'bg-purple-500': pt.estado === 'Entregado (Parcial)',
+                                              'bg-rose-500': pt.estado === 'Devuelto' || pt.estado === 'No Entregado',
+                                              'bg-slate-400': !['En Camino', 'Entregando', 'Entregado', 'Entregado (Parcial)', 'Devuelto', 'No Entregado'].includes(pt.estado)
                                           }"></span>
                                     <span class="font-extrabold text-slate-900 truncate" x-text="pt.estado || 'En Ruta'"></span>
                                 </div>
@@ -443,12 +449,19 @@ document.addEventListener('alpine:init', () => {
                     L.marker([p.lat, p.lng], { icon: iconInicio })
                         .bindPopup(`<div class="text-xs font-sans"><strong>Punto Inicial de Ruta</strong><br>${this.formatearFecha(p.timestamp)}</div>`)
                         .addTo(this.markersLayerGroup);
-                } else if (p.estado === 'En Camino' || p.estado === 'Entregando') {
-                    // Puntos de Control Especiales por Eventos de Estado
-                    const isEnCamino = p.estado === 'En Camino';
+                } else if (['En Camino', 'Entregando', 'Entregado', 'Entregado (Parcial)', 'Devuelto', 'No Entregado'].includes(p.estado)) {
+                    // Puntos de Control Especiales por Eventos de Estado Operativo
+                    let colorBg = '#3b82f6';
+                    let iconChar = '📦';
+                    if (p.estado === 'En Camino') { colorBg = '#f59e0b'; iconChar = '🎯'; }
+                    else if (p.estado === 'Entregando') { colorBg = '#3b82f6'; iconChar = '📦'; }
+                    else if (p.estado === 'Entregado') { colorBg = '#10b981'; iconChar = '✅'; }
+                    else if (p.estado === 'Entregado (Parcial)') { colorBg = '#8b5cf6'; iconChar = '⚠️'; }
+                    else if (p.estado === 'Devuelto' || p.estado === 'No Entregado') { colorBg = '#f43f5e'; iconChar = '❌'; }
+
                     const iconEvent = L.divIcon({
                         className: 'custom-event-pin',
-                        html: `<div style="background-color: ${isEnCamino ? '#f59e0b' : '#3b82f6'}; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; border: 2px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);">${isEnCamino ? '🎯' : '📦'}</div>`,
+                        html: `<div style="background-color: ${colorBg}; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; border: 2px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);">${iconChar}</div>`,
                         iconSize: [28, 28],
                         iconAnchor: [14, 14]
                     });
@@ -456,7 +469,7 @@ document.addEventListener('alpine:init', () => {
                     L.marker([p.lat, p.lng], { icon: iconEvent })
                         .bindPopup(`
                             <div class="p-1 text-xs font-sans">
-                                <strong style="color: ${isEnCamino ? '#d97706' : '#2563eb'}; font-size: 13px;" class="block mb-0.5">${isEnCamino ? '🎯 En Camino' : '📦 Entregando'}</strong>
+                                <strong style="color: ${colorBg}; font-size: 13px;" class="block mb-0.5">${iconChar} ${p.estado}</strong>
                                 <div><span class="text-gray-500">Hora:</span> <strong>${this.formatearHora(p.timestamp)}</strong></div>
                                 <div><span class="text-gray-500">Posición:</span> [${p.lat}, ${p.lng}]</div>
                             </div>
