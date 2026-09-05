@@ -307,8 +307,8 @@
                         </div>
                     </div>
 
-                    <!-- Tabla de Detalle de Devolución (Idéntica en formato y estructura si existen devoluciones) -->
-                    <template x-if="detalleFull?.items && detalleFull.items.some(i => (i.cantidad_solicitada - (i.cantidad_entregada || 0)) > 0)">
+                    <!-- Tabla de Detalle de Devolución (Solo para pedidos procesados/entregados/cancelados con devoluciones reales) -->
+                    <template x-if="['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado'].includes(detalleFull?.estado) && detalleFull?.items && detalleFull.items.some(i => (i.cantidad_solicitada - (i.cantidad_entregada || 0)) > 0)">
                         <div class="mb-6">
                             <div class="flex items-center gap-2 mb-3">
                                 <svg class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

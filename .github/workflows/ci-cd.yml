@@ -1,8 +1,9 @@
 name: Semantic Versioning & Tagging
 
 on:
-  push:
-    branches: [ "main", "feature/*", "develop" ]
+#  push:
+#    branches: [ "main", "feature/*", "develop" ]
+  workflow_dispatch:
 
 jobs:
   tagging:

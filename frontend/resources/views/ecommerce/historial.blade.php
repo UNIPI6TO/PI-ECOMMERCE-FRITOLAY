@@ -166,28 +166,51 @@
                             </td>
                             <td class="py-4 px-6 text-gray-600 font-bold uppercase text-[11px]" x-text="(pedido.metodo_pago || '').replace(/_/g, ' ')"></td>
                             <td class="py-4 px-6 text-right font-black text-slate-900 text-sm whitespace-nowrap" x-text="formatMoney(pedido.total)"></td>
-                            <td class="py-4 px-6 text-right">
+                            <td class="py-4 px-6">
                                 <div class="flex items-center justify-end flex-wrap gap-1.5">
-                                    <button @click="verNotaCreditoPdf(pedido)" x-show="pedido.factura && pedido.factura.nota_credito" class="text-xs bg-white hover:bg-purple-50 text-slate-700 hover:text-purple-700 border border-gray-200 px-3 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1.5">
-                                        N/C
-                                    </button>
+                                     <!-- Cancelar -->
+                                     <button @click="cancelarPedido(pedido)" 
+                                             x-show="!['en_ruta', 'listo_para_entregar', 'entregado', 'entregado_parcialmente', 'cancelado', 'no_entregado'].includes(pedido.estado)" 
+                                             title="Cancelar Pedido" 
+                                             class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 hover:border-rose-300 px-2.5 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1">
+                                         <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                         <span>Cancelar</span>
+                                     </button>
 
-                                    <a :href="`/ecommerce/rastreo/${pedido.id}`" x-show="pedido.estado === 'en_ruta'" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1.5">
-                                        📍 Rastrear
-                                    </a>
+                                     <!-- Nota de Crédito -->
+                                     <button @click="verNotaCreditoPdf(pedido)" 
+                                             x-show="pedido.factura && pedido.factura.nota_credito" 
+                                             title="Ver Nota de Crédito PDF" 
+                                             class="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-2.5 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1">
+                                         <svg class="w-3.5 h-3.5 text-purple-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"/></svg>
+                                         <span>N/C</span>
+                                     </button>
 
-                                    <button @click="verPdf(pedido)" class="text-xs bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 border border-gray-200 px-3 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1.5">
-                                        📄 Factura
-                                    </button>
+                                     <!-- Rastrear -->
+                                     <a :href="`/ecommerce/rastreo/${pedido.id}`" 
+                                        x-show="pedido.estado === 'en_ruta'" 
+                                        title="Rastrear Camión en Vivo" 
+                                        class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1">
+                                         <svg class="w-3.5 h-3.5 text-slate-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                         <span>Rastrear</span>
+                                     </a>
 
-                                    <button @click="verDetalle(pedido)" class="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1.5 cursor-pointer">
-                                        Detalles
-                                    </button>
+                                     <!-- Factura -->
+                                     <button @click="verPdf(pedido)" 
+                                             title="Ver / Descargar Factura SRI" 
+                                             class="text-xs bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 border border-gray-200 px-2.5 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1">
+                                         <svg class="w-3.5 h-3.5 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                         <span>Factura</span>
+                                     </button>
 
-                                    <button @click="cancelarPedido(pedido)" x-show="!['en_ruta', 'listo_para_entregar', 'entregado', 'entregado_parcialmente', 'cancelado', 'no_entregado'].includes(pedido.estado)" class="text-xs bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-gray-200 px-3 py-1.5 rounded-xl font-bold transition-all">
-                                        Cancelar
-                                    </button>
-                                </div>
+                                     <!-- Detalles -->
+                                     <button @click="verDetalle(pedido)" 
+                                             title="Ver Detalles Completos de la Orden" 
+                                             class="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1 cursor-pointer">
+                                         <svg class="w-3.5 h-3.5 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                         <span>Detalles</span>
+                                     </button>
+                                 </div>
                             </td>
                         </tr>
                     </template>
@@ -315,8 +338,8 @@
                 </div>
             </div>
 
-            <!-- Tabla de Detalle de Devolución (Mismo diseño y estructura visual si existen devoluciones) -->
-            <template x-if="pedidoSeleccionado?.items && pedidoSeleccionado.items.some(i => (i.cantidad_solicitada - (i.cantidad_entregada || 0)) > 0)">
+            <!-- Tabla de Detalle de Devolución (Solo para pedidos procesados/entregados/cancelados con devoluciones reales) -->
+            <template x-if="['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado'].includes(pedidoSeleccionado?.estado) && pedidoSeleccionado?.items && pedidoSeleccionado.items.some(i => (i.cantidad_solicitada - (i.cantidad_entregada || 0)) > 0)">
                 <div class="mb-6">
                     <div class="flex items-center gap-2 mb-3">
                         <svg class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
