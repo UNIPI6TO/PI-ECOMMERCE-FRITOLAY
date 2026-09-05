@@ -13,13 +13,17 @@ import {
 } from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForLocalDevFritolayAmbato",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "fritolay-ambato.firebaseapp.com",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "fritolay-ambato",
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "fritolay-ambato.appspot.com",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1234567890",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1234567890:web:abcdef123456"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
+
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    console.warn('[Firebase Config] Faltan variables de entorno VITE_FIREBASE_* requeridas para la inicialización de Firebase.');
+}
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
