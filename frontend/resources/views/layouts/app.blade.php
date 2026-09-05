@@ -549,6 +549,8 @@
                         
                         if (data && data.pedido_id) {
                             if (!this.entregaActiva) {
+                                // Solicitar permiso y emitir Notificación Push Nativa al SO del Dispositivo
+                                this.emitirNotificacionNativaOS(data.pedido_id);
                                 window.toast(`🔔 ¡Tu pedido #${data.pedido_id} está próximo a entregarse!`, 'info', 'bottom');
                             }
                             this.entregaActiva = data;
@@ -561,6 +563,36 @@
                         }
                     } catch (e) {
                         this.entregaActiva = null;
+                    }
+                },
+                async emitirNotificacionNativaOS(pedidoId) {
+                    if (!('Notification' in window)) return;
+
+                    if (Notification.permission === 'default') {
+                        await Notification.requestPermission();
+                    }
+
+                    if (Notification.permission === 'granted') {
+                        const titulo = 'Fritolay Ambato 🚚';
+                        const opciones = {
+                            body: `Tu pedido #${pedidoId} está próximo a entregarse. Haz clic para seguir el mapa en vivo.`,
+                            icon: '/icons/icon-192.png',
+                            badge: '/icons/icon-192.png',
+                            vibrate: [200, 100, 200],
+                            tag: `entrega-activa-${pedidoId}`,
+                            data: { url: `/ecommerce/rastreo/${pedidoId}` }
+                        };
+
+                        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                            const reg = await navigator.serviceWorker.ready;
+                            reg.showNotification(titulo, opciones);
+                        } else {
+                            const n = new Notification(titulo, opciones);
+                            n.onclick = () => {
+                                window.focus();
+                                window.location.href = `/ecommerce/rastreo/${pedidoId}`;
+                            };
+                        }
                     }
                 }
             }));
