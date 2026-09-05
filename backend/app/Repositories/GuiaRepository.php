@@ -88,6 +88,27 @@ class GuiaRepository implements GuiaRepositoryInterface
         $parciales     = $pedidos->where('estado', 'entregado_parcialmente')->count();
         $noEntregados  = $pedidos->where('estado', 'no_entregado')->count();
 
+        // Valores Monetarios por estado
+        $montoOriginalGuia = (float) $pedidos->sum('total');
+        $montoEntregados = (float) $pedidos->where('estado', 'entregado')->sum(function($p) {
+            return $p->valor_entrega !== null ? (float)$p->valor_entrega : (float)$p->total;
+        });
+
+        $montoParciales = (float) $pedidos->where('estado', 'entregado_parcialmente')->sum(function($p) {
+            return $p->valor_entrega !== null ? (float)$p->valor_entrega : (float)$p->total;
+        });
+
+        // Devoluciones parciales (N/C SRI)
+        $devolucionesParciales = (float) DB::table('items_pedido')
+            ->whereIn('pedido_id', $pedidoIds)
+            ->whereRaw('cantidad_entregada < cantidad_solicitada')
+            ->sum(DB::raw('(cantidad_solicitada - cantidad_entregada) * precio_unitario * 1.15'));
+
+        // Devoluciones totales (no entregados / cancelados)
+        $montoNoEntregados = (float) $pedidos->whereIn('estado', ['no_entregado', 'cancelado'])->sum('total');
+
+        $totalDevoluciones = round($devolucionesParciales + $montoNoEntregados, 2);
+
         // Recaudacion: sum totales by metodo_pago for delivered orders
         $entregadosIds = $pedidos->whereIn('estado', ['entregado', 'entregado_parcialmente'])->pluck('id');
 
@@ -102,11 +123,20 @@ class GuiaRepository implements GuiaRepositoryInterface
             ->first();
 
         return [
+            'financiero' => [
+                'monto_original'     => round($montoOriginalGuia, 2),
+                'total_devoluciones' => $totalDevoluciones,
+                'total_recaudado'    => round((float)($recaudacion->total_general ?? 0), 2),
+            ],
             'totales' => [
-                'total'         => $pedidos->count(),
-                'entregados'    => $entregados,
-                'parciales'     => $parciales,
-                'no_entregados' => $noEntregados,
+                'total'           => $pedidos->count(),
+                'monto_total'     => round($montoOriginalGuia, 2),
+                'entregados'      => $entregados,
+                'monto_entregados' => round($montoEntregados, 2),
+                'parciales'       => $parciales,
+                'monto_parciales' => round($montoParciales, 2),
+                'no_entregados'   => $noEntregados,
+                'monto_no_entregados' => round($montoNoEntregados, 2),
             ],
             'recaudacion' => [
                 'efectivo' => round((float)($recaudacion->efectivo ?? 0), 2),

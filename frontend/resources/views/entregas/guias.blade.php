@@ -5,67 +5,94 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
-<div class="max-w-4xl mx-auto py-8 px-4" x-data="guiasActivas()">
-    <h1 class="text-2xl font-bold mb-6">Mis Rutas Asignadas</h1>
+<div class="max-w-4xl mx-auto py-4 px-3 sm:px-6 pb-24" x-data="guiasActivas()">
+    <!-- Header Fijo con Indicador de Rol -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Mis Rutas Asignadas</h1>
+        <p class="text-xs text-slate-500 font-semibold mt-0.5">Seleccione la ruta activa para iniciar la navegación y entregas</p>
+    </div>
 
-    <div class="space-y-6">
+    <!-- Lista de Rutas Asignadas en Tarjetas Mobile-First -->
+    <div class="space-y-4">
         <template x-for="guia in guias" :key="guia.id">
-            <div class="bg-white p-6 rounded shadow border-l-4 border-[#F5C518]">
-                <!-- Encabezado y Acción Principal -->
-                <div class="flex items-center justify-between mb-4">
+            <div class="bg-white p-5 rounded-3xl shadow-2xs border border-slate-200/80 relative overflow-hidden transition-all hover:shadow-md">
+                <!-- Banner Superior Decorativo de Marca -->
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#E3001B] via-[#F5C518] to-slate-900"></div>
+
+                <!-- Encabezado y Estado de la Ruta -->
+                <div class="flex items-center justify-between mb-4 pt-1">
                     <div>
-                        <h2 class="text-xl font-bold">Ruta #<span x-text="guia.id"></span></h2>
-                        <p class="text-gray-600 text-sm mt-1"><span x-text="guia.pedidos_count"></span> pedidos asignados</p>
-                        <p class="text-gray-500 text-xs mt-1">Fecha: <span x-text="guia.fecha"></span></p>
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shadow-2xs">🚚</span>
+                            <h2 class="text-xl font-black text-slate-900 tracking-tight">Ruta #<span x-text="guia.id"></span></h2>
+                        </div>
+                        <p class="text-xs text-slate-500 font-semibold mt-1 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span x-text="`Fecha: ${guia.fecha}`"></span>
+                            <span class="text-slate-300">•</span>
+                            <span class="font-extrabold text-slate-800" x-text="`${guia.pedidos_count} pedidos`"></span>
+                        </p>
                     </div>
-                    <div>
-                        <a :href="`/entregas/mapa/${guia.id}`" class="bg-[#E3001B] text-white px-8 py-3 rounded font-bold hover:bg-red-700 shadow-sm transition-colors text-lg inline-block">
-                            Iniciar Ruta
-                        </a>
-                    </div>
+
+                    <a :href="`/entregas/mapa/${guia.id}`" 
+                       class="h-12 px-6 bg-[#E3001B] hover:bg-red-700 active:scale-95 text-white font-black text-sm rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all border border-red-500">
+                        <span>Iniciar Ruta</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
                 </div>
 
-                <!-- Resumen Financiero -->
+                <!-- Resumen Financiero Destacado -->
                 <template x-if="guia.recaudacion_esperada">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mb-6">
-                        <div class="bg-gray-50 p-4 rounded border border-gray-200">
-                            <h3 class="font-bold text-gray-700 mb-3 text-sm">Resumen de Pagos Digitales</h3>
-                            <div class="space-y-2 text-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4">
+                        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+                            <h3 class="font-black text-slate-500 mb-2 text-[10px] uppercase tracking-wider">Resumen de Pagos Digitales</h3>
+                            <div class="space-y-1.5 text-xs font-semibold">
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Transferencias / Depósitos:</span>
-                                    <span class="font-semibold" x-text="formatMoney(guia.recaudacion_esperada.transferencia)"></span>
+                                    <span class="text-slate-500">Depósitos / De Una:</span>
+                                    <span class="font-bold text-slate-900" x-text="formatMoney(guia.recaudacion_esperada.transferencia)"></span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Tarjetas de Crédito/Débito:</span>
-                                    <span class="font-semibold" x-text="formatMoney(guia.recaudacion_esperada.tarjeta)"></span>
+                                    <span class="text-slate-500">Tarjetas Crédito/Débito:</span>
+                                    <span class="font-bold text-slate-900" x-text="formatMoney(guia.recaudacion_esperada.tarjeta)"></span>
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-green-50 border border-green-300 p-4 rounded flex flex-col justify-center items-center shadow-inner">
-                            <h3 class="font-bold text-green-800 mb-1 text-sm uppercase tracking-wider">Total Recaudado en Efectivo</h3>
-                            <p class="text-3xl font-black text-green-700" x-text="formatMoney(guia.recaudacion_esperada.efectivo)"></p>
-                            <p class="text-xs text-green-600 mt-1 font-semibold">Requerido para el cuadre final</p>
+
+                        <!-- Card Destacado Efectivo Real esperable -->
+                        <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl flex flex-col justify-center items-center shadow-2xs">
+                            <h3 class="font-black text-emerald-800 text-[10px] uppercase tracking-wider">Total Recaudado en Efectivo</h3>
+                            <p class="text-2xl font-black text-emerald-700 my-0.5" x-text="formatMoney(guia.recaudacion_esperada.efectivo)"></p>
+                            <p class="text-[10px] text-emerald-600 font-extrabold">Físico a entregar en caja</p>
                         </div>
                     </div>
                 </template>
 
-                <!-- Acciones Secundarias (PDFs Client-Side) -->
-                <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
-                    <button @click="generarGuiaRemision(guia.id)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-gray-300 disabled:opacity-50" :disabled="loadingPdf === guia.id">
-                        <svg x-show="loadingPdf !== guia.id" class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        <svg x-show="loadingPdf === guia.id" class="animate-spin h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        Guía de Remisión
+                <!-- Acciones Secundarias (Descarga de PDFs Client-Side) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-100">
+                    <button @click="generarGuiaRemision(guia.id)" 
+                            class="h-12 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 border border-slate-200 disabled:opacity-50" 
+                            :disabled="loadingPdf === guia.id">
+                        <svg x-show="loadingPdf !== guia.id" class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <svg x-show="loadingPdf === guia.id" class="animate-spin h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span>Guía de Remisión (SRI)</span>
                     </button>
-                    <button @click="generarGuiaRuta(guia.id)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-gray-300 disabled:opacity-50" :disabled="loadingPdf === guia.id">
-                        <svg x-show="loadingPdf !== guia.id" class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>
-                        <svg x-show="loadingPdf === guia.id" class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        Listado de Ruta Detallado
+
+                    <button @click="generarGuiaRuta(guia.id)" 
+                            class="h-12 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 border border-slate-200 disabled:opacity-50" 
+                            :disabled="loadingPdf === guia.id">
+                        <svg x-show="loadingPdf !== guia.id" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>
+                        <svg x-show="loadingPdf === guia.id" class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span>Listado de Ruta Detallado</span>
                     </button>
                 </div>
             </div>
         </template>
-        <div x-show="guias.length === 0" class="text-center text-gray-500 py-12 bg-white rounded shadow border border-gray-100">
-            No tienes rutas asignadas para hoy.
+
+        <!-- Empty State en caso de no tener rutas asignadas -->
+        <div x-show="guias.length === 0" class="text-center text-slate-500 py-16 bg-white rounded-3xl border border-slate-200/80 shadow-2xs p-6">
+            <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-3xl flex items-center justify-center mx-auto mb-3 text-2xl">🚚</div>
+            <h3 class="text-base font-black text-slate-800 mb-1">Sin Rutas Asignadas</h3>
+            <p class="text-xs text-slate-500 font-semibold max-w-sm mx-auto">No tienes rutas de entrega programadas para hoy. Contacta al operador de ruta si necesitas asignaciones.</p>
         </div>
     </div>
 </div>

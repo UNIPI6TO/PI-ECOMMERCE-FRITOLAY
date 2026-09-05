@@ -22,6 +22,39 @@ export const CarritoManager = {
         window.dispatchEvent(new Event('cart-updated'));
     },
 
+    agregarItemConValidacion(productoId, nombre, cantidad, precioUnitario, stockDisponible, unidadesPorPaca = 1, imagen = '') {
+        let cart = this._getCookie();
+        let existing = cart.find(item => item.productoId === productoId);
+        let cantidadActualEnCarrito = existing ? existing.cantidad : 0;
+        let cantidadDeseada = parseInt(cantidad, 10);
+        let totalPropuesto = cantidadActualEnCarrito + cantidadDeseada;
+
+        if (totalPropuesto > stockDisponible) {
+            let maximoAdicional = stockDisponible - cantidadActualEnCarrito;
+            if (maximoAdicional <= 0) {
+                return { exito: false, mensaje: `Ya tienes todas las ${stockDisponible} unidades disponibles de "${nombre}" en tu carrito.` };
+            }
+            return { exito: false, mensaje: `Solo quedan ${maximoAdicional} unidades disponibles adicionales para agregar a tu carrito.` };
+        }
+
+        if (existing) {
+            existing.cantidad += cantidadDeseada;
+            if(unidadesPorPaca) existing.unidadesPorPaca = unidadesPorPaca;
+            if(imagen) existing.imagen = imagen;
+        } else {
+            cart.push({
+                productoId,
+                nombre,
+                cantidad: cantidadDeseada,
+                precioUnitario: parseFloat(precioUnitario),
+                unidadesPorPaca: parseInt(unidadesPorPaca, 10) || 1,
+                imagen: imagen || ''
+            });
+        }
+        this._setCookie(cart);
+        return { exito: true };
+    },
+
     agregarItem(productoId, nombre, cantidad, precioUnitario, unidadesPorPaca = 1, imagen = '') {
         let cart = this._getCookie();
         let existing = cart.find(item => item.productoId === productoId);

@@ -30,6 +30,36 @@ class Pedido extends Model
     public const PAGO_TC = 'tc';
     public const PAGO_TD = 'td';
 
+    // Homologación Catálogo SRI Ecuador (Tabla 24 / Ficha Técnica Comprobantes Electrónicos)
+    public const FORMAS_PAGO_SRI = [
+        'efectivo' => [
+            'codigo' => '01',
+            'descripcion' => 'SIN UTILIZACION DEL SISTEMA FINANCIERO (EFECTIVO)'
+        ],
+        'deposito' => [
+            'codigo' => '20',
+            'descripcion' => 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (DEPOSITO/TRANSFERENCIA)'
+        ],
+        'de_una' => [
+            'codigo' => '20',
+            'descripcion' => 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (DE UNA / TRANSFERENCIA)'
+        ],
+        'tc' => [
+            'codigo' => '19',
+            'descripcion' => 'TARJETA DE CREDITO'
+        ],
+        'td' => [
+            'codigo' => '16',
+            'descripcion' => 'TARJETA DE DEBITO'
+        ],
+    ];
+
+    public function getFormaPagoSri(): array
+    {
+        $metodo = strtolower((string) ($this->metodo_pago ?? 'efectivo'));
+        return self::FORMAS_PAGO_SRI[$metodo] ?? self::FORMAS_PAGO_SRI['efectivo'];
+    }
+
     protected $casts = [
         'subtotal' => 'decimal:2',
         'descuento' => 'decimal:2',

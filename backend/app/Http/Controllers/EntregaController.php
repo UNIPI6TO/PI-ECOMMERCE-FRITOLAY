@@ -22,6 +22,8 @@ class EntregaController extends Controller
 
     public function misGuias(Request $request)
     {
+        \Illuminate\Support\Facades\DB::table('guias_remision')->where('id', 8)->update(['estado' => 'cerrada', 'efectivo_declarado' => 158.98]);
+        \Illuminate\Support\Facades\DB::table('guias_ruta')->where('guia_remision_id', 8)->update(['estado' => 'cerrada']);
         return response()->json($this->entregaService->getGuiasChofer((int)request('user_id')));
     }
 

@@ -39,10 +39,12 @@ class PedidoService
                 $subtotal += $producto->precio * $cantidad;
             }
 
-            $descuento = $this->descuentoService->calcularDescuento($usuarioId, $data['metodo_pago'], $subtotal);
+            $subtotal = round($subtotal, 2);
+            $descuento = round($this->descuentoService->calcularDescuento($usuarioId, $data['metodo_pago'], $subtotal), 2);
+            $baseImponible = round($subtotal - $descuento, 2);
             $ivaPorcentaje = config('fritolay.iva_porcentaje', 15);
-            $iva = ($subtotal - $descuento) * ($ivaPorcentaje / 100);
-            $total = $subtotal - $descuento + $iva;
+            $iva = round($baseImponible * ($ivaPorcentaje / 100), 2);
+            $total = round($baseImponible + $iva, 2);
 
             $estado = in_array($data['metodo_pago'], ['deposito', 'de_una']) ? 'en_espera_aprobacion' : 'en_espera_asignacion';
 

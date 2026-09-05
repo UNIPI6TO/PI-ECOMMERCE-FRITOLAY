@@ -300,13 +300,16 @@
                             </div>
                         </template>
 
-                        <!-- Dropdown Ayuda / Información Corporativa -->
+                        <!-- Dropdown Ayuda / Información Corporativa (Solo Icono Elegante) -->
                         <div class="relative" x-data="{ openAyuda: false }">
                             <button @click="openAyuda = !openAyuda" @click.away="openAyuda = false"
-                                    :class="(isActive('/mapa-del-sitio') || isActive('/acerca-de') || isActive('/politicas-privacidad')) ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
-                                    class="px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1 cursor-pointer">
-                                <span>Ayuda / Info</span>
-                                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': openAyuda }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    :class="(isActive('/mapa-del-sitio') || isActive('/acerca-de') || isActive('/politicas-privacidad')) ? 'bg-slate-900 text-white shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'"
+                                    class="p-2 rounded-xl transition-all flex items-center justify-center cursor-pointer relative group"
+                                    title="Ayuda e Información"
+                                    aria-label="Ayuda e Información">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
                             </button>
                             <div x-show="openAyuda" x-transition.opacity style="display: none;"
                                  class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl py-2 z-50 border border-gray-100 text-left">
@@ -424,9 +427,16 @@
                         <a href="/gestion-rutas" 
                            :class="isActive('/gestion-rutas') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
                            class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Asignación Rutas</a>
-                        <a href="/admin/cierre-guias" 
-                           :class="isActive('/admin/cierre-guias') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
-                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Cierre de Guías</a>
+                        <div class="px-3 py-1 text-[11px] font-black uppercase text-gray-400">Información Corporativa</div>
+                        <a href="/mapa-del-sitio" 
+                           :class="isActive('/mapa-del-sitio') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Mapa del Sitio</a>
+                        <a href="/acerca-de" 
+                           :class="isActive('/acerca-de') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Acerca de Nosotros</a>
+                        <a href="/politicas-privacidad" 
+                           :class="isActive('/politicas-privacidad') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 pl-6 rounded-xl text-sm transition-all">Políticas de Privacidad</a>
                     </div>
                 </template>
                 <template x-if="role === 'admin' || role === 'administrador'">

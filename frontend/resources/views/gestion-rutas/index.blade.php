@@ -104,12 +104,12 @@
                 Quitar Asignación
             </button>
 
-            <!-- Cerrar Ruta por camion -->
+            <!-- Crear Ruta por camion -->
             <template x-for="truck in activeRoutes" :key="truck.id">
                 <button @click="cerrarRuta(truck.id, truck.placa)"
                         class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-2xs text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer">
                     <svg class="h-4 w-4 text-emerald-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
-                    <span>Cerrar Ruta <strong x-text="truck.placa"></strong></span>
+                    <span>Crear Ruta <strong x-text="truck.placa"></strong></span>
                 </button>
             </template>
 
@@ -737,11 +737,11 @@ document.addEventListener('alpine:init', () => {
 
             async cerrarRuta(camionId, placa) {
                 const result = await Swal.fire({
-                    title: `¿Cerrar ruta del camión ${placa}?`,
-                    text: "Los pedidos asignados pasarán a estado 'entregado'.",
-                    icon: 'warning',
+                    title: `¿Crear ruta del camión ${placa}?`,
+                    text: "Los pedidos asignados pasarán a estado 'En Ruta' y se optimizará la secuencia de entrega.",
+                    icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, cerrar ruta',
+                    confirmButtonText: 'Sí, crear ruta',
                     cancelButtonText: 'Cancelar'
                 });
 
@@ -755,7 +755,7 @@ document.addEventListener('alpine:init', () => {
                             toast: true,
                             position: 'bottom',
                             icon: 'success',
-                            title: 'Ruta cerrada con éxito',
+                            title: 'Ruta creada con éxito',
                             showConfirmButton: false,
                             timer: 3000
                         });
@@ -763,7 +763,7 @@ document.addEventListener('alpine:init', () => {
                         this.selectedIds = [];
                         window.location.reload();
                     } catch(e) {
-                        Swal.fire('Error', e.message || 'Error al cerrar la ruta', 'error');
+                        Swal.fire('Error', e.message || 'Error al crear la ruta', 'error');
                     }
                 }
             },

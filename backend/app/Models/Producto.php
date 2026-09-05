@@ -8,6 +8,7 @@ class Producto extends Model
 {
     protected $table = 'productos';
     protected $fillable = ['nombre', 'descripcion', 'marca', 'categoria', 'precio', 'cantidad_fisica', 'estado', 'imagen_gcs_path', 'unidades_por_paca', 'en_pedidos'];
+    protected $appends = ['disponible'];
     
     protected $casts = [
         'precio' => 'decimal:2',

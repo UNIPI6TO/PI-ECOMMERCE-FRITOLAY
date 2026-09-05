@@ -121,11 +121,11 @@
 
 - Cierres de Guías y Arqueo (Encerar Bodega):
 
-- o Cuando el chofer haga su arqueo de caja, este aparecerá en estado de confirmación de cierre en la guía y en el camión.
+- o Cuando el chofer complete su entrega de ruta y declare el efectivo recolectado, presiona "Finalizar Jornada", lo que cambia el estado de la guía a `cerrada`.
 
-- o En la página principal de la gestión debe aparecer un card de guías pendientes por cerrar.
+- o En el panel de Cierre de Guías (`/admin/cierre-guias`), la guía en estado `cerrada` se muestra visualmente con la etiqueta **EN REVISIÓN** (o **PENDIENTE DE REVISIÓN**) para representar que requiere auditoría.
 
-- o El gestor confirma la recepción de la mercadería devuelta y el dinero para cerrar la caja y encerar la bodega (dejar el inventario del camión en cero).
+- o El administrador u operador ingresa al detalle, verifica los montos, comprobantes y mercadería devuelta, y presiona "Aprobar Revisión", lo que cambia el estado final de la guía a `revisada` y encera el inventario a bordo del camión.
 
 - o Si los productos están en buen estado, debe actualizar el inventario master de los productos y generar transacciones de ingreso por mercadería en buen estado.
 
@@ -447,44 +447,54 @@ Escenario: Excepción por método de pago de aprobación automática Dado que un
 
 Épica: Módulo de Gestión de Pedidos (Operativo)
 
-## HU-005 - Cierre de Guías, Arqueo y Encerado de Bodega
+## HU-005 - Cierre de Guías, Arqueo, Declaración de Efectivo y Encerado de Bodega
 
-Como: Operador de Ruta Quiero: Confirmar la recepción del dinero en efectivo y procesar la mercadería devuelta por los camiones Para: Realizar el cierre de la guía de ruta, saldar la caja y encerar (dejar en cero) el inventario de la bodega del camión. Prioridad: Alta
+Como: Operador de Ruta / Administrador Quiero: Confirmar la recepción del dinero en efectivo declarado por el chofer al "Finalizar Jornada" (estado de la guía `cerrada`, visualizado como **EN REVISIÓN** en el panel administrativo), revisar el desglose por tipo de pago y la mercadería devuelta, y aprobar la revisión para encerar el inventario del camión. Prioridad: Alta
 
 ## Reglas de negocio
 
-- RN-01: La mercadería devuelta catalogada en "Buen estado" debe generar transacciones de ingreso y actualizar positivamente el inventario máster de productos.
-
-- RN-02: La mercadería devuelta en "Mal estado" no debe ingresar al inventario máster y debe registrarse en una tabla independiente.
+- RN-01: Al completar la entrega de ruta y declarar efectivo, el chofer presiona "Finalizar Jornada", lo cual actualiza el estado de la guía de remisión a `cerrada`.
+- RN-02: En el panel administrativo (`/admin/cierre-guias`), la guía en estado `cerrada` se renderiza visualmente como **EN REVISIÓN** para indicar que está pendiente de auditoría y aprobación.
+- RN-03: La mercadería devuelta catalogada en "Buen estado" debe generar transacciones de ingreso y actualizar positivamente el inventario máster de productos al momento de la aprobación.
+- RN-04: La mercadería devuelta en "Mal estado" no debe ingresar al inventario máster y debe registrarse en una tabla independiente (`mercaderia_mal_estado`).
+- RN-05: Al aprobar la revisión de la guía, el estado cambia a `revisada` (mostrándose como **REVISADA / APROBADA**), registrando el usuario revisor (`revisada_por`) y la fecha (`fecha_revision`), y descontando de `en_pedidos` del inventario máster los productos efectivamente entregados.
 
 ## Criterios de aceptación en Gherkin
 
-Característica: Cierre de caja y encerado de bodegas móviles
+Característica: Cierre de caja, auditoría de guías en revisión y encerado de bodegas móviles
 
-Escenario: Flujo principal exitoso de cierre con mercadería en buen estado Dado que un camión tiene una guía en estado de "Confirmación de cierre" Y el chofer ha declarado el valor en efectivo actual guiado por el Desglose Financiero (Total en Efectivo esperado) Cuando el Operador de Ruta confirma la recepción del dinero y
+Escenario: Flujo principal exitoso de cierre y aprobación de revisión
+Dado que un camión tiene una guía en estado `cerrada` (mostrada en la interfaz como "EN REVISIÓN") Y el chofer ha finalizado jornada declarando el valor en efectivo
+Cuando el Administrador / Operador revisa el detalle (`/admin/cierre-guias/{id}`) y presiona "Aprobar Revisión"
+Entonces el sistema cambia el estado de la guía a `revisada`
+Y registra `revisada_por` y `fecha_revision`
+Y actualiza el inventario máster restando la reserva `en_pedidos` e ingresando devoluciones en buen estado
+Y genera las transacciones de inventario correspondientes encerando la bodega a bordo del camión.
 
-
-de los productos devueltos en buen estado Entonces el sistema actualiza el inventario máster sumando los productos recibidos Y genera las transacciones de ingreso correspondientes Y el sistema encera el inventario del camión dejándolo en cero.
-
-Escenario: Validación de mercadería en mal estado Dado que el Operador de Ruta procesa el cierre de una guía con productos devueltos Cuando clasifica una parte de la mercadería como "Mal estado" Entonces el sistema registra estos ítems en la tabla exclusiva de mercadería en mal estado Y omite la actualización de estos ítems en el inventario máster disponible.
+Escenario: Validación de mercadería en mal estado
+Dado que el Operador de Ruta procesa el cierre de una guía con productos devueltos
+Cuando clasifica una parte de la mercadería como "Mal estado"
+Entonces el sistema registra estos ítems en la tabla exclusiva `mercaderia_mal_estado`
+Y omite la actualización de estos ítems en el inventario máster disponible.
 
 ## Datos o campos requeridos
 
-| Tipo de Campo dato ID_Guia Entero |   | Obligatorio Sí |   |   | Validación |   | Debe estar en estado "Confirmación de cierre" |   |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| EfectivoRecibido Decimal EstadoMercaderia Lista |   | Sí Sí |   |   |   |   | Monto entregado por el chofer "Buen estado" o "Mal estado" |   |
+| Campo | Tipo de dato | Obligatorio | Validación |
+| --- | --- | --- | --- |
+| ID_Guia | Entero | Sí | Debe estar en estado `cerrada` ("EN REVISIÓN") |
+| EfectivoDeclarado | Decimal | Sí | Monto ingresado por el chofer al finalizar jornada |
+| EstadoMercaderia | Lista | Sí | "Buen estado" o "Mal estado" |
 
 ## Dependencias
 
-- Historia o módulo relacionado: Módulo de Entregas (Cierre de Caja del Chofer).
+- Historia o módulo relacionado: Módulo de Entregas (Cierre de Caja y Declaración de Efectivo del Chofer).
 
 ## Evidencias esperadas
 
 - Registro generado en el Inventario Máster (si aplica buen estado).
-
 - Registro generado en la tabla de mercadería en mal estado (si aplica).
-
-- Reporte de arqueo de caja cerrado exitosamente.
+- Actualización del estado de la guía a `revisada` con marca de auditoría (`revisada_por`, `fecha_revision`).
+- Reporte de arqueo de caja cerrado y auditado exitosamente.
 
 Épica: Módulo Dashboard y Estadísticas
 
@@ -684,7 +694,11 @@ classDiagram
         +int operadorId
         +datetime fechaGeneracion
         +string estado
+        +decimal efectivoDeclarado
+        +int revisadaPorId
+        +datetime fechaRevision
         +cerrar()
+        +aprobarRevision()
         +generarPDF()
     }
 
@@ -1825,8 +1839,10 @@ erDiagram
         int camion_id FK
         int operador_id FK
         datetime fecha_generacion
-        enum estado "abierta|confirmacion_cierre|cerrada"
+        enum estado "abierta|cerrada|revisada"
         decimal efectivo_declarado
+        int revisada_por FK
+        datetime fecha_revision
     }
 
     GUIAS_RUTA {
@@ -2289,8 +2305,10 @@ Documento que ampara el traslado de mercadería general del camión.
 | `camion_id` | INT | FK (CAMIONES.id) | Vehículo asignado. |
 | `operador_id` | INT | FK (USUARIOS.id) | Operador que generó la guía. |
 | `fecha_generacion`| DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha de inicio. |
-| `estado` | ENUM | DEFAULT 'abierta' | `abierta`, `confirmacion_cierre`, `cerrada`. |
+| `estado` | ENUM | DEFAULT 'abierta' | `abierta`, `cerrada` (En Revisión en UI), `revisada` (Aprobada). |
 | `efectivo_declarado`| DECIMAL(10,2)| DEFAULT 0 | Efectivo reportado por el chofer al cierre. |
+| `revisada_por` | INT | FK (USUARIOS.id), NULL | Administrador u Operador que aprobó la revisión. |
+| `fecha_revision` | DATETIME | NULL | Fecha y hora en la que se aprobó la revisión. |
 
 **Tabla: `GUIAS_RUTA`**
 Control de la ruta diaria para entrega de pedidos.
@@ -2628,6 +2646,8 @@ Y renderiza un PDF en formato horizontal (Landscape) utilizando los recursos loc
 - **Migración de Submenús:** Agrupa las opciones de *"Gestión de Pedidos"* (`/gestion-pedidos`), *"Asignación de Rutas"* (`/gestion-rutas`) y la nueva vista *"Cierre de Guías"* (`/admin/cierre-guias`).
 
 ### 6.2 Cierre de Guías, Arqueo de Caja y Paridad Financiera (`pedidos.valor_entrega`)
+- **Flujo de Cierre y Botón "Finalizar Jornada":** Cuando el chofer concluye sus entregas y efectúa la declaración de efectivo en su panel de rutas, presiona el botón **"Finalizar Jornada"**, el cual actualiza el estado en la base de datos a `cerrada`.
+- **Mapeo Visual en UI ("EN REVISIÓN"):** En el panel de administración (`/admin/cierre-guias`), las guías en estado `cerrada` se renderizan visualmente con el badge **"EN REVISIÓN"** (o **"PENDIENTE DE REVISIÓN"**) para reflejar que la guía fue enviada por el chofer y se encuentra en proceso de auditoría previo a la aprobación final (`revisada`).
 - **Valor Real Recaudado (`valor_entrega`):** Se formalizó el atributo `valor_entrega` en la base de datos (migrado y backfilled tanto en Local MySQL como en GCP Cloud SQL). Este valor representa la suma monetaria real cobrada en entregas parciales/totales (`SUM(cantidad_entregada * precio_unitario * 1.15)`).
 - **Paridad Matemática Verificada:** `Total Pedido Original - Valor Entrega = Nota de Crédito (SRI)`.
 - **Listado y Detalle de Guías (`/admin/cierre-guias` & `/admin/cierre-guias/{id}`):**
