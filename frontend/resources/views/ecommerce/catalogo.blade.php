@@ -126,10 +126,10 @@
                         <!-- Header de la imagen con badges -->
                         <div class="h-52 bg-gray-50/80 p-4 flex items-center justify-center relative overflow-hidden border-b border-gray-100/60">
                             <!-- Badges de Stock -->
-                            <template x-if="product.cantidad_fisica <= 0">
+                            <template x-if="getStockDisponible(product) <= 0">
                                 <span class="absolute top-3 right-3 bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-2xs z-10">Agotado</span>
                             </template>
-                            <template x-if="product.cantidad_fisica > 0 && product.cantidad_fisica <= 5">
+                            <template x-if="getStockDisponible(product) > 0 && getStockDisponible(product) <= 5">
                                 <span class="absolute top-3 right-3 bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-2xs z-10">¡Pocas unidades!</span>
                             </template>
 
@@ -147,9 +147,20 @@
                                 </p>
                                 <h3 class="font-bold text-base text-gray-900 group-hover:text-[#E3001B] transition-colors line-clamp-1" x-text="product.nombre"></h3>
                                 
-                                <div class="mt-2 flex items-baseline gap-1">
-                                    <span class="text-2xl font-black text-slate-900" x-text="formatMoney(product.precio)"></span>
-                                    <span class="text-[11px] text-gray-400 font-semibold">/ unidad</span>
+                                <div class="mt-2 flex items-baseline justify-between">
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-2xl font-black text-slate-900" x-text="formatMoney(product.precio)"></span>
+                                        <span class="text-[11px] text-gray-400 font-semibold">/ unidad</span>
+                                    </div>
+                                    <!-- Visualización de Stock Disponible -->
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded-md"
+                                          :class="{
+                                              'bg-rose-50 text-rose-700 border border-rose-200': getStockDisponible(product) <= 0,
+                                              'bg-amber-50 text-amber-700 border border-amber-200': getStockDisponible(product) > 0 && getStockDisponible(product) <= 5,
+                                              'bg-emerald-50 text-emerald-700 border border-emerald-200': getStockDisponible(product) > 5
+                                          }"
+                                          x-text="`Stock: ${getStockDisponible(product)}`">
+                                    </span>
                                 </div>
                             </div>
 
@@ -169,36 +180,40 @@
                                         <button type="button" 
                                                 @click="if(qty > 1) qty--" 
                                                 class="px-2.5 py-2 text-gray-600 hover:bg-gray-200 transition-colors font-bold text-xs disabled:opacity-40 cursor-pointer"
-                                                :disabled="qty <= 1 || (product.disponible !== undefined ? product.disponible <= 0 : product.cantidad_fisica <= 0)">-</button>
+                                                :disabled="qty <= 1 || getStockDisponible(product) <= 0">-</button>
                                         <input type="number" 
                                                x-model.number="qty" 
                                                min="1" 
-                                               :max="tipoCompra === 'paca' ? Math.floor((product.disponible !== undefined ? product.disponible : product.cantidad_fisica) / (product.unidades_por_paca || 1)) : (product.disponible !== undefined ? product.disponible : product.cantidad_fisica)"
+                                               :max="tipoCompra === 'paca' ? Math.floor(getStockDisponible(product) / (product.unidades_por_paca || 1)) : getStockDisponible(product)"
                                                @input="
-                                                   let maxVal = tipoCompra === 'paca' ? Math.floor((product.disponible !== undefined ? product.disponible : product.cantidad_fisica) / (product.unidades_por_paca || 1)) : (product.disponible !== undefined ? product.disponible : product.cantidad_fisica);
+                                                   let maxVal = tipoCompra === 'paca' ? Math.floor(getStockDisponible(product) / (product.unidades_por_paca || 1)) : getStockDisponible(product);
                                                    if (qty > maxVal) qty = maxVal > 0 ? maxVal : 1;
                                                    if (qty < 1 || isNaN(qty)) qty = 1;
                                                "
                                                class="w-12 text-center text-xs font-extrabold text-gray-900 bg-white border-x border-gray-200 py-1 focus:outline-none focus:ring-1 focus:ring-slate-800">
                                         <button type="button" 
                                                 @click="
-                                                    let maxVal = tipoCompra === 'paca' ? Math.floor((product.disponible !== undefined ? product.disponible : product.cantidad_fisica) / (product.unidades_por_paca || 1)) : (product.disponible !== undefined ? product.disponible : product.cantidad_fisica);
+                                                    let maxVal = tipoCompra === 'paca' ? Math.floor(getStockDisponible(product) / (product.unidades_por_paca || 1)) : getStockDisponible(product);
                                                     if(qty < maxVal) qty++;
                                                 " 
                                                 class="px-2.5 py-2 text-gray-600 hover:bg-gray-200 transition-colors font-bold text-xs disabled:opacity-40 cursor-pointer"
-                                                :disabled="qty >= (tipoCompra === 'paca' ? Math.floor((product.disponible !== undefined ? product.disponible : product.cantidad_fisica) / (product.unidades_por_paca || 1)) : (product.disponible !== undefined ? product.disponible : product.cantidad_fisica))">+</button>
+                                                :disabled="qty >= (tipoCompra === 'paca' ? Math.floor(getStockDisponible(product) / (product.unidades_por_paca || 1)) : getStockDisponible(product))">+</button>
                                     </div>
                                     
                                     <!-- Botón Agregar al Carrito -->
                                     <button @click="
                                         let finalQty = qty;
-                                        if(tipoCompra === 'paca') finalQty = qty * product.unidades_por_paca;
-                                        window.CarritoManager.agregarItem(product.id, product.nombre, finalQty, parseFloat(product.precio), product.unidades_por_paca, product.imagen_gcs_path); 
-                                        $dispatch('cart-updated');
-                                        if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: '¡Agregado al carrito!', toast: true, position: 'bottom', showConfirmButton: false, timer: 2000});
+                                        if(tipoCompra === 'paca') finalQty = qty * (product.unidades_por_paca || 1);
+                                        let res = window.CarritoManager.agregarItemConValidacion(product.id, product.nombre, finalQty, parseFloat(product.precio), getStockDisponible(product), product.unidades_por_paca, product.imagen_gcs_path);
+                                        if (res.exito) {
+                                            $dispatch('cart-updated');
+                                            if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: '¡Agregado al carrito!', toast: true, position: 'bottom', showConfirmButton: false, timer: 1800});
+                                        } else {
+                                            if(typeof Swal !== 'undefined') Swal.fire({icon: 'warning', title: 'Stock Insuficiente', text: res.mensaje, toast: true, position: 'bottom', showConfirmButton: false, timer: 2500});
+                                        }
                                     " 
                                             class="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                                            :disabled="(product.disponible !== undefined ? product.disponible <= 0 : product.cantidad_fisica <= 0) || (tipoCompra === 'paca' && (product.disponible !== undefined ? product.disponible : product.cantidad_fisica) < product.unidades_por_paca)">
+                                            :disabled="getStockDisponible(product) <= 0 || (tipoCompra === 'paca' && getStockDisponible(product) < product.unidades_por_paca)">
                                         <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                                         <span>Agregar</span>
                                     </button>
@@ -224,8 +239,35 @@ function catalogo() {
             marcas: [],
             categorias: []
         },
+        cartItems: [],
+        getStockDisponible(p) {
+            if (!p) return 0;
+            let disponibleBackend = 0;
+            if (p.disponible !== undefined && p.disponible !== null) {
+                disponibleBackend = parseFloat(p.disponible);
+            } else {
+                const cantFisica = parseFloat(p.cantidad_fisica || 0);
+                const enPedidos = parseFloat(p.en_pedidos || 0);
+                disponibleBackend = Math.max(0, cantFisica - enPedidos);
+            }
+
+            // Descontar la cantidad que el usuario ya tiene agregada en el carrito local
+            const itemEnCarrito = (this.cartItems || []).find(i => i.productoId === p.id);
+            const enCarritoLocal = itemEnCarrito ? parseFloat(itemEnCarrito.cantidad || 0) : 0;
+
+            return Math.max(0, disponibleBackend - enCarritoLocal);
+        },
         init() {
+            this.updateCartItems();
+            window.addEventListener('cart-updated', () => {
+                this.updateCartItems();
+            });
             this.fetchProducts();
+        },
+        updateCartItems() {
+            if (window.CarritoManager) {
+                this.cartItems = window.CarritoManager.getItems() || [];
+            }
         },
         getUniqueMarcas() {
             const marcas = this.allProducts.map(p => p.marca).filter(Boolean);

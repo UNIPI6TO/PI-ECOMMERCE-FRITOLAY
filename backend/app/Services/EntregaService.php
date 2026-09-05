@@ -222,10 +222,10 @@ class EntregaService
         if (!$camion) return collect([]);
         
         $guiasRuta = \App\Models\GuiaRuta::whereHas('guiaRemision', function ($query) use ($camion) {
-            $query->where('camion_id', $camion->id);
-            // Mostrar si la remisión está abierta o cerrada (despachada)
+            $query->where('camion_id', $camion->id)
+                  ->where('estado', '!=', 'cerrada');
         })
-        ->where('estado', 'activa') // Solo guías de ruta que aún no se han terminado de entregar
+        ->where('estado', 'activa') // Solo guías de ruta activas que no han cerrado jornada
         ->withCount('asignaciones as pedidos_count')
         ->get();
         
@@ -273,16 +273,15 @@ class EntregaService
         
         return $guiaRuta->asignaciones->map(function ($asig) {
             $p = $asig->pedido;
-            $nombre = $p->cliente->razon_social ?: $p->cliente->nombre_cliente;
-            if (!$nombre && $p->cliente->usuario) {
-                $nombre = $p->cliente->usuario->nombre;
-            }
+            $razonSocial = $p->cliente->razon_social ?: ($p->cliente->nombre_cliente ?? '');
+            $nombrePersona = $p->cliente->usuario->nombre ?? ($p->cliente->nombre_cliente ?? '');
             
-                        return [
+            return [
                 'id' => $p->id,
                 'numero_pedido' => $p->numero_pedido,
                 'fecha_emision' => $p->created_at ? $p->created_at->format('Y-m-d') : date('Y-m-d'),
-                'cliente' => $nombre ?? 'Sin Cliente',
+                'cliente' => $razonSocial ?: 'Sin Cliente',
+                'nombre_cliente' => $nombrePersona,
                 'identificacion' => $p->cliente->ruc ?? $p->cliente->cedula ?? '9999999999',
                 'telefono' => $p->cliente->telefono ?? ($p->cliente->usuario->telefono ?? ''),
                 'direccion' => $p->direccion->descripcion ?? 'Ubicación Desconocida',

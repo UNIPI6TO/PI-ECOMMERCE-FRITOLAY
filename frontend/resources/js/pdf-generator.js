@@ -152,6 +152,8 @@ export const generateFactura = async (facturaData) => {
         columnStyles: { 2: { cellWidth: 60 } }
     });
 
+    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 130;
+
     // ── Forma de Pago homologada SRI ──────────────────────────────────────────
     doc.roundedRect(14, finalY + 8, 105, 24, 2, 2, 'S');
     doc.setFont("helvetica", "bold"); doc.setFontSize(8);

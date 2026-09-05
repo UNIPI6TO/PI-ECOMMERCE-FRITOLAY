@@ -128,7 +128,7 @@
                                           'bg-blue-100 text-blue-800 border border-blue-200': g.estado === 'cerrada',
                                           'bg-emerald-100 text-emerald-800 border border-emerald-200': g.estado === 'revisada'
                                       }">
-                                    <span x-text="g.estado"></span>
+                                    <span x-text="g.estado === 'cerrada' ? 'EN REVISIÓN' : (g.estado === 'revisada' ? 'REVISADA' : g.estado)"></span>
                                 </span>
                             </td>
                             <td class="py-3.5 px-4 text-center">

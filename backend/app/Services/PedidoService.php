@@ -37,6 +37,8 @@ class PedidoService
                     throw new Exception("Stock insuficiente para el producto ID: {$productoId}");
                 }
                 $subtotal += $producto->precio * $cantidad;
+            }
+
             $subtotal = round($subtotal, 2);
             $descuento = round($this->descuentoService->calcularDescuento($usuarioId, $data['metodo_pago'], $subtotal), 2);
             $baseImponible = round($subtotal - $descuento, 2);
