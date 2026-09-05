@@ -97,11 +97,18 @@ class EntregaService
                 if ($itemData['cantidad_entregada'] > 0) {
                     $this->inventarioService->egresoFisicoCamion($camionId, $item->producto_id, (float)$itemData['cantidad_entregada']);
                 }
+                
+                // Si hubo devolución parcial, liberar la cantidad devuelta de en_pedidos
+                $cantDevuelta = $item->cantidad_solicitada - $itemData['cantidad_entregada'];
+                if ($cantDevuelta > 0 && !$todosDevueltos) {
+                    $this->inventarioService->decrementarEnPedidos((int)$item->producto_id, (float)$cantDevuelta);
+                }
             }
 
             if ($todosDevueltos) {
                 $nuevoEstado = 'no_entregado';
                 $valorEntregaCalculado = 0.0;
+                $valorNota = round((float)$pedido->total, 2);
                 // Restaurar el inventario reservado en pedidos
                 foreach ($data['items'] as $itemData) {
                     $item = DB::table('items_pedido')->where('id', $itemData['item_pedido_id'])->first();
@@ -111,11 +118,27 @@ class EntregaService
                 }
             } else {
                 $nuevoEstado = $todosEntregados ? 'entregado' : 'entregado_parcialmente';
-                // Calcular valor real entregado: suma de (cantidad_entregada * precio_unitario * 1.15)
-                $subtotalEntregado = (float) DB::table('items_pedido')
-                    ->where('pedido_id', $pedido->id)
-                    ->sum(DB::raw('cantidad_entregada * precio_unitario * 1.15'));
-                $valorEntregaCalculado = round($subtotalEntregado, 2);
+                
+                // Cálculo proporcional con descuento e IVA exacto de la devolución
+                // Proporción de descuento aplicada al pedido = (descuento / subtotal_bruto)
+                $subtotalOriginalBruto = (float) $pedido->subtotal;
+                $factorDescuento = $subtotalOriginalBruto > 0 ? ((float)$pedido->descuento / $subtotalOriginalBruto) : 0.0;
+                
+                $subtotalBrutoDevuelto = 0.0;
+                $itemsPedidoActuales = DB::table('items_pedido')->where('pedido_id', $pedido->id)->get();
+                foreach ($itemsPedidoActuales as $itemP) {
+                    $cantDev = max(0, (float)$itemP->cantidad_solicitada - (float)$itemP->cantidad_entregada);
+                    $subtotalBrutoDevuelto += ($cantDev * (float)$itemP->precio_unitario);
+                }
+                
+                $descuentoDevuelto = round($subtotalBrutoDevuelto * $factorDescuento, 2);
+                $baseImponibleDevuelta = round($subtotalBrutoDevuelto - $descuentoDevuelto, 2);
+                $ivaPorcentaje = config('fritolay.iva_porcentaje', 15);
+                $ivaDevuelto = round($baseImponibleDevuelta * ($ivaPorcentaje / 100), 2);
+                $valorNota = round($baseImponibleDevuelta + $ivaDevuelto, 2);
+                
+                // Saldo Real a cobrar: Factura Total - Nota de Crédito
+                $valorEntregaCalculado = max(0.0, round((float)$pedido->total - $valorNota, 2));
             }
 
             $pedido = $this->pedidoRepository->update($pedido->id, [
@@ -138,7 +161,7 @@ class EntregaService
 
             $factura = DB::table('facturas')->where('pedido_id', $pedido->id)->first();
             if (!$factura) {
-                $numeroFactura = 'FAC-' . date('Y') . '-' . str_pad((string)$pedido->id, 6, '0', STR_PAD_LEFT);
+                $numeroFactura = \App\Models\Factura::generarNumero($pedido->id);
                 $facturaId = DB::table('facturas')->insertGetId([
                     'pedido_id' => $pedido->id,
                     'numero_factura' => $numeroFactura,
@@ -155,13 +178,15 @@ class EntregaService
             }
             
             if ($tieneDevoluciones || $todosDevueltos) {
-                $valorNota = $todosDevueltos ? $pedido->total : round($montoDevuelto * 1.15, 2);
+                // El valor de la Nota de Crédito NO puede ser superior al total de la factura original
+                $valorNota = min($valorNota, (float)$pedido->total);
+                
                 $existente = DB::table('notas_credito')->where('factura_id', $facturaId)->first();
                 if (!$existente) {
                     DB::table('notas_credito')->insert([
                         'factura_id' => $facturaId,
                         'pedido_id' => $pedido->id,
-                        'numero_nota' => 'NC-' . date('Y') . '-' . str_pad((string)$facturaId, 6, '0', STR_PAD_LEFT),
+                        'numero_nota' => \App\Models\NotaCredito::generarNumero($facturaId),
                         'fecha_emision' => now()->toDateString(),
                         'valor_total' => $valorNota,
                         'motivo' => 'Devolución en entrega - ' . $motivoPrincipal,
@@ -170,7 +195,6 @@ class EntregaService
                         'updated_at' => now()
                     ]);
                 } else {
-                    // Si ya existe la nota de crédito, actualiza el valor exacto devuelto
                     DB::table('notas_credito')->where('id', $existente->id)->update([
                         'valor_total' => $valorNota,
                         'motivo' => 'Devolución en entrega - ' . $motivoPrincipal,
@@ -269,6 +293,7 @@ class EntregaService
                 'subtotal' => $p->subtotal,
                 'iva' => $p->iva,
                 'total' => $p->total,
+                'valor_entrega' => $p->valor_entrega !== null ? (float)$p->valor_entrega : null,
                 'metodo_pago' => $p->metodo_pago,
                 'items' => $p->items->map(function($item) {
                     $cant = (int) ($item->cantidad_solicitada ?? $item->cantidad ?? 0);

@@ -34,6 +34,7 @@ class CierreServiceTest extends TestCase
     {
         $guiaRepo = Mockery::mock(GuiaRepositoryInterface::class);
         $bodegaRepo = Mockery::mock(BodegaRepositoryInterface::class);
+        $productoRepo = Mockery::mock(\App\Contracts\ProductoRepositoryInterface::class);
         $inventarioSvc = Mockery::mock(InventarioService::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
@@ -55,9 +56,9 @@ class CierreServiceTest extends TestCase
         ])->andReturn($guiaCerradaMock);
 
         $inventarioSvc->shouldReceive('encerarBodegaCamion')->with(5)->once();
-        $auditoriaSvc->shouldReceive('log')->once();
+        $auditoriaSvc->shouldReceive('logSimple')->once();
 
-        $service = new CierreService($guiaRepo, $bodegaRepo, $inventarioSvc, $auditoriaSvc);
+        $service = new CierreService($guiaRepo, $bodegaRepo, $productoRepo, $inventarioSvc, $auditoriaSvc);
         $resultado = $service->cerrarGuia(1, 100.50, 99);
 
         $this->assertEquals('cerrada', $resultado->estado);
@@ -67,6 +68,7 @@ class CierreServiceTest extends TestCase
     {
         $guiaRepo = Mockery::mock(GuiaRepositoryInterface::class);
         $bodegaRepo = Mockery::mock(BodegaRepositoryInterface::class);
+        $productoRepo = Mockery::mock(\App\Contracts\ProductoRepositoryInterface::class);
         $inventarioSvc = Mockery::mock(InventarioService::class);
         $auditoriaSvc = Mockery::mock(AuditoriaService::class);
 
@@ -78,7 +80,7 @@ class CierreServiceTest extends TestCase
         $inventarioSvc->shouldReceive('ingresoMaestro')->with(1, 2, 'Sobrante')->once();
         // El mal estado usa DB::table(), que ya está mockeado en setUp()
 
-        $service = new CierreService($guiaRepo, $bodegaRepo, $inventarioSvc, $auditoriaSvc);
+        $service = new CierreService($guiaRepo, $bodegaRepo, $productoRepo, $inventarioSvc, $auditoriaSvc);
         $service->procesarMercaderiaDevuelta(10, $mercaderias, 99);
         
         $this->assertTrue(true); // Si llega aquí, los mocks de DB e inventario fueron llamados correctamente

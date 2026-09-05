@@ -164,17 +164,29 @@
                                 </template>
                                 
                                 <div class="flex items-center gap-2">
-                                    <!-- Counter Minus / Plus -->
+                                    <!-- Counter Minus / Plus / Input -->
                                     <div class="flex items-center border border-gray-200 rounded-xl bg-gray-50/50 overflow-hidden">
                                         <button type="button" 
                                                 @click="if(qty > 1) qty--" 
-                                                class="px-2.5 py-2 text-gray-600 hover:bg-gray-200 transition-colors font-bold text-xs"
-                                                :disabled="qty <= 1 || product.cantidad_fisica <= 0">-</button>
-                                        <span class="w-8 text-center text-xs font-extrabold text-gray-900" x-text="qty"></span>
+                                                class="px-2.5 py-2 text-gray-600 hover:bg-gray-200 transition-colors font-bold text-xs disabled:opacity-40 cursor-pointer"
+                                                :disabled="qty <= 1 || (product.disponible !== undefined ? product.disponible <= 0 : product.cantidad_fisica <= 0)">-</button>
+                                        <input type="number" 
+                                               x-model.number="qty" 
+                                               min="1" 
+                                               :max="tipoCompra === 'paca' ? Math.floor((product.disponible !== undefined ? product.disponible : product.cantidad_fisica) / (product.unidades_por_paca || 1)) : (product.disponible !== undefined ? product.disponible : product.cantidad_fisica)"
+                                               @input="
+                                                   let maxVal = tipoCompra === 'paca' ? Math.floor((product.disponible !== undefined ? product.disponible : product.cantidad_fisica) / (product.unidades_por_paca || 1)) : (product.disponible !== undefined ? product.disponible : product.cantidad_fisica);
+                                                   if (qty > maxVal) qty = maxVal > 0 ? maxVal : 1;
+                                                   if (qty < 1 || isNaN(qty)) qty = 1;
+                                               "
+                                               class="w-12 text-center text-xs font-extrabold text-gray-900 bg-white border-x border-gray-200 py-1 focus:outline-none focus:ring-1 focus:ring-slate-800">
                                         <button type="button" 
-                                                @click="qty++" 
-                                                class="px-2.5 py-2 text-gray-600 hover:bg-gray-200 transition-colors font-bold text-xs"
-                                                :disabled="product.cantidad_fisica <= 0">+</button>
+                                                @click="
+                                                    let maxVal = tipoCompra === 'paca' ? Math.floor((product.disponible !== undefined ? product.disponible : product.cantidad_fisica) / (product.unidades_por_paca || 1)) : (product.disponible !== undefined ? product.disponible : product.cantidad_fisica);
+                                                    if(qty < maxVal) qty++;
+                                                " 
+                                                class="px-2.5 py-2 text-gray-600 hover:bg-gray-200 transition-colors font-bold text-xs disabled:opacity-40 cursor-pointer"
+                                                :disabled="qty >= (tipoCompra === 'paca' ? Math.floor((product.disponible !== undefined ? product.disponible : product.cantidad_fisica) / (product.unidades_por_paca || 1)) : (product.disponible !== undefined ? product.disponible : product.cantidad_fisica))">+</button>
                                     </div>
                                     
                                     <!-- Botón Agregar al Carrito -->
@@ -186,7 +198,7 @@
                                         if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: '¡Agregado al carrito!', toast: true, position: 'bottom', showConfirmButton: false, timer: 2000});
                                     " 
                                             class="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                                            :disabled="product.cantidad_fisica <= 0 || (tipoCompra === 'paca' && product.cantidad_fisica < product.unidades_por_paca)">
+                                            :disabled="(product.disponible !== undefined ? product.disponible <= 0 : product.cantidad_fisica <= 0) || (tipoCompra === 'paca' && (product.disponible !== undefined ? product.disponible : product.cantidad_fisica) < product.unidades_por_paca)">
                                         <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                                         <span>Agregar</span>
                                     </button>

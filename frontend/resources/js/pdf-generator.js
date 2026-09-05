@@ -152,15 +152,24 @@ export const generateFactura = async (facturaData) => {
         columnStyles: { 2: { cellWidth: 60 } }
     });
 
-    const finalY = doc.lastAutoTable.finalY || 90;
-
-    // ── Forma de Pago ─────────────────────────────────────────────────────────
-    doc.roundedRect(14, finalY + 8, 80, 22, 2, 2, 'S');
-    doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
-    doc.text("Forma de Pago", 17, finalY + 14);
-    doc.setFont("helvetica", "normal");
-    doc.text(String(facturaData.metodoPago || '').toUpperCase().replace(/_/g, ' '), 17, finalY + 20);
-    doc.text(`Valor: $${Number(facturaData.total).toFixed(2)}`, 17, finalY + 26);
+    // ── Forma de Pago homologada SRI ──────────────────────────────────────────
+    doc.roundedRect(14, finalY + 8, 105, 24, 2, 2, 'S');
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    doc.text("Forma de Pago (Catálogo SRI Ecuador)", 17, finalY + 13);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7);
+    
+    const formasSriMap = {
+        'efectivo': '01 - SIN UTILIZACION DEL SISTEMA FINANCIERO',
+        'deposito': '20 - OTROS CON UTILIZACION DEL SISTEMA FINANCIERO',
+        'de_una': '20 - OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (DE UNA)',
+        'tc': '19 - TARJETA DE CREDITO',
+        'td': '16 - TARJETA DE DEBITO'
+    };
+    const keyPago = String(facturaData.metodoPago || 'efectivo').toLowerCase();
+    const textoFormaPago = formasSriMap[keyPago] || '01 - SIN UTILIZACION DEL SISTEMA FINANCIERO';
+    
+    doc.text(textoFormaPago, 17, finalY + 19);
+    doc.text(`Valor: $${Number(facturaData.total).toFixed(2)}`, 17, finalY + 25);
 
     // ── Totales ───────────────────────────────────────────────────────────────
     const xL = 130; const xR = 195;
@@ -170,7 +179,7 @@ export const generateFactura = async (facturaData) => {
         doc.setFont("helvetica", "normal"); doc.text(`$${Number(value).toFixed(2)}`, xR, cy, { align: 'right' });
         cy += 6;
     };
-    row("SUBTOTAL:", facturaData.subtotal);
+    row("SUBTOTAL (BASE 15%):", facturaData.subtotal);
     row("DESCUENTO:", facturaData.descuento || 0);
     row("IVA 15%:", facturaData.iva);
 

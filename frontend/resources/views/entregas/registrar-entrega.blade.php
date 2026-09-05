@@ -1,20 +1,25 @@
+@extends('layouts.app')
+
+@section('title', 'Registrar Entrega')
+
+@section('content')
 <div class="min-h-[calc(100vh-4rem)] bg-slate-100 pb-28" x-data="registrarEntregaMobile('{{ $pedidoId }}')">
 
     <!-- Header Fijo de la Entrega -->
-    <div class="bg-slate-900 text-white p-4 sticky top-16 z-30 shadow-md">
-        <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <button @click="volver()" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex items-center justify-center">
+    <div class="bg-slate-900 text-white p-3 sm:p-4 sticky top-16 z-30 shadow-md">
+        <div class="max-w-3xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                <button @click="volver()" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex items-center justify-center shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                 </button>
-                <div>
-                    <h1 class="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
-                        <span>Entrega Pedido #<span x-text="pedidoId"></span></span>
+                <div class="min-w-0">
+                    <h1 class="text-sm sm:text-lg font-black tracking-tight flex items-center gap-2 truncate">
+                        <span>Pedido #<span x-text="pedidoId"></span></span>
                     </h1>
-                    <p class="text-xs text-slate-300 font-semibold truncate max-w-[200px] sm:max-w-md" x-text="clienteNombre"></p>
+                    <p class="text-[11px] sm:text-xs text-slate-300 font-semibold truncate max-w-[150px] sm:max-w-md" x-text="clienteNombre"></p>
                 </div>
             </div>
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-2xs"
+            <span class="px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border shadow-2xs shrink-0 whitespace-nowrap"
                   :class="{
                       'bg-emerald-500/20 text-emerald-300 border-emerald-500/30': metodoPago === 'EFECTIVO',
                       'bg-blue-500/20 text-blue-300 border-blue-500/30': metodoPago === 'TC' || metodoPago === 'TD',
@@ -114,19 +119,25 @@
                         </div>
 
                         <!-- Stepper Táctil Grande para Chofer (+ / -) -->
-                        <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-200/60">
-                            <span class="text-xs font-black text-slate-500 uppercase tracking-wider">Cantidad Entregada:</span>
-                            <div class="flex items-center gap-1.5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/60">
+                            <div>
+                                <span class="text-[11px] sm:text-xs font-black text-slate-500 uppercase tracking-wider block">Cantidad Entregada:</span>
+                                <template x-if="!permiteDevolucionParcial">
+                                    <span class="text-[10px] text-amber-700 font-bold block">🔒 Pago electrónico (Requiere Devolución Total si no se entrega completo)</span>
+                                </template>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
                                 <button type="button" @click="decrementarItem(item)" 
-                                        :disabled="item.entregado <= 0"
-                                        class="w-11 h-11 rounded-xl bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 font-black text-lg flex items-center justify-center transition-all disabled:opacity-30 touch-manipulation">
+                                        :disabled="!permiteDevolucionParcial || item.entregado <= 0"
+                                        class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 font-black text-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed touch-manipulation">
                                     -
                                 </button>
                                 <input type="number" x-model.number="item.entregado" min="0" :max="item.solicitado" 
-                                       class="w-16 h-11 text-center font-black text-base text-slate-900 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-200 focus:outline-none shadow-2xs">
+                                       :disabled="!permiteDevolucionParcial"
+                                       class="w-14 sm:w-16 h-10 sm:h-11 text-center font-black text-base text-slate-900 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-200 focus:outline-none shadow-2xs disabled:bg-slate-100 disabled:text-slate-500">
                                 <button type="button" @click="incrementarItem(item)" 
-                                        :disabled="item.entregado >= item.solicitado"
-                                        class="w-11 h-11 rounded-xl bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 font-black text-lg flex items-center justify-center transition-all disabled:opacity-30 touch-manipulation">
+                                        :disabled="!permiteDevolucionParcial || item.entregado >= item.solicitado"
+                                        class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 font-black text-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed touch-manipulation">
                                     +
                                 </button>
                             </div>
@@ -179,13 +190,13 @@
     </div>
 
     <!-- BOTTOM BAR FIJO DE CONFIRMACIÓN DE ENTREGA -->
-    <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md text-white p-3 border-t border-slate-800 z-40 shadow-2xl">
+    <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md text-white p-2.5 sm:p-3 border-t border-slate-800 z-40 shadow-2xl">
         <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
             <button @click="confirmarEntrega" :disabled="submitting" 
-                    class="w-full h-14 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-base rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-all border border-emerald-500 disabled:opacity-50 touch-manipulation">
-                <svg x-show="!submitting" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <svg x-show="submitting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                <span x-show="!submitting">Confirmar Entrega y Registrar Cobro</span>
+                    class="w-full h-12 sm:h-14 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-xs sm:text-base rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg transition-all border border-emerald-500 disabled:opacity-50 touch-manipulation">
+                <svg x-show="!submitting" class="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <svg x-show="submitting" class="animate-spin h-5 w-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span x-show="!submitting" class="truncate">Confirmar Entrega y Registrar Cobro</span>
                 <span x-show="submitting">Procesando Entrega...</span>
             </button>
         </div>
@@ -215,6 +226,10 @@ document.addEventListener('alpine:init', () => {
             { val: 'Fecha de caducidad corta', label: '⏳ Fecha caducidad corta' },
             { val: 'Otro motivo', label: '✏️ Otro motivo' }
         ],
+
+        get permiteDevolucionParcial() {
+            return this.metodoPago === 'EFECTIVO';
+        },
 
         get hayDevoluciones() {
             return this.items.some(i => i.entregado < i.solicitado);

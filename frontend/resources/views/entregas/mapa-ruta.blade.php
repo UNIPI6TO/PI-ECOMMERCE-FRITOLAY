@@ -101,8 +101,10 @@
                                     <span class="font-extrabold text-slate-800" x-text="p.metodo_pago ? p.metodo_pago.toUpperCase() : 'EFECTIVO'"></span>
                                 </div>
                                 <div class="text-right">
-                                    <span class="text-slate-400 font-bold block text-[10px] uppercase">Monto a Cobrar</span>
-                                    <span class="font-black text-sm text-emerald-600" x-text="formatMoney(p.total)"></span>
+                                    <span class="text-slate-400 font-bold block text-[10px] uppercase" x-text="['entregado', 'entregado_parcialmente'].includes(p.estado) ? 'Monto Cobrado' : (p.estado === 'no_entregado' ? 'Devuelto' : 'Monto a Cobrar')"></span>
+                                    <span class="font-black text-sm" 
+                                          :class="['entregado', 'entregado_parcialmente'].includes(p.estado) ? 'text-emerald-600' : (p.estado === 'no_entregado' ? 'text-rose-600' : 'text-slate-900')" 
+                                          x-text="formatMoney(['entregado', 'entregado_parcialmente'].includes(p.estado) ? (p.valor_entrega !== undefined && p.valor_entrega !== null ? p.valor_entrega : p.total) : (p.estado === 'no_entregado' ? 0 : p.total))"></span>
                                 </div>
                             </div>
 
@@ -188,7 +190,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         get montoEfectivoTotal() {
-            return this.pedidos.reduce((sum, p) => sum + (p.metodo_pago === 'efectivo' || !p.metodo_pago ? (parseFloat(p.total) || 0) : 0), 0);
+            return this.pedidos.reduce((sum, p) => {
+                if (p.metodo_pago !== 'efectivo' && p.metodo_pago) return sum;
+                if (p.estado === 'no_entregado' || p.estado === 'cancelado') return sum;
+                const val = (['entregado', 'entregado_parcialmente'].includes(p.estado) && p.valor_entrega !== undefined && p.valor_entrega !== null) 
+                    ? parseFloat(p.valor_entrega) 
+                    : parseFloat(p.total);
+                return sum + (val || 0);
+            }, 0);
         },
 
         async init() {

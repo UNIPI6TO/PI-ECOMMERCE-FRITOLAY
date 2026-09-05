@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Contracts\GuiaRepositoryInterface;
 use App\Contracts\BodegaRepositoryInterface;
+use App\Contracts\ProductoRepositoryInterface;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class CierreService
     public function __construct(
         private readonly GuiaRepositoryInterface $guiaRepository,
         private readonly BodegaRepositoryInterface $bodegaRepository,
+        private readonly ProductoRepositoryInterface $productoRepository,
         private readonly InventarioService $inventarioService,
         private readonly AuditoriaService $auditoriaService
     ) {}
@@ -117,40 +119,53 @@ class CierreService
                 throw new Exception('Guía de remisión no encontrada.');
             }
 
-            $res = $this->guiaRepository->aprobarRevisionGuia($guiaId, $operadorId);
+            if ($guia->estado === \App\Models\GuiaRemision::ESTADO_REVISADA) {
+                throw new Exception('Esta guía ya fue revisada y aprobada previamente.');
+            }
 
-            if ($res) {
-                // Iterar sobre todos los pedidos asociados a la guía para reducir en_pedidos y crear transacción
-                foreach ($guia->guiasRuta as $ruta) {
-                    foreach ($ruta->asignaciones as $asig) {
-                        $pedido = $asig->pedido;
-                        if (!$pedido || !$pedido->items) continue;
+            // Recorrer todos los pedidos asociados a la guía efectivamente entregados
+            foreach ($guia->guiasRuta as $guiaRuta) {
+                foreach ($guiaRuta->asignaciones as $asignacion) {
+                    $pedido = $asignacion->pedido;
+                    if (!$pedido) {
+                        continue;
+                    }
 
+                    // Procesar solo los pedidos entregados (totales o parciales)
+                    if (in_array($pedido->estado, ['entregado', 'entregado_parcialmente'])) {
                         foreach ($pedido->items as $item) {
-                            $productoId = (int) $item->producto_id;
-                            $cantEntregada = (float) ($item->cantidad_entregada ?? 0);
-                            $cantSolicitada = (float) ($item->cantidad_solicitada ?? 0);
+                            $cantidadEntregada = (float) $item->cantidad_entregada;
+                            if ($cantidadEntregada > 0) {
+                                // Descontar exclusivamente la mercancía real entregada del inventario maestro
+                                $producto = $this->productoRepository->findById((int) $item->producto_id);
+                                if (!$producto) {
+                                    throw new Exception("Producto ID {$item->producto_id} no encontrado durante la aprobación.");
+                                }
 
-                            // Reducir la cantidad reservada en_pedidos por la cantidad entregada
-                            if ($cantEntregada > 0) {
-                                $this->inventarioService->decrementarEnPedidos($productoId, $cantEntregada);
+                                if ($producto->cantidad_fisica < $cantidadEntregada) {
+                                    throw new Exception("Stock insuficiente en inventario maestro para el producto '{$producto->nombre}'. Disponible: {$producto->cantidad_fisica}, Requerido: {$cantidadEntregada}");
+                                }
 
-                                // Registrar la transacción de inventario por la entrega/devolución final
+                                $this->productoRepository->decrementarCantidadFisica((int) $item->producto_id, $cantidadEntregada);
+
+                                // Registrar la transacción de egreso maestro por venta final entregada
                                 DB::table('transacciones_inventario')->insert([
-                                    'producto_id' => $productoId,
-                                    'camion_id' => $guia->camion_id,
+                                    'motivo' => "Venta entregada - Guía #{$guiaId} / Pedido #{$pedido->id}",
                                     'tipo' => 'EGRESO',
-                                    'cantidad' => $cantEntregada,
-                                    'motivo' => 'Aprobación de Cierre de Guía #' . $guiaId . ' (Entrega Pedido #' . $pedido->id . ')',
-                                    'fecha_transaccion' => now(),
+                                    'producto_id' => $item->producto_id,
+                                    'cantidad' => $cantidadEntregada,
                                     'created_at' => now(),
-                                    'updated_at' => now()
+                                    'updated_at' => now(),
                                 ]);
                             }
                         }
                     }
                 }
+            }
 
+            $res = $this->guiaRepository->aprobarRevisionGuia($guiaId, $operadorId);
+
+            if ($res) {
                 $this->auditoriaService->logSimple('revision_guia_aprobada', 'Se aprobó la revisión de la guía ' . $guiaId, $operadorId);
             }
 

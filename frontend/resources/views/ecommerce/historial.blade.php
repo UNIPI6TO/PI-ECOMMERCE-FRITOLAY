@@ -476,6 +476,11 @@
                     <button @click="verPdf(pedidoSeleccionado)" class="bg-white hover:bg-red-50 text-slate-800 hover:text-red-700 border border-gray-200 px-4 py-2 rounded-xl text-xs font-extrabold transition-all shadow-2xs">
                         📄 Descargar Factura
                     </button>
+                    <template x-if="pedidoSeleccionado?.factura?.nota_credito">
+                        <button @click="verNotaCreditoPdf(pedidoSeleccionado)" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs font-extrabold transition-all shadow-2xs">
+                            🧾 Descargar Nota de Crédito
+                        </button>
+                    </template>
                     <button @click="pedidoSeleccionado = null" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer">
                         Cerrar
                     </button>

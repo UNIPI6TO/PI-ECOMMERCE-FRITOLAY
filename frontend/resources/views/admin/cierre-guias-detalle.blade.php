@@ -462,7 +462,23 @@
             },
 
             async aprobarRevision() {
-                if (!confirm("¿Está seguro de aprobar la revisión de esta guía? Esta acción certifica el cierre financiero y físico.")) return;
+                const result = await Swal.fire({
+                    title: '¿Aprobar Revisión de Guía?',
+                    text: 'Esta acción certificará el cierre financiero, físico y descontará la mercancía entregada del inventario maestro.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, Aprobar Revisión',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#059669',
+                    cancelButtonColor: '#94a3b8',
+                    customClass: {
+                        popup: 'rounded-3xl p-6 shadow-2xl border border-slate-100',
+                        confirmButton: 'rounded-xl py-3 px-6 text-xs font-black uppercase tracking-wider',
+                        cancelButton: 'rounded-xl py-3 px-6 text-xs font-bold'
+                    }
+                });
+
+                if (!result.isConfirmed) return;
 
                 this.guardando = true;
                 try {
@@ -471,11 +487,31 @@
                         method: 'POST',
                         body: JSON.stringify({ user_id: userId })
                     });
-                    window.toast("Revisión de guía aprobada exitosamente", "success");
+                    
+                    await Swal.fire({
+                        title: '¡Revisión Aprobada!',
+                        text: 'La revisión de la guía y el asentamiento de inventario fueron registrados exitosamente.',
+                        icon: 'success',
+                        confirmButtonColor: '#059669',
+                        customClass: {
+                            popup: 'rounded-3xl p-6',
+                            confirmButton: 'rounded-xl py-3 px-6 text-xs font-black'
+                        }
+                    });
+
                     await this.cargarDetalle();
                 } catch (e) {
                     console.error("Error al aprobar revisión:", e);
-                    window.toast(e.message || "No se pudo aprobar la revisión de la guía", "error");
+                    Swal.fire({
+                        title: 'Error al Aprobar',
+                        text: e.message || "No se pudo aprobar la revisión de la guía",
+                        icon: 'error',
+                        confirmButtonColor: '#E3001B',
+                        customClass: {
+                            popup: 'rounded-3xl p-6',
+                            confirmButton: 'rounded-xl py-3 px-6 text-xs font-black'
+                        }
+                    });
                 } finally {
                     this.guardando = false;
                 }
