@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Mis Rutas de Entrega')
+
 @section('content')
 <!-- Importar pdfmake para generación de PDFs del lado del cliente -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>

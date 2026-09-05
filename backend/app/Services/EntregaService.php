@@ -20,8 +20,40 @@ class EntregaService
 
     public function seleccionarPedido(int $pedidoId, int $choferId): object
     {
-        $pedido = $this->pedidoRepository->update($pedidoId, ['estado' => 'en_ruta']);
-        return $pedido;
+        $pedido = $this->pedidoRepository->findById($pedidoId);
+        if (!$pedido) {
+            throw new Exception("Pedido no encontrado.");
+        }
+
+        // Si el chofer cambia de destino y tenía otro pedido en 'en_ruta', revocamos el estado del anterior
+        $asignacion = DB::table('asignacion_pedido_camion as apc')
+            ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
+            ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
+            ->join('camiones as c', 'c.id', '=', 'grem.camion_id')
+            ->where('c.chofer_id', $choferId)
+            ->where('apc.pedido_id', '!=', $pedidoId)
+            ->where('apc.estado', 'en_ruta')
+            ->select('apc.pedido_id')
+            ->first();
+
+        if ($asignacion) {
+            DB::table('pedidos')->where('id', $asignacion->pedido_id)->update(['estado' => 'listo_para_entregar']);
+            DB::table('asignacion_pedido_camion')->where('pedido_id', $asignacion->pedido_id)->update(['estado' => 'asignado']);
+        }
+
+        // Actualizar pedido seleccionado a 'en_ruta'
+        DB::table('pedidos')->where('id', $pedidoId)->update(['estado' => 'en_ruta']);
+        DB::table('asignacion_pedido_camion')->where('pedido_id', $pedidoId)->update(['estado' => 'en_ruta']);
+
+        $this->auditoriaService->logSimple('pedido_en_camino', "Chofer inició ruta al pedido {$pedidoId}", $choferId);
+
+        // Notificación Push Simulado / Log Evento de Emisión para el Cliente
+        $cliente = DB::table('clientes')->where('id', $pedido->cliente_id)->first();
+        if ($cliente) {
+            \Illuminate\Support\Facades\Log::info("[PUSH NOTIFICATION] Emitida al Cliente #{$cliente->id} (Usuario #{$cliente->usuario_id}): 'Tu pedido #{$pedidoId} está próximo a entregarse'.");
+        }
+
+        return $this->pedidoRepository->findById($pedidoId);
     }
 
     public function registrarEntrega(array $data, int $choferId): array

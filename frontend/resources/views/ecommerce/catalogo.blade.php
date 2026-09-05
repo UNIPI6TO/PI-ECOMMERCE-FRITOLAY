@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Catálogo de Productos - Fritolay Ambato')
+@section('title', 'Catálogo de Productos')
 
 @section('content')
 <div class="max-w-7xl mx-auto py-4 px-2 sm:px-4" x-data="catalogo()">

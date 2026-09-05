@@ -36,10 +36,7 @@
 
 - Políticas de Expiración de Sesión por Rol (TTL Dinámico):
   - **Límite General (Sin Recuérdame):** La sesión para todos los usuarios (Administrador, Operador, Chofer, Cliente) caduca exactamente en **1 hora** (60 minutos).
-  - **Límite Extendido (Con "Recuérdame" Activo):**
-    - **Administrador y Operador:** **8 horas** (equivalente a 1 jornada laboral continua).
-    - **Chofer:** **12 horas** (cobertura completa de la jornada de ruta extendida).
-    - **Cliente:** **30 días** (persistencia prolongada para experiencias de e-commerce).
+  - **Límite Extendido (Con "Recuérdame" Activo):** Se otorga un token JWT con vigencia de **15 días** (1,296,000 segundos) para mantener la persistencia prolongada de la sesión.
 
 - Gestión de Contraseñas: Usar hash Bcrypt para comparación de contraseñas de forma segura. Todas las cuentas iniciales de entorno local y GCP Cloud SQL cuentan con el estándar unificado `password123`.
 
@@ -2700,5 +2697,24 @@ Y renderiza un PDF en formato horizontal (Landscape) utilizando los recursos loc
 ### 8.4 Navegación e Integración de Menús
 - Agregado el desplegable **"Ayuda / Info"** en la barra de navegación principal para dar acceso limpio a Mapa del Sitio, Acerca de Nosotros y Políticas de Privacidad.
 - Enriquecido el pie de página global (Footer) con los enlaces corporativos en todas las vistas del sistema.
+
+## 9. Módulo "Rastreo de Entrega en Vivo", Notificaciones Push Nativas del SO y Formato Fiscal SRI
+
+### 9.1 Rastreo de Entrega en Vivo del Cliente (`/ecommerce/rastreo`)
+- **Acceso & Botón Reactivo Navbar:** Para clientes autenticados con un pedido activo en estado `en_ruta`, el Navbar despliega un botón animado con pulso de luz *"🚚 Ver entrega"* que consulta la API `/api/clientes/entrega-activa`.
+- **Visualización en Mapa Leaflet:** La vista mobile-first `/ecommerce/rastreo` inicializa un mapa interactivo Leaflet renderizando el icono temático del camión de reparto, la ubicación del cliente y el trazado de la ruta.
+- **Cálculo de Distancia Haversine:** Muestra en tiempo real la distancia restante entre el camión y el negocio del cliente, actualizándose dinámicamente con la telemetría enviada por la aplicación del chofer a Firestore.
+
+### 9.2 Notificaciones Push Nativas del Sistema Operativo & Redirección Automática
+- **Integración PWA & Notifications API:** Implementada la solicitud de permisos (`Notification.requestPermission()`) y emisión de notificaciones nativas a nivel del Sistema Operativo (Windows, Android, macOS) utilizando `ServiceWorkerRegistration.showNotification()`.
+- **Redirección Automática en Tiempo Real:** Al ser emitida o cliqueada la notificación nativa del SO por un evento de aproximación/despacho, el Service Worker (`sw.js`) y la vista del cliente ejecutan la redirección automática instantánea hacia la vista de rastreo en vivo (`/ecommerce/rastreo`).
+
+### 9.3 Guardián de Navegación & Expulsión de Vista
+- **Protección contra el Botón Atrás:** La vista de rastreo implementa `history.replaceState` para evitar trampas de navegación en el historial del navegador.
+- **Expulsión Automática:** Si el pedido es marcado como `ENTREGADO` por el chofer o la entrega se da por finalizada, el cliente es redirigido automáticamente a la vista de historial (`/ecommerce/historial`).
+
+### 9.4 Formato Estándar SRI de Comprobantes (15 Dígitos)
+- **Notas de Crédito & Facturas:** Actualizado el generador de secuencias `NotaCredito::generarNumero` en el backend y `pdf-generator.js` en el frontend para cumplir estrictamente la codificación de 15 dígitos aprobada por el SRI: `EST-PTO-SECUENCIAL` (ej. `003-001-000000037`).
+
 
 

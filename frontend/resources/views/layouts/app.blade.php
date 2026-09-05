@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Fritolay Ambato')</title>
+    <title>Fritolay - @yield('title', 'Ambato')</title>
     
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#FFFFFF">
@@ -248,9 +248,21 @@
                         </template>
 
                         <template x-if="role === 'cliente'">
-                            <a href="/ecommerce/historial" 
-                               :class="isActive('/ecommerce/historial') ? 'bg-red-50 text-[#E3001B] border border-red-100 font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
-                               class="px-3.5 py-2 rounded-xl text-xs transition-all">Mis Pedidos</a>
+                            <div class="flex items-center space-x-1 sm:space-x-2" x-data="clienteNavEntregaWidget()">
+                                <a href="/ecommerce/historial" 
+                                   :class="isActive('/ecommerce/historial') ? 'bg-red-50 text-[#E3001B] border border-red-100 font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Mis Pedidos</a>
+
+                                <!-- Botón Dinámico "Ver entrega" en tiempo real -->
+                                <template x-if="entregaActiva">
+                                    <a :href="`/ecommerce/rastreo/${entregaActiva.pedido_id}`"
+                                       :class="isActive('/ecommerce/rastreo') ? 'bg-emerald-600 text-white font-black shadow-md border border-emerald-500' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-black animate-pulse'"
+                                       class="px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                                        <span>🚚 Ver entrega</span>
+                                    </a>
+                                </template>
+                            </div>
                         </template>
 
                         <template x-if="role === 'chofer'">
@@ -520,6 +532,79 @@
 
     <script>
         document.addEventListener('alpine:init', () => {
+            Alpine.data('clienteNavEntregaWidget', () => ({
+                entregaActiva: null,
+                pollTimer: null,
+                async init() {
+                    const role = localStorage.getItem('role') || 'guest';
+                    if (role !== 'cliente') return;
+
+                    await this.consultarEntregaActiva();
+                    this.pollTimer = setInterval(() => this.consultarEntregaActiva(), 10000);
+                },
+                async consultarEntregaActiva() {
+                    try {
+                        const res = await window.api('/api/clientes/entrega-activa');
+                        const data = res ? (res.data || res) : null;
+                        
+                        if (data && data.pedido_id) {
+                            if (!this.entregaActiva) {
+                                // Solicitar permiso y emitir Notificación Push Nativa al SO del Dispositivo
+                                this.emitirNotificacionNativaOS(data.pedido_id);
+                                window.toast(`🔔 ¡Tu pedido #${data.pedido_id} está próximo a entregarse!`, 'info', 'bottom');
+                            }
+                            this.entregaActiva = data;
+                        } else {
+                            if (this.entregaActiva && window.location.pathname.startsWith('/ecommerce/rastreo')) {
+                                window.toast('El rastreo de tu entrega ha finalizado.', 'warning', 'bottom');
+                                window.location.replace('/ecommerce/historial');
+                            }
+                            this.entregaActiva = null;
+                        }
+                    } catch (e) {
+                        this.entregaActiva = null;
+                    }
+                },
+                async emitirNotificacionNativaOS(pedidoId) {
+                    if (!('Notification' in window)) return;
+
+                    if (Notification.permission === 'default') {
+                        await Notification.requestPermission();
+                    }
+
+                    if (Notification.permission === 'granted') {
+                        const titulo = 'Fritolay Ambato 🚚';
+                        const opciones = {
+                            body: `Tu pedido #${pedidoId} está próximo a entregarse. Haz clic para seguir el mapa en vivo.`,
+                            icon: '/icons/icon-192.png',
+                            badge: '/icons/icon-192.png',
+                            vibrate: [200, 100, 200],
+                            tag: `entrega-activa-${pedidoId}`,
+                            data: { url: `/ecommerce/rastreo/${pedidoId}` }
+                        };
+
+                        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                            const reg = await navigator.serviceWorker.ready;
+                            reg.showNotification(titulo, opciones);
+                        } else {
+                            const n = new Notification(titulo, opciones);
+                            n.onclick = () => {
+                                window.focus();
+                                window.location.href = `/ecommerce/rastreo/${pedidoId}`;
+                            };
+                        }
+
+                        // Redirección automática inmediata a la vista de rastreo en vivo si el usuario no está en ella
+                        const targetPath = `/ecommerce/rastreo/${pedidoId}`;
+                        if (!window.location.pathname.startsWith(targetPath)) {
+                            setTimeout(() => {
+                                window.location.href = targetPath;
+                            }, 500);
+                        }
+                    }
+                }
+            }));
+
             Alpine.data('userHeaderWidget', () => ({
                 token: localStorage.getItem('jwt_token'),
                 role: localStorage.getItem('role') || 'guest',

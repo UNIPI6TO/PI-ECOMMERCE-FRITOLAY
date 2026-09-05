@@ -222,8 +222,14 @@ export const generateNotaCredito = async (notaData) => {
     doc.roundedRect(118, 5, 87, 30, 2, 2, 'S');
 
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(9);
-    const numSRI = notaData.numeroNota || `NC-${notaData.id || '001'}`;
+    let numSRI = notaData.numeroNota || '';
+    if (!numSRI || numSRI.startsWith('NC-')) {
+        const est = String(empresa.codigo_establecimiento || '003').padStart(3, '0');
+        const pto = String(empresa.punto_emision || '001').padStart(3, '0');
+        const idRaw = String(notaData.id || '1').replace(/\D/g, '') || '1';
+        const seq = idRaw.padStart(9, '0');
+        numSRI = `${est}-${pto}-${seq}`;
+    }
     doc.setFont("helvetica", "bold");
     doc.text("NOTA DE CRÉDITO", 120, 12);
     doc.setFont("helvetica", "normal");

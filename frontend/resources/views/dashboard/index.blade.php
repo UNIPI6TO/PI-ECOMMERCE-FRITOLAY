@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Dashboard Gerencial')
+
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="dashboard()">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
