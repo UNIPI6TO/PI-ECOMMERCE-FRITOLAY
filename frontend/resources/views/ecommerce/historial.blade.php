@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Historial de Pedidos - Fritolay')
+@section('title', 'Historial de Pedidos')
 
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4" x-data="historial()">
