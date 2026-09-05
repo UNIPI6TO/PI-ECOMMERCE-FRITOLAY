@@ -4,12 +4,11 @@
 
 @section('content')
 <div class="max-w-md mx-auto mt-10 bg-white p-8 rounded-lg shadow-md" x-data="recoverForm()">
-    <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center mb-3">
-            <img src="/apple-touch-icon.png" alt="Fritolay" class="w-16 h-16 object-contain drop-shadow-sm">
+    <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center">
+            <img src="/logo-fritolay.png" alt="FritoLay" class="h-28 w-auto object-contain">
         </div>
-        <h1 class="text-3xl font-bold text-primary">Frito<span class="text-secondary">lay</span></h1>
-        <p class="text-neutral-dark mt-2">Recuperar Contraseña</p>
+        <p class="text-xs font-bold text-gray-500 mt-2 uppercase tracking-wider">Recuperar Contraseña</p>
     </div>
 
     <!-- Step 1: Request PIN -->

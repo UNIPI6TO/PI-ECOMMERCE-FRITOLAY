@@ -7,14 +7,11 @@
     <div class="max-w-md w-full bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 p-8 transition-all">
         
         <!-- Header con Logo Fritolay -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center mb-3">
-                <img src="/apple-touch-icon.png" alt="Fritolay" class="w-16 h-16 object-contain drop-shadow-sm">
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center">
+                <img src="/logo-fritolay.png" alt="FritoLay" class="h-28 w-auto object-contain">
             </div>
-            <h1 class="text-2xl font-black text-gray-900 tracking-tight">
-                Frito<span class="text-[#F5C518]">lay</span>
-            </h1>
-            <p class="text-xs font-semibold text-gray-500 mt-1 uppercase tracking-wider">Sistema de Comercio y Distribución</p>
+            <p class="text-[11px] font-bold text-gray-500 mt-2 uppercase tracking-widest">Sistema de Comercio y Distribución</p>
         </div>
 
         <!-- Alerta de Error -->
