@@ -22,16 +22,11 @@
                 <p class="text-xs font-semibold text-gray-500 mt-1" x-text="pedido ? `Dirección de Entrega: ${pedido.direccion}` : 'Cargando datos del pedido...'"></p>
             </div>
 
-            <!-- Card Resumen Distancia y Tiempo Estimado -->
-            <div class="bg-slate-900 text-white p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between sm:justify-end gap-4">
+            <!-- Card Resumen Distancia Restante -->
+            <div class="bg-slate-900 text-white p-3.5 px-5 rounded-2xl border border-slate-800 flex items-center justify-center sm:justify-end">
                 <div>
                     <span class="text-[10px] font-black uppercase text-amber-400 tracking-wider block">Distancia Restante</span>
                     <span class="text-lg font-black font-mono text-white" x-text="distanciaRestanteKm !== null ? `${distanciaRestanteKm.toFixed(2)} km` : 'Calculando...'"></span>
-                </div>
-                <div class="w-px h-8 bg-slate-800"></div>
-                <div class="text-right">
-                    <span class="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Refresco Telemetría</span>
-                    <span class="text-xs font-bold text-slate-300" x-text="`${refreshMinutes} min`"></span>
                 </div>
             </div>
         </div>
