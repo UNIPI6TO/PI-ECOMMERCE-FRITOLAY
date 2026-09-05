@@ -593,6 +593,14 @@
                                 window.location.href = `/ecommerce/rastreo/${pedidoId}`;
                             };
                         }
+
+                        // Redirección automática inmediata a la vista de rastreo en vivo si el usuario no está en ella
+                        const targetPath = `/ecommerce/rastreo/${pedidoId}`;
+                        if (!window.location.pathname.startsWith(targetPath)) {
+                            setTimeout(() => {
+                                window.location.href = targetPath;
+                            }, 500);
+                        }
                     }
                 }
             }));
