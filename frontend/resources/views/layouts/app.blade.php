@@ -291,12 +291,30 @@
 
                         <template x-if="role === 'admin' || role === 'administrador'">
                             <div class="flex items-center space-x-1">
+                                <!-- Dropdown Categoría Flota -->
+                                <div class="relative" x-data="{ openFlota: false }">
+                                    <button @click="openFlota = !openFlota" @click.away="openFlota = false"
+                                            :class="(isActive('/admin/camiones') || isActive('/admin/flota/ubicaciones')) ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
+                                            class="px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1 cursor-pointer">
+                                        <span>Flota</span>
+                                        <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': openFlota }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="openFlota" x-transition.opacity style="display: none;"
+                                         class="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl py-2 z-50 border border-gray-100">
+                                        <a href="/admin/camiones" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors">
+                                            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5l-4-4h-0.05z"/></svg>
+                                            Camiones
+                                        </a>
+                                        <a href="/admin/flota/ubicaciones" class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors">
+                                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                            Ubicaciones
+                                        </a>
+                                    </div>
+                                </div>
+
                                 <a href="/admin/usuarios" 
                                    :class="isActive('/admin/usuarios') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
                                    class="px-3.5 py-2 rounded-xl text-xs transition-all">Usuarios</a>
-                                <a href="/admin/camiones" 
-                                   :class="isActive('/admin/camiones') ? 'bg-slate-900 text-white font-extrabold shadow-2xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 font-bold'"
-                                   class="px-3.5 py-2 rounded-xl text-xs transition-all">Camiones</a>
                             </div>
                         </template>
 
@@ -441,12 +459,12 @@
                 </template>
                 <template x-if="role === 'admin' || role === 'administrador'">
                     <div class="space-y-1 pt-1 border-t border-gray-100">
+                        <a href="/admin/camiones" 
+                           :class="isActive('/admin/camiones') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
+                           class="block px-3 py-2 rounded-xl text-sm transition-all">Flota (Camiones)</a>
                         <a href="/admin/usuarios" 
                            :class="isActive('/admin/usuarios') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
                            class="block px-3 py-2 rounded-xl text-sm transition-all">Usuarios</a>
-                        <a href="/admin/camiones" 
-                           :class="isActive('/admin/camiones') ? 'bg-slate-900 text-white font-extrabold' : 'text-gray-700 hover:bg-gray-50 font-bold'"
-                           class="block px-3 py-2 rounded-xl text-sm transition-all">Camiones</a>
                     </div>
                 </template>
             </div>

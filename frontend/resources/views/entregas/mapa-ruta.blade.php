@@ -3,38 +3,75 @@
 @section('content')
 <div class="min-h-[calc(100vh-4rem)] bg-slate-100 pb-28 sm:pb-8" x-data="mapaRutaMobile('{{ $guiaRutaId }}')">
     
-    <!-- Header Fijo Superior Mobile -->
-    <div class="bg-slate-900 text-white p-4 sticky top-16 z-30 shadow-md">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+    <!-- Banner Dinámico Reactivo de Estado del Chofer (Ponytail Logistics) -->
+    <div class="bg-slate-900 text-white border-b border-slate-800 sticky top-16 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+            
             <div class="flex items-center gap-3">
-                <a :href="`/entregas`" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex items-center justify-center">
+                <a :href="`/entregas`" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex items-center justify-center shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                 </a>
                 <div>
-                    <h1 class="text-lg font-black tracking-tight flex items-center gap-2">
+                    <h1 class="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
                         <span>Ruta #<span x-text="guiaId"></span></span>
                         <span class="text-xs bg-[#F5C518] text-slate-900 px-2 py-0.5 rounded-full font-extrabold" x-text="`${pedidosCompletados}/${pedidos.length}`"></span>
                     </h1>
-                    <p class="text-xs text-slate-300 font-semibold" x-text="`Efectivo estimado: $${montoEfectivoTotal.toFixed(2)}`"></p>
+                    <p class="text-[11px] text-slate-300 font-semibold" x-text="`Efectivo estimado: $${montoEfectivoTotal.toFixed(2)}`"></p>
                 </div>
             </div>
 
-            <!-- Switcher Lista / Mapa para móviles -->
-            <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700 md:hidden">
-                <button @click="tabActiva = 'lista'" 
-                        :class="tabActiva === 'lista' ? 'bg-[#E3001B] text-white font-black shadow-2xs' : 'text-slate-400 font-bold'"
-                        class="px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                    <span>Lista</span>
-                </button>
-                <button @click="tabActiva = 'mapa'; setTimeout(() => { if(map) map.invalidateSize(); }, 150);" 
-                        :class="tabActiva === 'mapa' ? 'bg-[#E3001B] text-white font-black shadow-2xs' : 'text-slate-400 font-bold'"
-                        class="px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
-                    <span>Mapa</span>
-                </button>
+            <!-- Badge Reactivo de Estado (Libre / En Camino / Entregando) -->
+            <div class="flex items-center gap-2">
+                <div class="px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border shadow-sm flex items-center gap-2"
+                     :class="{
+                         'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse': estadoChofer.fase === 'LIBRE',
+                         'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse': estadoChofer.fase === 'EN_CAMINO',
+                         'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse': estadoChofer.fase === 'ENTREGANDO'
+                     }">
+                    <span class="w-2.5 h-2.5 rounded-full"
+                          :class="{
+                              'bg-emerald-400': estadoChofer.fase === 'LIBRE',
+                              'bg-amber-400': estadoChofer.fase === 'EN_CAMINO',
+                              'bg-blue-400': estadoChofer.fase === 'ENTREGANDO'
+                          }"></span>
+                    <span x-text="`Fase: ${estadoChofer.label || 'Cargando...'}`"></span>
+                </div>
+
+                <!-- Botón Directo GPS Waze / Google Maps al Destino Activo -->
+                <template x-if="estadoChofer.fase === 'EN_CAMINO' && pedidoActivo">
+                    <button @click="navegar(pedidoActivo)" 
+                            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1 shadow-sm transition-all">
+                        📍 Waze / Maps
+                    </button>
+                </template>
+
+                <!-- Switcher Lista / Mapa para móviles -->
+                <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700 md:hidden ml-1">
+                    <button @click="tabActiva = 'lista'" 
+                            :class="tabActiva === 'lista' ? 'bg-[#E3001B] text-white font-black shadow-2xs' : 'text-slate-400 font-bold'"
+                            class="px-2.5 py-1 rounded-lg text-xs transition-all flex items-center gap-1">
+                        <span>Lista</span>
+                    </button>
+                    <button @click="tabActiva = 'mapa'; setTimeout(() => { if(map) map.invalidateSize(); }, 150);" 
+                            :class="tabActiva === 'mapa' ? 'bg-[#E3001B] text-white font-black shadow-2xs' : 'text-slate-400 font-bold'"
+                            class="px-2.5 py-1 rounded-lg text-xs transition-all flex items-center gap-1">
+                        <span>Mapa</span>
+                    </button>
+                </div>
             </div>
+
         </div>
+
+        <!-- Banner de Destino Activo cuando está En Camino -->
+        <template x-if="estadoChofer.fase === 'EN_CAMINO' && pedidoActivo">
+            <div class="bg-amber-500/10 border-t border-amber-500/20 px-4 py-1.5 text-xs text-amber-200 flex items-center justify-between gap-2">
+                <span class="truncate font-semibold flex items-center gap-1.5">
+                    <span class="font-black text-amber-400">🎯 Destino Activo:</span>
+                    <span x-text="`${pedidoActivo.cliente} (${pedidoActivo.direccion})`"></span>
+                </span>
+                <button @click="enfocarClienteActivo()" class="text-amber-300 underline font-bold shrink-0">Centrar Pin</button>
+            </div>
+        </template>
     </div>
 
     <!-- Contenido Principal Adaptativo -->
@@ -207,6 +244,8 @@ document.addEventListener('alpine:init', () => {
         pedidos: [],
         map: null,
         markers: [],
+        estadoChofer: { fase: 'LIBRE', label: 'Cargando...', mensaje: '' },
+        pedidoActivo: null,
 
         get pedidosList() {
             return this.pedidos;
@@ -227,6 +266,33 @@ document.addEventListener('alpine:init', () => {
             }, 0);
         },
 
+        async cargarEstadoFase() {
+            try {
+                const res = await window.api('/api/chofer/fase');
+                if (res) {
+                    this.estadoChofer = res;
+                    this.pedidoActivo = res.pedido_activo || null;
+                    if (this.pedidoActivo && this.pedidoActivo.id) {
+                        this.seleccionar(this.pedidoActivo.id, false);
+                    }
+                }
+            } catch (e) {
+                console.warn("No se pudo cargar la fase del chofer:", e);
+            }
+        },
+
+        enfocarClienteActivo() {
+            if (this.pedidoActivo && this.pedidoActivo.lat && this.pedidoActivo.lng && this.map) {
+                this.tabActiva = 'mapa';
+                setTimeout(() => {
+                    if (this.map) {
+                        this.map.invalidateSize();
+                        this.map.flyTo([this.pedidoActivo.lat, this.pedidoActivo.lng], 17, { duration: 1.5 });
+                    }
+                }, 100);
+            }
+        },
+
         async init() {
             try {
                 this.pedidos = await window.api(`/api/guias-ruta/${this.guiaId}/pedidos`);
@@ -235,13 +301,21 @@ document.addEventListener('alpine:init', () => {
                 if (selected) {
                     selected.ui_estado = 'SELECCIONADO';
                 }
+                await this.cargarEstadoFase();
             } catch (e) {
                 console.error("Error al cargar pedidos de ruta:", e);
             }
 
             setTimeout(() => {
                 this.initMap();
-                if (window.gpsTracker) window.gpsTracker.startTracking();
+                if (typeof window.startTracking === 'function') {
+                    // Obtener camion_id a partir de las guías activas del chofer
+                    window.api('/api/guias-ruta').then(guias => {
+                        if (guias && guias.length > 0 && guias[0].camion_id) {
+                            window.startTracking(guias[0].camion_id);
+                        }
+                    }).catch(console.error);
+                }
             }, 150);
         },
 
@@ -304,7 +378,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        seleccionar(id) {
+        async seleccionar(id, triggerCheckpoint = true) {
             this.pedidos.forEach(p => {
                 if (p.ui_estado === 'SELECCIONADO') p.ui_estado = p.estado;
             });
@@ -314,6 +388,18 @@ document.addEventListener('alpine:init', () => {
                 this.renderMarkers();
                 if (p.lat && p.lng && this.map) {
                     this.map.flyTo([p.lat, p.lng], 16);
+                }
+
+                // Disparo de Evento de Estado: En Camino (Punto de Control Firestore)
+                if (triggerCheckpoint && typeof window.saveEventCheckpointLocation === 'function') {
+                    try {
+                        const guias = await window.api('/api/guias-ruta');
+                        if (guias && guias.length > 0 && guias[0].camion_id) {
+                            await window.saveEventCheckpointLocation(guias[0].camion_id, 'En Camino');
+                        }
+                    } catch (e) {
+                        console.warn("No se pudo enviar punto de control En Camino:", e);
+                    }
                 }
             }
         },

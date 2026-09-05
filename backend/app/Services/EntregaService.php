@@ -230,7 +230,7 @@ class EntregaService
         ->get();
         
         $guiasRuta->load('asignaciones.pedido');
-        return $guiasRuta->map(function ($guia) {
+        return $guiasRuta->map(function ($guia) use ($camion) {
             $efectivo = 0;
             $tarjeta = 0;
             $transferencia = 0;
@@ -251,8 +251,9 @@ class EntregaService
             
             return [
                 'id' => $guia->id,
+                'camion_id' => $camion->id,
                 'pedidos_count' => $guia->pedidos_count,
-                'fecha' => $guia->fecha_creacion->format('Y-m-d H:i'),
+                'fecha' => $guia->fecha_creacion ? (is_string($guia->fecha_creacion) ? $guia->fecha_creacion : $guia->fecha_creacion->format('Y-m-d H:i')) : date('Y-m-d H:i'),
                 'recaudacion_esperada' => [
                     'efectivo' => $efectivo,
                     'tarjeta' => $tarjeta,
@@ -316,5 +317,62 @@ class EntregaService
     public function getInventarioCamion(int $camionId): Collection
     {
         return collect([]); // TODO: implement
+    }
+
+    public function getFaseEstadoChofer(int $choferId): array
+    {
+        $camion = \App\Models\Camion::where('chofer_id', $choferId)->first();
+        if (!$camion) {
+            return [
+                'fase' => 'LIBRE',
+                'label' => 'Libre',
+                'mensaje' => 'No tienes un vehículo asignado.',
+                'pedido_activo' => null
+            ];
+        }
+
+        $guias = $this->getGuiasChofer($choferId);
+        if ($guias->isEmpty()) {
+            return [
+                'fase' => 'LIBRE',
+                'label' => 'Libre',
+                'mensaje' => 'Sin guías activas asignadas.',
+                'pedido_activo' => null
+            ];
+        }
+
+        $guiaActivaId = $guias->first()['id'];
+        $pedidos = $this->getPedidosGuiaChofer($guiaActivaId);
+
+        $pendientes = $pedidos->filter(fn($p) => !in_array($p['estado'], ['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado']));
+
+        if ($pendientes->isEmpty()) {
+            return [
+                'fase' => 'LIBRE',
+                'label' => 'Libre',
+                'mensaje' => 'Todos los pedidos de la guía han sido procesados.',
+                'pedido_activo' => null
+            ];
+        }
+
+        $pedidoEnRuta = $pendientes->firstWhere('estado', 'en_ruta');
+        if ($pedidoEnRuta) {
+            return [
+                'fase' => 'EN_CAMINO',
+                'label' => 'En Camino',
+                'mensaje' => 'Ruta iniciada hacia ' . $pedidoEnRuta['cliente'],
+                'guia_id' => $guiaActivaId,
+                'pedido_activo' => $pedidoEnRuta
+            ];
+        }
+
+        $siguiente = $pendientes->first();
+        return [
+            'fase' => 'EN_CAMINO',
+            'label' => 'En Camino',
+            'mensaje' => 'Siguiente destino: ' . $siguiente['cliente'],
+            'guia_id' => $guiaActivaId,
+            'pedido_activo' => $siguiente
+        ];
     }
 }

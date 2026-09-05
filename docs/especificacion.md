@@ -2617,6 +2617,11 @@ Y renderiza un PDF en formato horizontal (Landscape) utilizando los recursos loc
   - Buscador dinámico por placa o modelo (`searchTerm`).
   - Filtro por estado operativo (`ACTIVO`, `MANTENIMIENTO`, `INACTIVO`).
   - Selector directo de asignación de choferes registrados con actualización transparente.
+- **Categoría "Flota" y Submenú "Ubicaciones" (`/admin/flota/ubicaciones`):**
+  - Reestructuración del menú superior para agrupar la flota bajo el desplegable **Flota** (*Camiones* y *Ubicaciones*).
+  - Tarjetas interactivas con telemetría de Firestore en tiempo real por cada vehículo (`camionId`).
+  - Vista de mapa interactivo (`/admin/flota/ubicaciones/{idCamion}`) que dibuja el trazado histórico con línea punteada (`Polyline`), destaca la **Última Posición Conocida** con un pin animado y reutiliza el filtro de fechas Datadog (*Hoy, Ayer, 1d, 1w*).
+  - **Captura Optimizada y Haversine:** Módulo GPS chofer en frontend (`gps-tracker.js`) configurado con variables de entorno (`VITE_LOCATION_REFRESH_MINUTES`, `VITE_LOCATION_MIN_DISTANCE_METERS`, `VITE_MAX_HISTORIC_LOCATIONS`). Se evalúa la distancia ortodrómica Haversine antes de escribir en Firestore y se autolimita el historial a `96` coordenadas máximas por camión para controlar costos de storage.
 
 ### 5.3 Modal Enriquecido de Detalle de Pedidos
 - **Visualización Full Modal / Glassmorphism:** Reemplazo de alertas planas SweetAlert por un modal enriquecido (`bg-slate-900/60 backdrop-blur-xs`) en las vistas de **Gestión de Pedidos** (`/gestion-pedidos`) e **Historial de Pedidos del Cliente** (`/ecommerce/historial`).
