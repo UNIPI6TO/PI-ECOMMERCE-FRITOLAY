@@ -19,4 +19,18 @@ class AuthServiceTest extends TestCase
         $pin4 = $service->generatePin(4);
         $this->assertEquals(4, strlen($pin4));
     }
+
+    public function test_calculate_ttl_remember()
+    {
+        $service = $this->app->make(AuthService::class);
+        $ttl15Days = 15 * 86400; // 1,296,000 segundos
+
+        $this->assertEquals($ttl15Days, $service->calculateTtl('cliente', true));
+        $this->assertEquals($ttl15Days, $service->calculateTtl('chofer', true));
+        $this->assertEquals($ttl15Days, $service->calculateTtl('administrador', true));
+
+        // Por defecto sin recuérdame
+        $this->assertEquals(3600, $service->calculateTtl('cliente', false));
+        $this->assertEquals(86400, $service->calculateTtl('chofer', false));
+    }
 }

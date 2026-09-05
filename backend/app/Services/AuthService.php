@@ -16,12 +16,17 @@ class AuthService
      */
     public function calculateTtl(string $rol, bool $remember = false): int
     {
-        $rolLower = strtolower($rol);
-        if ($rolLower === 'chofer') {
-            return $remember ? (7 * 86400) : 86400; // 7 días con recuérdame, 24 horas por defecto
+        // Si el usuario activa "Recuérdame", extender el token a 15 días (15 * 86400 = 1,296,000 segundos)
+        if ($remember) {
+            return 15 * 86400; // 15 días exactos
         }
 
-        return $remember ? 86400 : 3600; // 24 horas con recuérdame, 1 hora por defecto
+        $rolLower = strtolower($rol);
+        if ($rolLower === 'chofer') {
+            return 86400; // 24 horas por defecto para choferes
+        }
+
+        return 3600; // 1 hora por defecto para otros roles
     }
 
     public function login(string $email, string $password, bool $remember = false): array
