@@ -194,4 +194,51 @@ class PedidoController extends Controller
             return response()->json(['error' => $e->getMessage()], 422);
         }
     }
+
+    public function entregaActiva(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $usuarioId = (int) $request->input('user_id');
+        $cliente = \App\Models\Cliente::where('usuario_id', $usuarioId)->first();
+        if (!$cliente) {
+            return response()->json(['data' => null]);
+        }
+
+        $pedidoEnRuta = \App\Models\Pedido::with(['direccion', 'items.producto'])
+            ->where('cliente_id', $cliente->id)
+            ->where('estado', 'en_ruta')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (!$pedidoEnRuta) {
+            return response()->json(['data' => null]);
+        }
+
+        // Buscar camión asignado a la guía de ruta de este pedido
+        $asignacion = \Illuminate\Support\Facades\DB::table('asignacion_pedido_camion as apc')
+            ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
+            ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
+            ->join('camiones as c', 'c.id', '=', 'grem.camion_id')
+            ->where('apc.pedido_id', $pedidoEnRuta->id)
+            ->select('c.id as camion_id', 'c.placa as camion_placa')
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'pedido_id' => $pedidoEnRuta->id,
+                'estado' => $pedidoEnRuta->estado,
+                'total' => $pedidoEnRuta->total,
+                'metodo_pago' => strtoupper($pedidoEnRuta->metodo_pago),
+                'direccion' => $pedidoEnRuta->direccion->descripcion ?? 'Ubicación registrada',
+                'lat' => $pedidoEnRuta->direccion->latitud ?? null,
+                'lng' => $pedidoEnRuta->direccion->longitud ?? null,
+                'camion_id' => $asignacion ? $asignacion->camion_id : null,
+                'camion_placa' => $asignacion ? $asignacion->camion_placa : null,
+                'items' => $pedidoEnRuta->items->map(fn($i) => [
+                    'nombre' => $i->nombre_producto ?? ($i->producto->nombre ?? 'Producto'),
+                    'cantidad' => (int) $i->cantidad_solicitada,
+                    'precio' => (float) $i->precio_unitario
+                ])
+            ]
+        ]);
+    }
 }

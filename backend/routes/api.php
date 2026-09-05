@@ -72,6 +72,9 @@ Route::middleware('jwt')->group(function () {
         Route::get('/me',   [ClienteController::class, 'me']);
         Route::put('/me',   [ClienteController::class, 'update']);
 
+        // Rastreo de Entrega Activa del Cliente
+        Route::get('/entrega-activa', [PedidoController::class, 'entregaActiva']);
+
         // Historial de pedidos del cliente
         Route::get('/{clienteId}/pedidos', [PedidoController::class, 'historial']);
 
