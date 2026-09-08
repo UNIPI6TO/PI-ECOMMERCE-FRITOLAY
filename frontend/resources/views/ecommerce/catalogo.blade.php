@@ -156,15 +156,18 @@
                                         <template x-if="qty > 1 || tipoCompra === 'paca'">
                                             <span class="text-[11px] text-slate-600 font-bold mt-0.5" x-text="`Subtotal: ${formatMoney(parseFloat(product.precio || 0) * (tipoCompra === 'paca' ? parseInt(product.unidades_por_paca || 1) : 1) * qty)}`"></span>
                                         </template>
+                                        <template x-if="getCantidadEnCarrito(product) > 0">
+                                            <span class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md mt-1.5 inline-block self-start" x-text="`🛒 En carrito: ${getCantidadEnCarrito(product)} unds`"></span>
+                                        </template>
                                     </div>
-                                    <!-- Visualización de Stock Disponible -->
+                                    <!-- Visualización de Stock Disponible Restante -->
                                     <span class="text-xs font-bold px-2 py-0.5 rounded-md self-start"
                                           :class="{
                                               'bg-rose-50 text-rose-700 border border-rose-200': getStockDisponible(product) <= 0,
                                               'bg-amber-50 text-amber-700 border border-amber-200': getStockDisponible(product) > 0 && getStockDisponible(product) <= 5,
                                               'bg-emerald-50 text-emerald-700 border border-emerald-200': getStockDisponible(product) > 5
                                           }"
-                                          x-text="`Stock: ${getStockDisponible(product)}`">
+                                          x-text="`Disp: ${getStockDisponible(product)}`">
                                     </span>
                                 </div>
                             </div>
@@ -257,10 +260,14 @@ function catalogo() {
             }
 
             // Descontar la cantidad que el usuario ya tiene agregada en el carrito local
-            const itemEnCarrito = (this.cartItems || []).find(i => i.productoId === p.id);
-            const enCarritoLocal = itemEnCarrito ? parseFloat(itemEnCarrito.cantidad || 0) : 0;
+            const enCarritoLocal = this.getCantidadEnCarrito(p);
 
             return Math.max(0, disponibleBackend - enCarritoLocal);
+        },
+        getCantidadEnCarrito(p) {
+            if (!p || !this.cartItems) return 0;
+            const itemEnCarrito = this.cartItems.find(i => i.productoId === p.id);
+            return itemEnCarrito ? parseFloat(itemEnCarrito.cantidad || 0) : 0;
         },
         init() {
             this.updateCartItems();
