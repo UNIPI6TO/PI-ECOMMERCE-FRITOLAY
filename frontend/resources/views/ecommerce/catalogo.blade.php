@@ -212,7 +212,7 @@
                                     <button @click="
                                         let finalQty = qty;
                                         if(tipoCompra === 'paca') finalQty = qty * (product.unidades_por_paca || 1);
-                                        let res = window.CarritoManager.agregarItemConValidacion(product.id, product.nombre, finalQty, parseFloat(product.precio), getStockDisponible(product), product.unidades_por_paca, product.imagen_gcs_path);
+                                        let res = window.CarritoManager.agregarItemConValidacion(product.id, product.nombre, finalQty, parseFloat(product.precio), getStockBase(product), product.unidades_por_paca, product.imagen_gcs_path);
                                         if (res.exito) {
                                             $dispatch('cart-updated');
                                             if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: '¡Agregado al carrito!', toast: true, position: 'bottom', showConfirmButton: false, timer: 1800});
@@ -248,20 +248,18 @@ function catalogo() {
             categorias: []
         },
         cartItems: [],
-        getStockDisponible(p) {
+        getStockBase(p) {
             if (!p) return 0;
-            let disponibleBackend = 0;
             if (p.disponible !== undefined && p.disponible !== null) {
-                disponibleBackend = parseFloat(p.disponible);
-            } else {
-                const cantFisica = parseFloat(p.cantidad_fisica || 0);
-                const enPedidos = parseFloat(p.en_pedidos || 0);
-                disponibleBackend = Math.max(0, cantFisica - enPedidos);
+                return parseFloat(p.disponible);
             }
-
-            // Descontar la cantidad que el usuario ya tiene agregada en el carrito local
+            const cantFisica = parseFloat(p.cantidad_fisica || 0);
+            const enPedidos = parseFloat(p.en_pedidos || 0);
+            return Math.max(0, cantFisica - enPedidos);
+        },
+        getStockDisponible(p) {
+            const disponibleBackend = this.getStockBase(p);
             const enCarritoLocal = this.getCantidadEnCarrito(p);
-
             return Math.max(0, disponibleBackend - enCarritoLocal);
         },
         getCantidadEnCarrito(p) {
