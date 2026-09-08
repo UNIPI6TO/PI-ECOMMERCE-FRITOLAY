@@ -146,7 +146,7 @@ document.addEventListener('alpine:init', () => {
                 const data = res ? (res.data || res) : null;
 
                 // Validación estricta: debe existir una entrega activa y coincidir el ID de pedido
-                if (!data || Number(data.pedido_id) !== Number(this.pedidoId) || data.estado !== 'en_ruta') {
+                if (!data || Number(data.pedido_id) !== Number(this.pedidoId) || !['listo_para_entregar', 'en_ruta'].includes(data.estado)) {
                     window.toast('El rastreo ya no está disponible.', 'warning', 'bottom');
                     window.location.replace('/ecommerce/historial');
                     return false;

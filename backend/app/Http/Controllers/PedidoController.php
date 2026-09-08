@@ -205,7 +205,7 @@ class PedidoController extends Controller
 
         $pedidoEnRuta = \App\Models\Pedido::with(['direccion', 'items.producto'])
             ->where('cliente_id', $cliente->id)
-            ->where('estado', 'en_ruta')
+            ->whereIn('estado', ['listo_para_entregar', 'en_ruta'])
             ->orderBy('id', 'desc')
             ->first();
 
