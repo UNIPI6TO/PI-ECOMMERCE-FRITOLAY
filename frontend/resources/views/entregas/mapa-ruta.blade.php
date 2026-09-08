@@ -127,12 +127,12 @@
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wide border shadow-2xs shrink-0" 
                                       :class="{
-                                          'bg-blue-100 text-blue-800 border-blue-200': p.estado === 'en_ruta',
-                                          'bg-amber-100 text-amber-800 border-amber-200': p.estado === 'listo_para_entregar' || p.estado === 'en_espera_asignacion' || p.estado === 'asignado',
-                                          'bg-emerald-100 text-emerald-800 border-emerald-200': p.estado === 'entregado' || p.estado === 'entregado_parcialmente',
+                                          'bg-blue-100 text-blue-800 border-blue-200': p.estado === 'en_ruta' || p.estado === 'en_espera_asignacion' || p.estado === 'asignado',
+                                          'bg-emerald-100 text-emerald-800 border-emerald-200': p.estado === 'listo_para_entregar',
+                                          'bg-slate-100 text-slate-700 border-slate-200': p.estado === 'entregado' || p.estado === 'entregado_parcialmente',
                                           'bg-rose-100 text-rose-800 border-rose-200': p.estado === 'no_entregado' || p.estado === 'cancelado'
                                       }"
-                                      x-text="p.estado === 'en_ruta' ? 'EN RUTA' : (p.estado === 'no_entregado' ? 'DEVUELTO' : (p.estado === 'entregado' ? 'ENTREGADO' : (p.estado === 'entregado_parcialmente' ? 'ENTREGADO PARCIAL' : 'LISTO PARA ENTREGAR')))"></span>
+                                      x-text="p.estado === 'listo_para_entregar' ? 'LISTO POR ENTREGAR' : (p.estado === 'no_entregado' ? 'DEVUELTO' : (p.estado === 'entregado' ? 'ENTREGADO' : (p.estado === 'entregado_parcialmente' ? 'ENTREGADO PARCIAL' : 'EN RUTA')))"></span>
                             </div>
 
                             <!-- Dirección y Monto -->
@@ -379,31 +379,18 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async seleccionar(id) {
+        seleccionar(id) {
             const pTarget = this.pedidos.find(x => x.id === id);
             if (!pTarget) return;
 
-            // Actualización visual reactiva instantánea
+            // Selección / Visualización simple: NO cambia el estado del pedido en BD ni en la UI.
             this.pedidos.forEach(p => {
-                if (p.id === id) {
-                    p.ui_estado = 'SELECCIONADO';
-                    p.estado = 'en_ruta';
-                } else {
-                    if (p.ui_estado === 'SELECCIONADO') p.ui_estado = p.estado;
-                    if (p.estado === 'en_ruta') p.estado = 'listo_para_entregar';
-                }
+                p.ui_estado = (p.id === id) ? 'SELECCIONADO' : p.estado;
             });
 
             this.renderMarkers();
             if (pTarget.lat && pTarget.lng && this.map) {
                 this.map.flyTo([parseFloat(pTarget.lat), parseFloat(pTarget.lng)], 16);
-            }
-
-            // Notificar al backend de forma asíncrona sin bloquear la UI
-            try {
-                await window.api(`/api/pedidos/${id}/seleccionar`, { method: 'PATCH' });
-            } catch (e) {
-                console.warn("Error enviando selección al servidor:", e);
             }
         },
 
@@ -419,8 +406,30 @@ document.addEventListener('alpine:init', () => {
         async navegar(p) {
             if (!p) return;
 
-            // Invocar la selección e inicio de ruta
-            await this.seleccionar(p.id);
+            // Actualización reactiva instantánea: el seleccionado pasa a 'listo_para_entregar' y el anterior a 'en_ruta'
+            this.pedidos.forEach(item => {
+                if (item.id === p.id) {
+                    item.estado = 'listo_para_entregar';
+                    item.ui_estado = 'SELECCIONADO';
+                } else if (item.estado === 'listo_para_entregar') {
+                    item.estado = 'en_ruta';
+                    if (item.ui_estado !== 'SELECCIONADO') {
+                        item.ui_estado = 'en_ruta';
+                    }
+                }
+            });
+
+            this.renderMarkers();
+            if (p.lat && p.lng && this.map) {
+                this.map.flyTo([parseFloat(p.lat), parseFloat(p.lng)], 16);
+            }
+
+            // Petición asíncrona transaccional al backend
+            try {
+                await window.api(`/api/pedidos/${p.id}/seleccionar`, { method: 'PATCH' });
+            } catch (e) {
+                console.warn("Error enviando estado Navegar GPS al servidor:", e);
+            }
 
             // Disparo de Evento de Estado: En Camino (Punto de Control Firestore)
             if (typeof window.saveEventCheckpointLocation === 'function') {

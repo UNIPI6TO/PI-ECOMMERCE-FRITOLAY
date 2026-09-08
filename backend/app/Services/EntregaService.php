@@ -35,42 +35,45 @@ class EntregaService
 
         $camionId = $asignacionActual ? $asignacionActual->camion_id : null;
 
-        // Desmarcar CUALQUIER otro pedido en_ruta del camion o del chofer
-        DB::table('pedidos')
-            ->whereIn('id', function($q) use ($camionId, $choferId) {
-                $q->select('apc.pedido_id')
-                  ->from('asignacion_pedido_camion as apc')
-                  ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
-                  ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
-                  ->leftJoin('camiones as c', 'c.id', '=', 'grem.camion_id')
-                  ->where(function($w) use ($camionId, $choferId) {
-                      if ($camionId) $w->where('grem.camion_id', $camionId);
-                      if ($choferId) $w->orWhere('c.chofer_id', $choferId);
-                  });
-            })
-            ->where('estado', 'en_ruta')
-            ->update(['estado' => 'listo_para_entregar']);
+        // DB Transaction para asegurar exclusividad atómica en la misma ruta/camión
+        DB::transaction(function() use ($camionId, $choferId, $pedidoId) {
+            // Revertir CUALQUIER otro pedido en 'listo_para_entregar' perteneciente al mismo camión o chofer a 'en_ruta'
+            DB::table('pedidos')
+                ->whereIn('id', function($q) use ($camionId, $choferId) {
+                    $q->select('apc.pedido_id')
+                      ->from('asignacion_pedido_camion as apc')
+                      ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
+                      ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
+                      ->leftJoin('camiones as c', 'c.id', '=', 'grem.camion_id')
+                      ->where(function($w) use ($camionId, $choferId) {
+                          if ($camionId) $w->where('grem.camion_id', $camionId);
+                          if ($choferId) $w->orWhere('c.chofer_id', $choferId);
+                      });
+                })
+                ->where('estado', 'listo_para_entregar')
+                ->update(['estado' => 'en_ruta']);
 
-        DB::table('asignacion_pedido_camion')
-            ->whereIn('pedido_id', function($q) use ($camionId, $choferId) {
-                $q->select('apc.pedido_id')
-                  ->from('asignacion_pedido_camion as apc')
-                  ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
-                  ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
-                  ->leftJoin('camiones as c', 'c.id', '=', 'grem.camion_id')
-                  ->where(function($w) use ($camionId, $choferId) {
-                      if ($camionId) $w->where('grem.camion_id', $camionId);
-                      if ($choferId) $w->orWhere('c.chofer_id', $choferId);
-                  });
-            })
-            ->where('estado', 'en_ruta')
-            ->update(['estado' => 'asignado']);
+            DB::table('asignacion_pedido_camion')
+                ->whereIn('pedido_id', function($q) use ($camionId, $choferId) {
+                    $q->select('apc.pedido_id')
+                      ->from('asignacion_pedido_camion as apc')
+                      ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
+                      ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
+                      ->leftJoin('camiones as c', 'c.id', '=', 'grem.camion_id')
+                      ->where(function($w) use ($camionId, $choferId) {
+                          if ($camionId) $w->where('grem.camion_id', $camionId);
+                          if ($choferId) $w->orWhere('c.chofer_id', $choferId);
+                      });
+                })
+                ->where('estado', 'listo_para_entregar')
+                ->update(['estado' => 'asignado']);
 
-        // Actualizar pedido seleccionado a 'en_ruta'
-        DB::table('pedidos')->where('id', $pedidoId)->update(['estado' => 'en_ruta']);
-        DB::table('asignacion_pedido_camion')->where('pedido_id', $pedidoId)->update(['estado' => 'en_ruta']);
+            // Actualizar pedido seleccionado a 'listo_para_entregar'
+            DB::table('pedidos')->where('id', $pedidoId)->update(['estado' => 'listo_para_entregar']);
+            DB::table('asignacion_pedido_camion')->where('pedido_id', $pedidoId)->update(['estado' => 'listo_para_entregar']);
+        });
 
-        $this->auditoriaService->logSimple('pedido_en_camino', "Chofer inició ruta al pedido {$pedidoId}", $choferId);
+        $this->auditoriaService->logSimple('pedido_listo_entregar', "Chofer fijó navegación a listo para entregar pedido {$pedidoId}", $choferId);
 
         // Notificación Push Simulado / Log Evento de Emisión para el Cliente
         $cliente = DB::table('clientes')->where('id', $pedido->cliente_id)->first();
