@@ -21,57 +21,57 @@
             </div>
 
             <!-- Filtro de Fechas (ComboBox, Desde, Hasta y Atajos Rápidos) -->
-            <div class="bg-white p-2 sm:p-2.5 rounded-2xl border border-gray-200/80 shadow-xs flex flex-wrap items-center gap-3 text-xs">
+            <div class="bg-white p-2 sm:p-2.5 rounded-2xl border border-gray-200/80 shadow-xs flex flex-wrap items-center gap-2.5 text-xs">
                 
-                <!-- ComboBox de Fechas con Actividad Real (Primer elemento 'Todos') -->
-                <div class="flex items-center gap-2">
+                <!-- ComboBox de Fechas con Actividad Real -->
+                <div class="flex items-center gap-1.5">
                     <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide flex items-center gap-1">
                         <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        FECHA ACTIVIDAD:
+                        ACTIVIDAD:
                     </span>
                     <select x-model="fechaSeleccionadaCombo"
                             @change="onCambioFechaCombo()"
-                            class="px-3 py-1.5 bg-blue-50/60 border border-blue-200 rounded-xl text-xs font-extrabold text-blue-900 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none cursor-pointer shadow-2xs">
+                            class="px-2.5 py-1.5 bg-blue-50/60 border border-blue-200 rounded-xl text-xs font-extrabold text-blue-900 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none cursor-pointer shadow-2xs">
                         <option value="TODOS">Todos (Historial Completo)</option>
                         <template x-for="f in fechasDisponibles" :key="f.fecha">
-                            <option :value="f.fecha" x-text="`${f.fecha} (${f.totalPuntos} registros)`"></option>
+                            <option :value="f.fecha" x-text="`${f.fecha} (${f.totalPuntos} reg)`"></option>
                         </template>
                     </select>
                 </div>
 
                 <!-- Input Fecha DESDE -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5">
                     <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide">DESDE:</span>
                     <input type="date" 
                            x-model="fechaDesdeInput" 
                            @change="aplicarRangoExactoFechas()"
-                           class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none cursor-pointer">
+                           class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none cursor-pointer">
                 </div>
 
                 <!-- Input Fecha HASTA -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5">
                     <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide">HASTA:</span>
                     <input type="date" 
                            x-model="fechaHastaInput" 
                            @change="aplicarRangoExactoFechas()"
-                           class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none cursor-pointer">
+                           class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none cursor-pointer">
                 </div>
 
-                <!-- Atajos de Selección Rápida (Último Mes, Última Semana, Hoy) -->
-                <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+                <!-- Atajos de Selección Rápida (Último Mes, Última Semana, Hoy) In-line -->
+                <div class="flex items-center gap-1 bg-gray-100 p-0.5 rounded-xl ml-auto sm:ml-0">
                     <button @click="seleccionarAtajo('MES')" 
                             :class="filterLabel === 'Último Mes' ? 'bg-white text-slate-900 font-black shadow-2xs' : 'text-gray-600 hover:text-slate-900 font-bold'"
-                            class="px-3 py-1 rounded-lg text-xs transition-all">
+                            class="px-2.5 py-1 rounded-lg text-xs transition-all">
                         Último Mes
                     </button>
                     <button @click="seleccionarAtajo('SEMANA')" 
                             :class="filterLabel === 'Última Semana' ? 'bg-white text-slate-900 font-black shadow-2xs' : 'text-gray-600 hover:text-slate-900 font-bold'"
-                            class="px-3 py-1 rounded-lg text-xs transition-all">
+                            class="px-2.5 py-1 rounded-lg text-xs transition-all">
                         Última Semana
                     </button>
                     <button @click="seleccionarAtajo('HOY')" 
                             :class="filterLabel === 'Hoy' ? 'bg-white text-slate-900 font-black shadow-2xs' : 'text-gray-600 hover:text-slate-900 font-bold'"
-                            class="px-3 py-1 rounded-lg text-xs transition-all">
+                            class="px-2.5 py-1 rounded-lg text-xs transition-all">
                         Hoy
                     </button>
                 </div>
