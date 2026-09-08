@@ -297,8 +297,13 @@ document.addEventListener('alpine:init', () => {
         async init() {
             try {
                 this.pedidos = await window.api(`/api/guias-ruta/${this.guiaId}/pedidos`);
+                this.pedidos.forEach(p => {
+                    if (!['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado', 'listo_para_entregar'].includes(p.estado)) {
+                        p.estado = 'en_ruta';
+                    }
+                    p.ui_estado = p.estado;
+                });
                 let selected = this.pedidos.find(p => !['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado'].includes(p.estado));
-                this.pedidos.forEach(p => p.ui_estado = p.estado);
                 if (selected) {
                     selected.ui_estado = 'SELECCIONADO';
                 }
