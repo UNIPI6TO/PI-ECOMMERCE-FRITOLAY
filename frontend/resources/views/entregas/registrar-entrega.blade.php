@@ -276,14 +276,25 @@ document.addEventListener('alpine:init', () => {
                 }));
 
                 // Disparo de Evento de Estado: Entregando (Punto de Control Auditoría Firestore)
-                if (typeof window.saveEventCheckpointLocation === 'function') {
+                // + continuar rastreo GPS mientras el chofer está en la pantalla de entrega
+                if (typeof window.saveEventCheckpointLocation === 'function' || typeof window.startTracking === 'function') {
                     try {
                         const guias = await window.api('/api/guias-ruta');
                         if (guias && guias.length > 0 && guias[0].camion_id) {
-                            await window.saveEventCheckpointLocation(guias[0].camion_id, 'Entregando');
+                            const camionId = guias[0].camion_id;
+
+                            // Checkpoint inmediato: registrar que el chofer está "Entregando"
+                            if (typeof window.saveEventCheckpointLocation === 'function') {
+                                await window.saveEventCheckpointLocation(camionId, 'Entregando');
+                            }
+
+                            // Continuar rastreo periódico en esta pantalla (mismo intervalo global)
+                            if (typeof window.startTracking === 'function') {
+                                window.startTracking(camionId);
+                            }
                         }
                     } catch (e) {
-                        console.warn("No se pudo enviar punto de control Entregando:", e);
+                        console.warn("No se pudo iniciar rastreo GPS en pantalla de entrega:", e);
                     }
                 }
             } catch (e) {
