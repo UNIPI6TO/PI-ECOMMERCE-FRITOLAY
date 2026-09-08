@@ -49,7 +49,7 @@ class RutaService
                     'orden' => $orden++,
                     'estado' => \App\Models\AsignacionPedidoCamion::ESTADO_ASIGNADO
                 ]);
-                $pedido = $this->pedidoRepository->update((int)$pedidoId, ['estado' => 'listo_para_entregar']);
+                $pedido = $this->pedidoRepository->update((int)$pedidoId, ['estado' => 'en_ruta']);
                 
                 foreach ($pedido->items as $item) {
                     $this->inventarioService->ingresoFisicoCamion($camionId, (int)$item->producto_id, (float)$item->cantidad_solicitada);
