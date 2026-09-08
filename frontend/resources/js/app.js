@@ -5,7 +5,7 @@ import { CarritoManager } from './carrito.js';
 import { dateFilterParser } from './date-filter-parser.js';
 import { initMap, addPin, movePinTo } from './mapa-leaflet.js';
 import { generateFactura, generateNotaCredito } from './pdf-generator.js';
-import { startTracking, stopTracking, saveEventCheckpointLocation } from './gps-tracker.js';
+import { startTracking, stopTracking, saveEventCheckpointLocation } from './gps-native-tracker.js';
 
 import { db, doc, getDoc, setDoc, collection, getDocs, query } from './firebase-config.js';
 

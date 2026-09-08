@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Info.plist — Parche de Permisos iOS para Background GPS (Fritolay Chofer)
+    =========================================================================
+    INSTRUCCIONES: Cuando ejecutes "npx cap add ios" en macOS con Xcode,
+    se generará ios/App/App/Info.plist automáticamente.
+
+    Añade los siguientes bloques XML DENTRO del <dict> raíz de ese archivo.
+    Ubícalos antes del cierre </dict> final.
+
+    Referencia Apple: https://developer.apple.com/documentation/corelocation/choosing-the-authorization-level-for-location-access
+-->
+<plist version="1.0">
+<dict>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PERMISOS DE LOCALIZACIÓN — Obligatorios para App Store
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <!--
+        Permiso CUANDO EN USO: aparece en el primer diálogo al usuario.
+        Apple mostrará este texto exactamente en el cuadro de diálogo de iOS.
+        Sé descriptivo y honesto — Apple lo revisa manualmente.
+    -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Fritolay necesita tu ubicación para mostrar tu ruta de entrega a los clientes y al equipo de operaciones en tiempo real durante la jornada de trabajo.</string>
+
+    <!--
+        Permiso SIEMPRE (Always Allow): requerido para background tracking.
+        Apple revisa esto manualmente — SOLO aprobar para apps B2B/Logistics.
+        El texto debe mencionar explícitamente el beneficio al usuario.
+    -->
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Fritolay necesita rastrear tu ubicación continuamente, incluso con la pantalla apagada o la app minimizada, para garantizar el registro completo de la ruta de entrega y el seguimiento en tiempo real por parte del cliente.</string>
+
+    <!--
+        iOS 11 y anteriores (legacy — incluir por compatibilidad).
+        Requerido junto con NSLocationAlwaysAndWhenInUseUsageDescription.
+    -->
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Fritolay necesita tu ubicación en segundo plano para el rastreo continuo de rutas de entrega.</string>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         BACKGROUND MODES — Habilitar procesos en segundo plano
+         ═══════════════════════════════════════════════════════════════════
+         Sin esto, iOS suspende la app al minimizarla y el GPS se detiene.
+         En Xcode: Project → Signing & Capabilities → + Background Modes
+         y marcar "Location updates", "Background fetch" y "Background processing".
+    -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <!-- Actualización de ubicación en segundo plano (CRÍTICO) -->
+        <string>location</string>
+        <!-- Background fetch para flush de la cola offline -->
+        <string>fetch</string>
+        <!-- BGTaskScheduler para tareas de sincronización programadas -->
+        <string>processing</string>
+    </array>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         CONFIGURACIÓN ADICIONAL DE LA APP
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Nombre de la app visible al usuario -->
+    <key>CFBundleDisplayName</key>
+    <string>Fritolay Chofer</string>
+
+    <!-- Versión de la app (sincronizar con capacitor.config.ts) -->
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <!--
+        Seguridad de transporte (ATS): permitir HTTP solo en dev.
+        ELIMINAR en producción y usar HTTPS exclusivamente.
+    -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- Solo para desarrollo con server.url HTTP (LAN local) -->
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <!--
+            En producción, reemplazar por:
+            <key>NSAllowsArbitraryLoads</key>
+            <false/>
+            <key>NSExceptionDomains</key>
+            <dict>
+                <key>backend-api.fritolay-ambato.com</key>
+                <dict>
+                    <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                    <false/>
+                </dict>
+            </dict>
+        -->
+    </dict>
+
+</dict>
+</plist>
