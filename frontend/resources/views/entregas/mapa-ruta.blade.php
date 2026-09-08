@@ -378,21 +378,10 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async seleccionar(id, triggerCheckpoint = true) {
-            // Actualizar backend para establecer este pedido como en_ruta y desmarcar anteriores
-            try {
-                await window.api(`/api/pedidos/${id}/seleccionar`, { method: 'PATCH' });
-            } catch (e) {
-                console.warn("Error actualizando selección en backend:", e);
-            }
-
+        seleccionar(id) {
             this.pedidos.forEach(p => {
                 if (p.id === id) {
-                    p.estado = 'en_ruta';
                     p.ui_estado = 'SELECCIONADO';
-                } else if (p.estado === 'en_ruta') {
-                    p.estado = 'listo_para_entregar';
-                    p.ui_estado = 'listo_para_entregar';
                 } else if (p.ui_estado === 'SELECCIONADO') {
                     p.ui_estado = p.estado;
                 }
@@ -403,18 +392,6 @@ document.addEventListener('alpine:init', () => {
                 this.renderMarkers();
                 if (p.lat && p.lng && this.map) {
                     this.map.flyTo([p.lat, p.lng], 16);
-                }
-
-                // Disparo de Evento de Estado: En Camino (Punto de Control Firestore)
-                if (triggerCheckpoint && typeof window.saveEventCheckpointLocation === 'function') {
-                    try {
-                        const guias = await window.api('/api/guias-ruta');
-                        if (guias && guias.length > 0 && guias[0].camion_id) {
-                            await window.saveEventCheckpointLocation(guias[0].camion_id, 'En Camino');
-                        }
-                    } catch (e) {
-                        console.warn("No se pudo enviar punto de control En Camino:", e);
-                    }
                 }
             }
         },
@@ -431,8 +408,39 @@ document.addEventListener('alpine:init', () => {
         async navegar(p) {
             if (!p) return;
 
-            // Invocar la selección y sincronización de destino
-            await this.seleccionar(p.id, true);
+            // Al dar clic en Navegar GPS, activamos formalmente el pedido en la BD como en_ruta
+            try {
+                await window.api(`/api/pedidos/${p.id}/seleccionar`, { method: 'PATCH' });
+            } catch (e) {
+                console.warn("Error actualizando selección en backend:", e);
+            }
+
+            // Actualizar estados reactivos locales
+            this.pedidos.forEach(item => {
+                if (item.id === p.id) {
+                    item.estado = 'en_ruta';
+                    item.ui_estado = 'SELECCIONADO';
+                } else if (item.estado === 'en_ruta') {
+                    item.estado = 'listo_para_entregar';
+                    if (item.ui_estado !== 'SELECCIONADO') {
+                        item.ui_estado = 'listo_para_entregar';
+                    }
+                }
+            });
+
+            this.seleccionar(p.id);
+
+            // Disparo de Evento de Estado: En Camino (Punto de Control Firestore)
+            if (typeof window.saveEventCheckpointLocation === 'function') {
+                try {
+                    const guias = await window.api('/api/guias-ruta');
+                    if (guias && guias.length > 0 && guias[0].camion_id) {
+                        await window.saveEventCheckpointLocation(guias[0].camion_id, 'En Camino');
+                    }
+                } catch (e) {
+                    console.warn("No se pudo enviar punto de control En Camino:", e);
+                }
+            }
 
             const lat = p.lat;
             const lng = p.lng;
