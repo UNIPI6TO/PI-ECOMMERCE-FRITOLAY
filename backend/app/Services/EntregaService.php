@@ -423,4 +423,12 @@ class EntregaService
             'pedido_activo' => $siguiente
         ];
     }
+
+    public function getVehiculoChofer(int $choferId): ?object
+    {
+        return DB::table('camiones')
+            ->where('chofer_id', $choferId)
+            ->select('id', 'placa', 'descripcion', 'estado')
+            ->first();
+    }
 }

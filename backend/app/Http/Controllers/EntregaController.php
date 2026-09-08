@@ -15,7 +15,7 @@ class EntregaController extends Controller
         private readonly EntregaService $entregaService
     ) {}
 
-        public function getPedidosGuia(int $id)
+    public function getPedidosGuia(int $id)
     {
         return response()->json($this->entregaService->getPedidosGuiaChofer($id));
     }
@@ -56,5 +56,12 @@ class EntregaController extends Controller
     {
         $userId = (int) ($request->user_id ?? $request->query('user_id') ?? 0);
         return response()->json($this->entregaService->getFaseEstadoChofer($userId));
+    }
+
+    public function vehiculo(Request $request)
+    {
+        $userId = (int) ($request->user_id ?? $request->query('user_id') ?? 0);
+        $vehiculo = $this->entregaService->getVehiculoChofer($userId);
+        return response()->json($vehiculo);
     }
 }
