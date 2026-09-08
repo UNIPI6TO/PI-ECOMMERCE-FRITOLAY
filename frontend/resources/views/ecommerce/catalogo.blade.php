@@ -140,7 +140,7 @@
                         </div>
                         
                         <!-- Cuerpo de la Tarjeta -->
-                        <div class="p-5 flex-grow flex flex-col justify-between">
+                        <div class="p-5 flex-grow flex flex-col justify-between" x-data="{ qty: 1, tipoCompra: 'unidad' }">
                             <div>
                                 <p class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">
                                     <span x-text="product.marca"></span> <span class="text-gray-300">•</span> <span class="text-gray-500 font-semibold" x-text="product.categoria"></span>
@@ -150,11 +150,11 @@
                                 <div class="mt-2 flex items-baseline justify-between">
                                     <div class="flex flex-col">
                                         <div class="flex items-baseline gap-1">
-                                            <span class="text-2xl font-black text-slate-900" x-text="formatMoney(product.precio * (tipoCompra === 'paca' ? product.unidades_por_paca : 1))"></span>
+                                            <span class="text-2xl font-black text-slate-900" x-text="formatMoney(parseFloat(product.precio || 0) * (tipoCompra === 'paca' ? parseInt(product.unidades_por_paca || 1) : 1))"></span>
                                             <span class="text-[11px] text-gray-400 font-semibold" x-text="tipoCompra === 'paca' ? `/ paca (${product.unidades_por_paca} unds)` : '/ unidad'"></span>
                                         </div>
                                         <template x-if="qty > 1 || tipoCompra === 'paca'">
-                                            <span class="text-[11px] text-slate-600 font-bold mt-0.5" x-text="`Subtotal: ${formatMoney(product.precio * (tipoCompra === 'paca' ? product.unidades_por_paca : 1) * qty)}`"></span>
+                                            <span class="text-[11px] text-slate-600 font-bold mt-0.5" x-text="`Subtotal: ${formatMoney(parseFloat(product.precio || 0) * (tipoCompra === 'paca' ? parseInt(product.unidades_por_paca || 1) : 1) * qty)}`"></span>
                                         </template>
                                     </div>
                                     <!-- Visualización de Stock Disponible -->
@@ -170,7 +170,7 @@
                             </div>
 
                             <!-- Selector de Cantidad y Botón de Compra -->
-                            <div class="mt-5 pt-4 border-t border-gray-100 space-y-3" x-data="{ qty: 1, tipoCompra: 'unidad' }">
+                            <div class="mt-5 pt-4 border-t border-gray-100 space-y-3">
                                 <!-- Selector Unidad vs Paca -->
                                 <template x-if="product.unidades_por_paca > 1">
                                     <select x-model="tipoCompra" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-slate-800 outline-none cursor-pointer">
