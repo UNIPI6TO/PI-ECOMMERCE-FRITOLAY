@@ -20,25 +20,9 @@
                 <p class="text-xs font-semibold text-gray-500 mt-1" x-text="camion ? `Conductor asignado: ${camion.chofer?.nombre || camion.chofer_nombre || 'Sin asignación'}` : ''"></p>
             </div>
 
-            <!-- Filtro de Fechas (ComboBox, Desde, Hasta y Atajos Rápidos) -->
+            <!-- Filtro de Fechas (Desde, Hasta y Atajos Rápidos) -->
             <div class="bg-white p-2 sm:p-2.5 rounded-2xl border border-gray-200/80 shadow-xs flex flex-wrap items-center gap-2.5 text-xs">
                 
-                <!-- ComboBox de Fechas con Actividad Real -->
-                <div class="flex items-center gap-1.5">
-                    <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide flex items-center gap-1">
-                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        ACTIVIDAD:
-                    </span>
-                    <select x-model="fechaSeleccionadaCombo"
-                            @change="onCambioFechaCombo()"
-                            class="px-2.5 py-1.5 bg-blue-50/60 border border-blue-200 rounded-xl text-xs font-extrabold text-blue-900 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none cursor-pointer shadow-2xs">
-                        <option value="TODOS">Todos (Historial Completo)</option>
-                        <template x-for="f in fechasDisponibles" :key="f.fecha">
-                            <option :value="f.fecha" x-text="`${f.fecha} (${f.totalPuntos} reg)`"></option>
-                        </template>
-                    </select>
-                </div>
-
                 <!-- Input Fecha DESDE -->
                 <div class="flex items-center gap-1.5">
                     <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide">DESDE:</span>
@@ -78,15 +62,35 @@
             </div>
         </div>
 
-        <!-- Rango de Fechas Activo e Información -->
-        <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between text-xs font-semibold text-gray-500 gap-2">
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Filtro activo: <strong class="text-slate-900" x-text="filterLabel"></strong></span>
-                <span class="text-gray-300">•</span>
-                <span>Período: <strong class="text-slate-800" x-text="`${fechaDesdeInput} al ${fechaHastaInput}`"></strong></span>
+        <!-- Rango de Fechas Activo, ComboBox de Fechas con Actividad e Información -->
+        <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between text-xs font-semibold text-gray-500 gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- ComboBox de Fechas con Actividad Real Ubicado Abajo -->
+                <div class="flex items-center gap-1.5">
+                    <span class="font-black text-slate-600 uppercase text-[11px] tracking-wide flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        FECHA ACTIVIDAD:
+                    </span>
+                    <select x-model="fechaSeleccionadaCombo"
+                            @change="onCambioFechaCombo()"
+                            class="px-3 py-1 bg-blue-50/70 border border-blue-200 rounded-xl text-xs font-extrabold text-blue-900 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none cursor-pointer shadow-2xs">
+                        <option value="TODOS">Todos (Historial Completo)</option>
+                        <template x-for="f in fechasDisponibles" :key="f.fecha">
+                            <option :value="f.fecha" x-text="`${f.fecha} (${f.totalPuntos} reg)`"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <span class="text-gray-300 hidden sm:inline">•</span>
+
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Filtro activo: <strong class="text-slate-900" x-text="filterLabel"></strong></span>
+                    <span class="text-gray-300">•</span>
+                    <span>Período: <strong class="text-slate-800" x-text="`${fechaDesdeInput} al ${fechaHastaInput}`"></strong></span>
+                </div>
             </div>
-            <div class="text-blue-600 font-extrabold" x-text="`${puntosFiltrados.length} puntos trazados en mapa`"></div>
+            <div class="text-blue-600 font-extrabold ml-auto" x-text="`${puntosFiltrados.length} puntos trazados en mapa`"></div>
         </div>
     </div>
 
