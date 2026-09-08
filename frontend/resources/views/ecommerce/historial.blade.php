@@ -149,19 +149,19 @@
                             <td class="py-4 px-6 whitespace-nowrap">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1.5 border" 
                                     :class="{
-                                        'bg-amber-50 text-amber-800 border-amber-200': pedido.estado.includes('espera'),
-                                        'bg-emerald-50 text-emerald-800 border-emerald-200': pedido.estado.includes('entregado'),
-                                        'bg-blue-50 text-blue-800 border-blue-200': pedido.estado === 'en_ruta' || pedido.estado === 'listo_para_entregar',
+                                        'bg-amber-50 text-amber-800 border-amber-200': pedido.estado.includes('espera') || pedido.estado === 'asignado',
+                                        'bg-blue-50 text-blue-800 border-blue-200': pedido.estado === 'en_ruta',
+                                        'bg-emerald-50 text-emerald-800 border-emerald-200': pedido.estado === 'listo_para_entregar' || pedido.estado.includes('entregado'),
                                         'bg-rose-50 text-rose-800 border-rose-200': pedido.estado === 'cancelado' || pedido.estado === 'no_entregado'
                                     }">
                                     <span class="w-1.5 h-1.5 rounded-full"
                                           :class="{
-                                              'bg-amber-500': pedido.estado.includes('espera'),
-                                              'bg-emerald-500': pedido.estado.includes('entregado'),
-                                              'bg-blue-500': pedido.estado === 'en_ruta' || pedido.estado === 'listo_para_entregar',
+                                              'bg-amber-500': pedido.estado.includes('espera') || pedido.estado === 'asignado',
+                                              'bg-blue-500': pedido.estado === 'en_ruta',
+                                              'bg-emerald-500': pedido.estado === 'listo_para_entregar' || pedido.estado.includes('entregado'),
                                               'bg-rose-500': pedido.estado === 'cancelado' || pedido.estado === 'no_entregado'
                                           }"></span>
-                                    <span x-text="pedido.estado === 'no_entregado' ? 'Devolución / No Entregado' : pedido.estado.replace(/_/g, ' ')"></span>
+                                    <span x-text="pedido.estado === 'listo_para_entregar' ? 'Listo Por Entregar' : (pedido.estado === 'en_ruta' ? 'En Ruta' : (pedido.estado === 'no_entregado' ? 'Devolución / No Entregado' : pedido.estado.replace(/_/g, ' ')))"></span>
                                 </span>
                             </td>
                             <td class="py-4 px-6 text-gray-600 font-bold uppercase text-[11px]" x-text="(pedido.metodo_pago || '').replace(/_/g, ' ')"></td>
@@ -521,17 +521,33 @@ document.addEventListener('alpine:init', () => {
 
             this.loading = true;
             try {
+                await this.cargarHistorial();
+            } finally {
+                this.loading = false;
+            }
+
+            // Polling silencioso en segundo plano cada 3 segundos para actualización dinámica sin recargar la página
+            setInterval(() => {
+                this.cargarHistorial(true);
+            }, 3000);
+        },
+
+        async cargarHistorial(silencioso = false) {
+            try {
                 let clienteData = await window.api('/api/clientes/me');
                 if (clienteData && clienteData.data) clienteData = clienteData.data;
                 if (clienteData && clienteData.id) {
                     const response = await window.api(`/api/clientes/${clienteData.id}/pedidos`);
-                    this.pedidosOriginales = response.data || response || [];
-                    this.filtrar();
+                    const nuevosPedidos = response.data || response || [];
+                    
+                    // Actualización reactiva solo si los datos cambian o primera carga
+                    if (JSON.stringify(nuevosPedidos) !== JSON.stringify(this.pedidosOriginales)) {
+                        this.pedidosOriginales = nuevosPedidos;
+                        this.filtrar();
+                    }
                 }
             } catch (error) {
-                console.error("Error al cargar historial:", error);
-            } finally {
-                this.loading = false;
+                if (!silencioso) console.error("Error al cargar historial:", error);
             }
         },
 
