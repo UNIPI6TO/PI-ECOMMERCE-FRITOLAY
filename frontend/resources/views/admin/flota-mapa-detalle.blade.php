@@ -20,9 +20,22 @@
                 <p class="text-xs font-semibold text-gray-500 mt-1" x-text="camion ? `Conductor asignado: ${camion.chofer?.nombre || camion.chofer_nombre || 'Sin asignación'}` : ''"></p>
             </div>
 
-            <!-- Filtro de Fechas (Desde, Hasta y Atajos Rápidos) -->
-            <div class="bg-white p-2 sm:p-2.5 rounded-2xl border border-gray-200/80 shadow-xs flex flex-wrap items-center gap-3 text-xs">
-                
+                <!-- ComboBox de Fechas con Actividad Real (Primer elemento 'Todos') -->
+                <div class="flex items-center gap-2">
+                    <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        FECHA ACTIVIDAD:
+                    </span>
+                    <select x-model="fechaSeleccionadaCombo"
+                            @change="onCambioFechaCombo()"
+                            class="px-3 py-1.5 bg-blue-50/60 border border-blue-200 rounded-xl text-xs font-extrabold text-blue-900 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none cursor-pointer shadow-2xs">
+                        <option value="TODOS">Todos (Historial Completo)</option>
+                        <template x-for="f in fechasDisponibles" :key="f.fecha">
+                            <option :value="f.fecha" x-text="`${f.fecha} (${f.totalPuntos} registros)`"></option>
+                        </template>
+                    </select>
+                </div>
+
                 <!-- Input Fecha DESDE -->
                 <div class="flex items-center gap-2">
                     <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide">DESDE:</span>
@@ -199,6 +212,8 @@ document.addEventListener('alpine:init', () => {
         filterLabel: 'Hoy',
         fechaInicio: new Date(),
         fechaFin: new Date(),
+        fechaSeleccionadaCombo: 'TODOS',
+        fechasDisponibles: [],
         historialPuntos: [],
         puntosFiltrados: [],
         ultimaUbicacion: null,
@@ -214,10 +229,10 @@ document.addEventListener('alpine:init', () => {
                 const list = Array.isArray(res) ? res : (res.data || []);
                 this.camion = list.find(c => Number(c.id) === Number(this.camionId)) || null;
 
-                // Inicializar fechas a 'Hoy'
-                this.seleccionarAtajo('HOY');
+                // 1. Extraer dinámicamente las fechas con actividad real desde Firestore
+                await this.cargarFechasDisponiblesConActividad();
 
-                // Cargar historial de Firestore vinculando clave idCamion
+                // 2. Cargar historial por defecto (Todos / Rango)
                 await this.cargarHistorialFirestore();
 
             } catch (err) {
@@ -226,6 +241,64 @@ document.addEventListener('alpine:init', () => {
                 this.cargando = false;
                 this.$nextTick(() => this.renderizarMapa());
             }
+        },
+
+        /**
+         * Requerimiento 1: Carga Dinámica de Fechas con Actividad Real
+         * Examina la subcolección 'historial' en Firestore y extrae las fechas únicas que sí tienen puntos.
+         */
+        async cargarFechasDisponiblesConActividad() {
+            try {
+                if (window.firestoreDb && window.firestoreCollection && window.firestoreGetDocs) {
+                    const colRef = window.firestoreCollection(window.firestoreDb, 'camiones', String(this.camionId), 'historial');
+                    const snap = await window.firestoreGetDocs(colRef);
+                    const fechasMap = [];
+
+                    snap.forEach(docSnap => {
+                        const data = docSnap.data();
+                        const idFecha = docSnap.id; // YYYY-MM-DD
+                        if (Array.isArray(data.puntos) && data.puntos.length > 0) {
+                            fechasMap.push({
+                                fecha: idFecha,
+                                totalPuntos: data.puntos.length,
+                                timestamp: new Date(idFecha + 'T00:00:00').getTime()
+                            });
+                        }
+                    });
+
+                    // Requerimiento 2: Ordenar de la más reciente a la más antigua
+                    fechasMap.sort((a, b) => b.timestamp - a.timestamp);
+                    this.fechasDisponibles = fechasMap;
+                }
+            } catch (err) {
+                console.warn('[Mapa Detalle] No se pudieron cargar fechas desde subcolección Firestore:', err.message);
+                this.fechasDisponibles = [];
+            }
+        },
+
+        /**
+         * Requerimiento 3: Actualización Reactiva del Mapa según selección del ComboBox
+         */
+        async onCambioFechaCombo() {
+            this.cargando = true;
+
+            if (this.fechaSeleccionadaCombo === 'TODOS') {
+                // Opción 'Todos': Carga todo el historial disponible
+                this.filterLabel = 'Todos (Historial Completo)';
+                await this.cargarHistorialFirestore(true);
+            } else {
+                // Fecha específica seleccionada
+                this.filterLabel = `Fecha: ${this.fechaSeleccionadaCombo}`;
+                this.fechaDesdeInput = this.fechaSeleccionadaCombo;
+                this.fechaHastaInput = this.fechaSeleccionadaCombo;
+                
+                this.fechaInicio = new Date(this.fechaSeleccionadaCombo + 'T00:00:00');
+                this.fechaFin = new Date(this.fechaSeleccionadaCombo + 'T23:59:59');
+
+                await this.cargarHistorialFirestore();
+            }
+
+            this.cargando = false;
         },
 
         async seleccionarAtajo(tipo) {
@@ -285,7 +358,7 @@ document.addEventListener('alpine:init', () => {
             this.cargando = false;
         },
 
-        async cargarHistorialFirestore() {
+        async cargarHistorialFirestore(cargarTodos = false) {
             try {
                 if (window.firestoreDb && window.firestoreDoc && window.firestoreGetDoc) {
                     // Helper para formatear fecha en hora local YYYY-MM-DD
@@ -296,16 +369,22 @@ document.addEventListener('alpine:init', () => {
                         return `${yr}-${mo}-${dy}`;
                     };
 
-                    // Generar lista de fechas YYYY-MM-DD entre fechaInicio y fechaFin
-                    const fechas = [];
-                    const dCur = new Date(this.fechaInicio);
-                    dCur.setHours(0, 0, 0, 0);
-                    const dEnd = new Date(this.fechaFin);
-                    dEnd.setHours(23, 59, 59, 999);
+                    let fechas = [];
 
-                    while (dCur <= dEnd) {
-                        fechas.push(toLocalYmd(dCur));
-                        dCur.setDate(dCur.getDate() + 1);
+                    if (cargarTodos && this.fechasDisponibles.length > 0) {
+                        // Si se solicita 'TODOS', se cargan todas las fechas que tienen actividad registrada
+                        fechas = this.fechasDisponibles.map(f => f.fecha);
+                    } else {
+                        // Generar lista de fechas YYYY-MM-DD entre fechaInicio y fechaFin
+                        const dCur = new Date(this.fechaInicio);
+                        dCur.setHours(0, 0, 0, 0);
+                        const dEnd = new Date(this.fechaFin);
+                        dEnd.setHours(23, 59, 59, 999);
+
+                        while (dCur <= dEnd) {
+                            fechas.push(toLocalYmd(dCur));
+                            dCur.setDate(dCur.getDate() + 1);
+                        }
                     }
 
                     // Consultar cada documento diario de la subcolección camiones/{idCamion}/historial/{YYYY-MM-DD}
@@ -358,13 +437,17 @@ document.addEventListener('alpine:init', () => {
         },
 
         filtrarPuntosPorFecha() {
-            const fStart = new Date(this.fechaInicio).getTime();
-            const fEnd = new Date(this.fechaFin).getTime();
+            if (this.fechaSeleccionadaCombo === 'TODOS') {
+                this.puntosFiltrados = [...this.historialPuntos];
+            } else {
+                const fStart = new Date(this.fechaInicio).getTime();
+                const fEnd = new Date(this.fechaFin).getTime();
 
-            this.puntosFiltrados = this.historialPuntos.filter(p => {
-                const pTime = new Date(p.timestamp).getTime();
-                return pTime >= fStart && pTime <= fEnd;
-            });
+                this.puntosFiltrados = this.historialPuntos.filter(p => {
+                    const pTime = new Date(p.timestamp).getTime();
+                    return pTime >= fStart && pTime <= fEnd;
+                });
+            }
 
             // Calcular distancia total trazada con Haversine
             let distMeters = 0;
