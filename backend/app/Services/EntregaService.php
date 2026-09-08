@@ -25,21 +25,30 @@ class EntregaService
             throw new Exception("Pedido no encontrado.");
         }
 
-        // Si el chofer cambia de destino y tenía otro pedido en 'en_ruta', revocamos el estado del anterior
-        $asignacion = DB::table('asignacion_pedido_camion as apc')
-            ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
-            ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
-            ->join('camiones as c', 'c.id', '=', 'grem.camion_id')
-            ->where('c.chofer_id', $choferId)
-            ->where('apc.pedido_id', '!=', $pedidoId)
-            ->where('apc.estado', 'en_ruta')
-            ->select('apc.pedido_id')
-            ->first();
+        // Desmarcar CUALQUIER pedido previo que estuviera en 'en_ruta' para la guía o camión de este chofer
+        DB::table('pedidos')
+            ->whereIn('id', function($q) use ($choferId) {
+                $q->select('apc.pedido_id')
+                  ->from('asignacion_pedido_camion as apc')
+                  ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
+                  ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
+                  ->join('camiones as c', 'c.id', '=', 'grem.camion_id')
+                  ->where('c.chofer_id', $choferId);
+            })
+            ->where('estado', 'en_ruta')
+            ->update(['estado' => 'listo_para_entregar']);
 
-        if ($asignacion) {
-            DB::table('pedidos')->where('id', $asignacion->pedido_id)->update(['estado' => 'listo_para_entregar']);
-            DB::table('asignacion_pedido_camion')->where('pedido_id', $asignacion->pedido_id)->update(['estado' => 'asignado']);
-        }
+        DB::table('asignacion_pedido_camion')
+            ->whereIn('pedido_id', function($q) use ($choferId) {
+                $q->select('apc.pedido_id')
+                  ->from('asignacion_pedido_camion as apc')
+                  ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
+                  ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
+                  ->join('camiones as c', 'c.id', '=', 'grem.camion_id')
+                  ->where('c.chofer_id', $choferId);
+            })
+            ->where('estado', 'en_ruta')
+            ->update(['estado' => 'asignado']);
 
         // Actualizar pedido seleccionado a 'en_ruta'
         DB::table('pedidos')->where('id', $pedidoId)->update(['estado' => 'en_ruta']);

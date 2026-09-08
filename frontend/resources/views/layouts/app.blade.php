@@ -543,7 +543,7 @@
                     if (role !== 'cliente') return;
 
                     await this.consultarEntregaActiva();
-                    this.pollTimer = setInterval(() => this.consultarEntregaActiva(), 10000);
+                    this.pollTimer = setInterval(() => this.consultarEntregaActiva(), 3000);
                 },
                 async consultarEntregaActiva() {
                     try {
