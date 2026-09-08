@@ -148,12 +148,17 @@
                                 <h3 class="font-bold text-base text-gray-900 group-hover:text-[#E3001B] transition-colors line-clamp-1" x-text="product.nombre"></h3>
                                 
                                 <div class="mt-2 flex items-baseline justify-between">
-                                    <div class="flex items-baseline gap-1">
-                                        <span class="text-2xl font-black text-slate-900" x-text="formatMoney(product.precio)"></span>
-                                        <span class="text-[11px] text-gray-400 font-semibold">/ unidad</span>
+                                    <div class="flex flex-col">
+                                        <div class="flex items-baseline gap-1">
+                                            <span class="text-2xl font-black text-slate-900" x-text="formatMoney(product.precio * (tipoCompra === 'paca' ? product.unidades_por_paca : 1))"></span>
+                                            <span class="text-[11px] text-gray-400 font-semibold" x-text="tipoCompra === 'paca' ? `/ paca (${product.unidades_por_paca} unds)` : '/ unidad'"></span>
+                                        </div>
+                                        <template x-if="qty > 1 || tipoCompra === 'paca'">
+                                            <span class="text-[11px] text-slate-600 font-bold mt-0.5" x-text="`Subtotal: ${formatMoney(product.precio * (tipoCompra === 'paca' ? product.unidades_por_paca : 1) * qty)}`"></span>
+                                        </template>
                                     </div>
                                     <!-- Visualización de Stock Disponible -->
-                                    <span class="text-xs font-bold px-2 py-0.5 rounded-md"
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded-md self-start"
                                           :class="{
                                               'bg-rose-50 text-rose-700 border border-rose-200': getStockDisponible(product) <= 0,
                                               'bg-amber-50 text-amber-700 border border-amber-200': getStockDisponible(product) > 0 && getStockDisponible(product) <= 5,
