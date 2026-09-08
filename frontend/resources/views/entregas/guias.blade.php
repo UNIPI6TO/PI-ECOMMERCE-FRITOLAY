@@ -8,6 +8,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
 <div class="max-w-4xl mx-auto py-4 px-3 sm:px-6 pb-24" x-data="guiasActivas()">
+    <!-- Componente Blade: Tarjeta de Vehículo Asignado -->
+    <template x-if="guias.length > 0 && guias[0].vehiculo">
+        <x-tarjeta-vehiculo-chofer ::vehiculo="guias[0].vehiculo" />
+    </template>
+
     <!-- Header Fijo con Indicador de Rol y Estado del Chofer -->
     <div class="mb-6 flex items-center justify-between gap-3 flex-wrap">
         <div>

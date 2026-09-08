@@ -253,7 +253,8 @@ class EntregaService
         $camion = \App\Models\Camion::where('chofer_id', $choferId)->first();
         if (!$camion) return collect([]);
         
-        $guiasRuta = \App\Models\GuiaRuta::whereHas('guiaRemision', function ($query) use ($camion) {
+        $guiasRuta = \App\Models\GuiaRuta::with(['guiaRemision.camion'])
+        ->whereHas('guiaRemision', function ($query) use ($camion) {
             $query->where('camion_id', $camion->id)
                   ->where('estado', '!=', 'cerrada');
         })
@@ -281,9 +282,17 @@ class EntregaService
                 }
             }
             
+            $vehiculoObj = $guia->guiaRemision->camion ?? $camion;
+
             return [
                 'id' => $guia->id,
                 'camion_id' => $camion->id,
+                'vehiculo' => [
+                    'id' => $vehiculoObj->id,
+                    'placa' => $vehiculoObj->placa,
+                    'descripcion' => $vehiculoObj->descripcion,
+                    'estado' => $vehiculoObj->estado,
+                ],
                 'pedidos_count' => $guia->pedidos_count,
                 'fecha' => $guia->fecha_creacion ? (is_string($guia->fecha_creacion) ? $guia->fecha_creacion : $guia->fecha_creacion->format('Y-m-d H:i')) : date('Y-m-d H:i'),
                 'recaudacion_esperada' => [
@@ -298,9 +307,16 @@ class EntregaService
 
         public function getPedidosGuiaChofer(int $guiaId): \Illuminate\Support\Collection
     {
-        $guiaRuta = \App\Models\GuiaRuta::with(['asignaciones' => function($q) {
-            $q->orderBy('orden', 'asc');
-        }, 'asignaciones.pedido.cliente', 'asignaciones.pedido.direccion', 'asignaciones.pedido.items.producto', 'asignaciones.pedido.cliente.usuario'])->find($guiaId);
+        $guiaRuta = \App\Models\GuiaRuta::with([
+            'guiaRemision.camion',
+            'asignaciones' => function($q) {
+                $q->orderBy('orden', 'asc');
+            }, 
+            'asignaciones.pedido.cliente', 
+            'asignaciones.pedido.direccion', 
+            'asignaciones.pedido.items.producto', 
+            'asignaciones.pedido.cliente.usuario'
+        ])->find($guiaId);
         
         if (!$guiaRuta) return collect([]);
         
