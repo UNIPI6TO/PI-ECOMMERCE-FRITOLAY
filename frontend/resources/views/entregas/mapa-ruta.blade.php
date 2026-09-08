@@ -413,8 +413,17 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        navegar(p) {
+        async navegar(p) {
             if (!p) return;
+
+            // Marcar el pedido como el destino activo del chofer en el backend
+            try {
+                await window.api(`/api/pedidos/${p.id}/seleccionar`, { method: 'PATCH' });
+                this.seleccionar(p.id, true);
+            } catch (e) {
+                console.warn('Error registrando selección de pedido en backend:', e);
+            }
+
             const lat = p.lat;
             const lng = p.lng;
             const address = encodeURIComponent(p.direccion || p.cliente || '');
