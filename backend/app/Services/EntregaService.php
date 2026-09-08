@@ -345,7 +345,7 @@ class EntregaService
                 'direccion' => $p->direccion->descripcion ?? 'Ubicación Desconocida',
                 'lat' => $p->direccion->latitud,
                 'lng' => $p->direccion->longitud,
-                'estado' => $asig->estado,
+                'estado' => $p->estado ?: $asig->estado,
                 'orden' => $asig->orden,
                 'subtotal' => $p->subtotal,
                 'iva' => $p->iva,
