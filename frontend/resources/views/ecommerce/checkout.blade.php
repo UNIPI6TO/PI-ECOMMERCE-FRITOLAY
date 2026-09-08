@@ -20,11 +20,18 @@
                     </thead>
                     <tbody>
                         <template x-for="item in items" :key="item.productoId">
-                            <tr class="border-b">
-                                <td class="py-4" x-text="item.nombre"></td>
-                                <td class="py-4 text-center" x-text="formatQty(item)"></td>
-                                <td class="py-4 text-right" x-text="formatMoney(item.precioUnitario)"></td>
-                                <td class="py-4 text-right" x-text="formatMoney(item.precioUnitario * item.cantidad)"></td>
+                            <tr class="border-b text-sm">
+                                <td class="py-4">
+                                    <div class="font-bold text-gray-900" x-text="item.nombre"></div>
+                                    <template x-if="item.unidadesPorPaca > 1">
+                                        <div class="text-[11px] text-gray-400 font-medium" x-text="`Paca de ${item.unidadesPorPaca} unds (${formatMoney(item.precioUnitario * item.unidadesPorPaca)} / paca)`"></div>
+                                    </template>
+                                </td>
+                                <td class="py-4 text-center font-semibold text-gray-700" x-text="formatQty(item)"></td>
+                                <td class="py-4 text-right font-medium text-gray-600">
+                                    <div x-text="formatMoney(item.precioUnitario) + ' / und'"></div>
+                                </td>
+                                <td class="py-4 text-right font-black text-gray-900" x-text="formatMoney(item.precioUnitario * item.cantidad)"></td>
                             </tr>
                         </template>
                     </tbody>

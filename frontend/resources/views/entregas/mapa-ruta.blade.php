@@ -127,11 +127,12 @@
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wide border shadow-2xs shrink-0" 
                                       :class="{
-                                          'bg-blue-100 text-blue-800 border-blue-200': p.estado === 'en_ruta',
-                                          'bg-emerald-100 text-emerald-800 border-emerald-200': p.estado === 'entregado' || p.estado === 'entregado_parcialmente',
+                                          'bg-blue-100 text-blue-800 border-blue-200': p.estado === 'en_ruta' || p.estado === 'en_espera_asignacion' || p.estado === 'asignado',
+                                          'bg-emerald-100 text-emerald-800 border-emerald-200': p.estado === 'listo_para_entregar',
+                                          'bg-slate-100 text-slate-700 border-slate-200': p.estado === 'entregado' || p.estado === 'entregado_parcialmente',
                                           'bg-rose-100 text-rose-800 border-rose-200': p.estado === 'no_entregado' || p.estado === 'cancelado'
                                       }"
-                                      x-text="p.estado === 'en_ruta' ? 'Listo / En Ruta' : (p.estado === 'no_entregado' ? 'Devuelto' : p.estado.replace('_', ' '))"></span>
+                                      x-text="p.estado === 'listo_para_entregar' ? 'POR ENTREGAR' : (p.estado === 'no_entregado' ? 'DEVUELTO' : (p.estado === 'entregado' ? 'ENTREGADO' : (p.estado === 'entregado_parcialmente' ? 'ENTREGADO PARCIAL' : 'EN RUTA')))"></span>
                             </div>
 
                             <!-- Dirección y Monto -->
@@ -296,8 +297,26 @@ document.addEventListener('alpine:init', () => {
         async init() {
             try {
                 this.pedidos = await window.api(`/api/guias-ruta/${this.guiaId}/pedidos`);
+                
+                // Regla Ponytail: Por defecto todos los pedidos activos inician en 'en_ruta'
+                let listoEncontrado = false;
+                this.pedidos.forEach(p => {
+                    const isTerminado = ['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado'].includes(p.estado);
+                    if (!isTerminado) {
+                        if (p.estado === 'listo_para_entregar') {
+                            if (listoEncontrado) {
+                                p.estado = 'en_ruta';
+                            } else {
+                                listoEncontrado = true;
+                            }
+                        } else {
+                            p.estado = 'en_ruta';
+                        }
+                    }
+                    p.ui_estado = p.estado;
+                });
+
                 let selected = this.pedidos.find(p => !['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado'].includes(p.estado));
-                this.pedidos.forEach(p => p.ui_estado = p.estado);
                 if (selected) {
                     selected.ui_estado = 'SELECCIONADO';
                 }
@@ -378,29 +397,18 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async seleccionar(id, triggerCheckpoint = true) {
-            this.pedidos.forEach(p => {
-                if (p.ui_estado === 'SELECCIONADO') p.ui_estado = p.estado;
-            });
-            const p = this.pedidos.find(x => x.id === id);
-            if (p) {
-                p.ui_estado = 'SELECCIONADO';
-                this.renderMarkers();
-                if (p.lat && p.lng && this.map) {
-                    this.map.flyTo([p.lat, p.lng], 16);
-                }
+        seleccionar(id) {
+            const pTarget = this.pedidos.find(x => x.id === id);
+            if (!pTarget) return;
 
-                // Disparo de Evento de Estado: En Camino (Punto de Control Firestore)
-                if (triggerCheckpoint && typeof window.saveEventCheckpointLocation === 'function') {
-                    try {
-                        const guias = await window.api('/api/guias-ruta');
-                        if (guias && guias.length > 0 && guias[0].camion_id) {
-                            await window.saveEventCheckpointLocation(guias[0].camion_id, 'En Camino');
-                        }
-                    } catch (e) {
-                        console.warn("No se pudo enviar punto de control En Camino:", e);
-                    }
-                }
+            // Selección / Visualización simple: NO cambia el estado del pedido en BD ni en la UI.
+            this.pedidos.forEach(p => {
+                p.ui_estado = (p.id === id) ? 'SELECCIONADO' : p.estado;
+            });
+
+            this.renderMarkers();
+            if (pTarget.lat && pTarget.lng && this.map) {
+                this.map.flyTo([parseFloat(pTarget.lat), parseFloat(pTarget.lng)], 16);
             }
         },
 
@@ -415,6 +423,31 @@ document.addEventListener('alpine:init', () => {
 
         navegar(p) {
             if (!p) return;
+
+            // 1. Actualización reactiva instantánea: exclusividad única de 'listo_para_entregar'
+            this.pedidos.forEach(item => {
+                const isTerminado = ['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado'].includes(item.estado);
+                if (!isTerminado) {
+                    if (item.id === p.id) {
+                        item.estado = 'listo_para_entregar';
+                        item.ui_estado = 'SELECCIONADO';
+                    } else {
+                        if (item.estado === 'listo_para_entregar') {
+                            item.estado = 'en_ruta';
+                        }
+                        if (item.ui_estado !== 'SELECCIONADO') {
+                            item.ui_estado = item.estado;
+                        }
+                    }
+                }
+            });
+
+            this.renderMarkers();
+            if (p.lat && p.lng && this.map) {
+                this.map.flyTo([parseFloat(p.lat), parseFloat(p.lng)], 16);
+            }
+
+            // 2. Abrir GPS de forma síncrona INMEDIATA para evitar que el navegador bloquee la ventana por async delay
             const lat = p.lat;
             const lng = p.lng;
             const address = encodeURIComponent(p.direccion || p.cliente || '');
@@ -423,20 +456,33 @@ document.addEventListener('alpine:init', () => {
                 if (address) {
                     window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
                 } else {
-                    window.toast('Ubicación o dirección no registrada', 'warning', 'bottom');
+                    if (window.toast) window.toast('Ubicación o dirección no registrada', 'warning', 'bottom');
                 }
-                return;
+            } else {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isAndroid = /Android/.test(navigator.userAgent);
+
+                if (isIOS) {
+                    window.location.href = `https://maps.apple.com/?daddr=${lat},${lng}`;
+                } else if (isAndroid) {
+                    window.location.href = `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(p.cliente || 'Entrega')})`;
+                } else {
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                }
             }
 
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            const isAndroid = /Android/.test(navigator.userAgent);
+            // 3. Notificar al backend en segundo plano
+            window.api(`/api/pedidos/${p.id}/seleccionar`, { method: 'PATCH' }).catch(e => {
+                console.warn("Error enviando estado Navegar GPS al servidor:", e);
+            });
 
-            if (isIOS) {
-                window.location.href = `https://maps.apple.com/?daddr=${lat},${lng}`;
-            } else if (isAndroid) {
-                window.location.href = `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(p.cliente || 'Entrega')})`;
-            } else {
-                window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+            // 4. Disparo de Evento de Estado: En Camino (Punto de Control Firestore)
+            if (typeof window.saveEventCheckpointLocation === 'function') {
+                window.api('/api/guias-ruta').then(guias => {
+                    if (guias && guias.length > 0 && guias[0].camion_id) {
+                        window.saveEventCheckpointLocation(guias[0].camion_id, 'En Camino');
+                    }
+                }).catch(console.error);
             }
         },
 

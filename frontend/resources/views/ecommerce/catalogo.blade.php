@@ -140,7 +140,7 @@
                         </div>
                         
                         <!-- Cuerpo de la Tarjeta -->
-                        <div class="p-5 flex-grow flex flex-col justify-between">
+                        <div class="p-5 flex-grow flex flex-col justify-between" x-data="{ qty: 1, tipoCompra: 'unidad' }">
                             <div>
                                 <p class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">
                                     <span x-text="product.marca"></span> <span class="text-gray-300">•</span> <span class="text-gray-500 font-semibold" x-text="product.categoria"></span>
@@ -148,24 +148,32 @@
                                 <h3 class="font-bold text-base text-gray-900 group-hover:text-[#E3001B] transition-colors line-clamp-1" x-text="product.nombre"></h3>
                                 
                                 <div class="mt-2 flex items-baseline justify-between">
-                                    <div class="flex items-baseline gap-1">
-                                        <span class="text-2xl font-black text-slate-900" x-text="formatMoney(product.precio)"></span>
-                                        <span class="text-[11px] text-gray-400 font-semibold">/ unidad</span>
+                                    <div class="flex flex-col">
+                                        <div class="flex items-baseline gap-1">
+                                            <span class="text-2xl font-black text-slate-900" x-text="formatMoney(parseFloat(product.precio || 0) * (tipoCompra === 'paca' ? parseInt(product.unidades_por_paca || 1) : 1))"></span>
+                                            <span class="text-[11px] text-gray-400 font-semibold" x-text="tipoCompra === 'paca' ? `/ paca (${product.unidades_por_paca} unds)` : '/ unidad'"></span>
+                                        </div>
+                                        <template x-if="qty > 1 || tipoCompra === 'paca'">
+                                            <span class="text-[11px] text-slate-600 font-bold mt-0.5" x-text="`Subtotal: ${formatMoney(parseFloat(product.precio || 0) * (tipoCompra === 'paca' ? parseInt(product.unidades_por_paca || 1) : 1) * qty)}`"></span>
+                                        </template>
+                                        <template x-if="getCantidadEnCarrito(product) > 0">
+                                            <span class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md mt-1.5 inline-block self-start" x-text="`🛒 En carrito: ${getCantidadEnCarrito(product)} unds`"></span>
+                                        </template>
                                     </div>
-                                    <!-- Visualización de Stock Disponible -->
-                                    <span class="text-xs font-bold px-2 py-0.5 rounded-md"
+                                    <!-- Visualización de Stock Disponible Restante -->
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded-md self-start"
                                           :class="{
                                               'bg-rose-50 text-rose-700 border border-rose-200': getStockDisponible(product) <= 0,
                                               'bg-amber-50 text-amber-700 border border-amber-200': getStockDisponible(product) > 0 && getStockDisponible(product) <= 5,
                                               'bg-emerald-50 text-emerald-700 border border-emerald-200': getStockDisponible(product) > 5
                                           }"
-                                          x-text="`Stock: ${getStockDisponible(product)}`">
+                                          x-text="`Disp: ${getStockDisponible(product)}`">
                                     </span>
                                 </div>
                             </div>
 
                             <!-- Selector de Cantidad y Botón de Compra -->
-                            <div class="mt-5 pt-4 border-t border-gray-100 space-y-3" x-data="{ qty: 1, tipoCompra: 'unidad' }">
+                            <div class="mt-5 pt-4 border-t border-gray-100 space-y-3">
                                 <!-- Selector Unidad vs Paca -->
                                 <template x-if="product.unidades_por_paca > 1">
                                     <select x-model="tipoCompra" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-slate-800 outline-none cursor-pointer">
@@ -204,7 +212,7 @@
                                     <button @click="
                                         let finalQty = qty;
                                         if(tipoCompra === 'paca') finalQty = qty * (product.unidades_por_paca || 1);
-                                        let res = window.CarritoManager.agregarItemConValidacion(product.id, product.nombre, finalQty, parseFloat(product.precio), getStockDisponible(product), product.unidades_por_paca, product.imagen_gcs_path);
+                                        let res = window.CarritoManager.agregarItemConValidacion(product.id, product.nombre, finalQty, parseFloat(product.precio), getStockBase(product), product.unidades_por_paca, product.imagen_gcs_path);
                                         if (res.exito) {
                                             $dispatch('cart-updated');
                                             if(typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: '¡Agregado al carrito!', toast: true, position: 'bottom', showConfirmButton: false, timer: 1800});
@@ -240,22 +248,24 @@ function catalogo() {
             categorias: []
         },
         cartItems: [],
-        getStockDisponible(p) {
+        getStockBase(p) {
             if (!p) return 0;
-            let disponibleBackend = 0;
             if (p.disponible !== undefined && p.disponible !== null) {
-                disponibleBackend = parseFloat(p.disponible);
-            } else {
-                const cantFisica = parseFloat(p.cantidad_fisica || 0);
-                const enPedidos = parseFloat(p.en_pedidos || 0);
-                disponibleBackend = Math.max(0, cantFisica - enPedidos);
+                return parseFloat(p.disponible);
             }
-
-            // Descontar la cantidad que el usuario ya tiene agregada en el carrito local
-            const itemEnCarrito = (this.cartItems || []).find(i => i.productoId === p.id);
-            const enCarritoLocal = itemEnCarrito ? parseFloat(itemEnCarrito.cantidad || 0) : 0;
-
+            const cantFisica = parseFloat(p.cantidad_fisica || 0);
+            const enPedidos = parseFloat(p.en_pedidos || 0);
+            return Math.max(0, cantFisica - enPedidos);
+        },
+        getStockDisponible(p) {
+            const disponibleBackend = this.getStockBase(p);
+            const enCarritoLocal = this.getCantidadEnCarrito(p);
             return Math.max(0, disponibleBackend - enCarritoLocal);
+        },
+        getCantidadEnCarrito(p) {
+            if (!p || !this.cartItems) return 0;
+            const itemEnCarrito = this.cartItems.find(i => i.productoId === p.id);
+            return itemEnCarrito ? parseFloat(itemEnCarrito.cantidad || 0) : 0;
         },
         init() {
             this.updateCartItems();

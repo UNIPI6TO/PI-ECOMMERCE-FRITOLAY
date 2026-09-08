@@ -149,19 +149,19 @@
                             <td class="py-4 px-6 whitespace-nowrap">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1.5 border" 
                                     :class="{
-                                        'bg-amber-50 text-amber-800 border-amber-200': pedido.estado.includes('espera'),
-                                        'bg-emerald-50 text-emerald-800 border-emerald-200': pedido.estado.includes('entregado'),
-                                        'bg-blue-50 text-blue-800 border-blue-200': pedido.estado === 'en_ruta' || pedido.estado === 'listo_para_entregar',
+                                        'bg-amber-50 text-amber-800 border-amber-200': pedido.estado.includes('espera') || pedido.estado === 'asignado',
+                                        'bg-blue-50 text-blue-800 border-blue-200': pedido.estado === 'en_ruta',
+                                        'bg-emerald-50 text-emerald-800 border-emerald-200': pedido.estado === 'listo_para_entregar' || pedido.estado.includes('entregado'),
                                         'bg-rose-50 text-rose-800 border-rose-200': pedido.estado === 'cancelado' || pedido.estado === 'no_entregado'
                                     }">
                                     <span class="w-1.5 h-1.5 rounded-full"
                                           :class="{
-                                              'bg-amber-500': pedido.estado.includes('espera'),
-                                              'bg-emerald-500': pedido.estado.includes('entregado'),
-                                              'bg-blue-500': pedido.estado === 'en_ruta' || pedido.estado === 'listo_para_entregar',
+                                              'bg-amber-500': pedido.estado.includes('espera') || pedido.estado === 'asignado',
+                                              'bg-blue-500': pedido.estado === 'en_ruta',
+                                              'bg-emerald-500': pedido.estado === 'listo_para_entregar' || pedido.estado.includes('entregado'),
                                               'bg-rose-500': pedido.estado === 'cancelado' || pedido.estado === 'no_entregado'
                                           }"></span>
-                                    <span x-text="pedido.estado === 'no_entregado' ? 'Devolución / No Entregado' : pedido.estado.replace(/_/g, ' ')"></span>
+                                    <span x-text="pedido.estado === 'listo_para_entregar' ? 'Por Entregar' : (pedido.estado === 'en_ruta' ? 'En Ruta' : (pedido.estado === 'no_entregado' ? 'Devolución / No Entregado' : pedido.estado.replace(/_/g, ' ')))"></span>
                                 </span>
                             </td>
                             <td class="py-4 px-6 text-gray-600 font-bold uppercase text-[11px]" x-text="(pedido.metodo_pago || '').replace(/_/g, ' ')"></td>
@@ -186,9 +186,9 @@
                                          <span>N/C</span>
                                      </button>
 
-                                     <!-- Rastrear -->
+                                     <!-- Rastrear (Únicamente en estado Por Entregar) -->
                                      <a :href="`/ecommerce/rastreo/${pedido.id}`" 
-                                        x-show="pedido.estado === 'en_ruta'" 
+                                        x-show="pedido.estado === 'listo_para_entregar'" 
                                         title="Rastrear Camión en Vivo" 
                                         class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-xl font-bold transition-all shadow-2xs inline-flex items-center gap-1">
                                          <svg class="w-3.5 h-3.5 text-slate-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -521,17 +521,57 @@ document.addEventListener('alpine:init', () => {
 
             this.loading = true;
             try {
+                await this.cargarHistorial();
+            } finally {
+                this.loading = false;
+            }
+
+            // Solicitar permiso de notificaciones al sistema operativo si es la primera vez
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+
+            // Polling silencioso en segundo plano cada 3 segundos para actualización dinámica sin recargar la página
+            setInterval(() => {
+                this.cargarHistorial(true);
+            }, 3000);
+        },
+
+        async cargarHistorial(silencioso = false) {
+            try {
                 let clienteData = await window.api('/api/clientes/me');
                 if (clienteData && clienteData.data) clienteData = clienteData.data;
                 if (clienteData && clienteData.id) {
                     const response = await window.api(`/api/clientes/${clienteData.id}/pedidos`);
-                    this.pedidosOriginales = response.data || response || [];
-                    this.filtrar();
+                    const nuevosPedidos = response.data || response || [];
+
+                    // Emitir Notificación Nativa del Sistema Operativo (PC y Móvil) cuando cambia a 'Por Entregar'
+                    if (this.pedidosOriginales.length > 0) {
+                        nuevosPedidos.forEach(nuevo => {
+                            const previo = this.pedidosOriginales.find(p => p.id === nuevo.id);
+                            if (previo && previo.estado !== 'listo_para_entregar' && nuevo.estado === 'listo_para_entregar') {
+                                if (window.notificarOS) {
+                                    window.notificarOS(`🚚 ¡Pedido #${nuevo.id} Por Entregar!`, {
+                                        body: `El vehículo de Fritolay se dirige a tu ubicación (${nuevo.direccion || 'Dirección registrada'}).`,
+                                        tag: `pedido-por-entregar-${nuevo.id}`,
+                                        url: `/ecommerce/rastreo/${nuevo.id}`
+                                    });
+                                }
+                                if (window.toast) {
+                                    window.toast(`¡Tu pedido #${nuevo.id} está Por Entregar!`, 'info', 'top');
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Actualización reactiva solo si los datos cambian o primera carga
+                    if (JSON.stringify(nuevosPedidos) !== JSON.stringify(this.pedidosOriginales)) {
+                        this.pedidosOriginales = nuevosPedidos;
+                        this.filtrar();
+                    }
                 }
             } catch (error) {
-                console.error("Error al cargar historial:", error);
-            } finally {
-                this.loading = false;
+                if (!silencioso) console.error("Error al cargar historial:", error);
             }
         },
 

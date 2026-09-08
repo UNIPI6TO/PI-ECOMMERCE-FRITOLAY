@@ -48,8 +48,10 @@ class PedidoController extends Controller
             
             if ($estadoStr === 'EN_ESPERA_APROBACION') {
                 $estadoStr = 'PENDIENTE';
-            } elseif (in_array($estadoStr, ['EN_ESPERA_ASIGNACION', 'LISTO_PARA_ENTREGAR'])) {
+            } elseif ($estadoStr === 'EN_ESPERA_ASIGNACION') {
                 $estadoStr = 'APROBADO';
+            } elseif (in_array($estadoStr, ['EN_RUTA', 'LISTO_PARA_ENTREGAR'])) {
+                $estadoStr = 'EN_RUTA';
             } elseif (in_array($estadoStr, ['ENTREGADO', 'ENTREGADO_PARCIALMENTE'])) {
                 $estadoStr = 'ENTREGADO';
             }
@@ -205,7 +207,7 @@ class PedidoController extends Controller
 
         $pedidoEnRuta = \App\Models\Pedido::with(['direccion', 'items.producto'])
             ->where('cliente_id', $cliente->id)
-            ->where('estado', 'en_ruta')
+            ->where('estado', 'listo_para_entregar')
             ->orderBy('id', 'desc')
             ->first();
 
