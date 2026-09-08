@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('pedido_id')->constrained('pedidos');
             $table->foreignId('guia_ruta_id')->constrained('guias_ruta');
             $table->integer('orden');
-            $table->enum('estado', ['asignado', 'en_ruta', 'entregado', 'no_entregado'])->default('asignado');
+            $table->string('estado', 50)->default('asignado');
             $table->timestamps();
         });
     }

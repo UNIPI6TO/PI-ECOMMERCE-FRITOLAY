@@ -161,7 +161,7 @@
                                               'bg-emerald-500': pedido.estado === 'listo_para_entregar' || pedido.estado.includes('entregado'),
                                               'bg-rose-500': pedido.estado === 'cancelado' || pedido.estado === 'no_entregado'
                                           }"></span>
-                                    <span x-text="pedido.estado === 'listo_para_entregar' ? 'Listo Por Entregar' : (pedido.estado === 'en_ruta' ? 'En Ruta' : (pedido.estado === 'no_entregado' ? 'Devolución / No Entregado' : pedido.estado.replace(/_/g, ' ')))"></span>
+                                    <span x-text="pedido.estado === 'listo_para_entregar' ? 'Por Entregar' : (pedido.estado === 'en_ruta' ? 'En Ruta' : (pedido.estado === 'no_entregado' ? 'Devolución / No Entregado' : pedido.estado.replace(/_/g, ' ')))"></span>
                                 </span>
                             </td>
                             <td class="py-4 px-6 text-gray-600 font-bold uppercase text-[11px]" x-text="(pedido.metodo_pago || '').replace(/_/g, ' ')"></td>

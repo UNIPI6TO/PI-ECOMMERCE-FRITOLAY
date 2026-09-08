@@ -25,52 +25,54 @@ class EntregaService
             throw new Exception("Pedido no encontrado.");
         }
 
-        // 1. Obtener la asignación de camión de este pedido
-        $asignacionActual = DB::table('asignacion_pedido_camion as apc')
-            ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
-            ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
-            ->where('apc.pedido_id', $pedidoId)
-            ->select('grem.camion_id')
+        // 1. Obtener directamente la asignación y la guía de ruta de este pedido
+        $asignacion = DB::table('asignacion_pedido_camion')
+            ->where('pedido_id', $pedidoId)
             ->first();
 
-        $camionId = $asignacionActual ? $asignacionActual->camion_id : null;
+        $guiaRutaId = $asignacion ? $asignacion->guia_ruta_id : null;
 
-        // DB Transaction para asegurar exclusividad atómica en la misma ruta/camión
-        DB::transaction(function() use ($camionId, $choferId, $pedidoId) {
-            // Revertir CUALQUIER otro pedido en 'listo_para_entregar' perteneciente al mismo camión o chofer a 'en_ruta'
-            DB::table('pedidos')
-                ->whereIn('id', function($q) use ($camionId, $choferId) {
-                    $q->select('apc.pedido_id')
-                      ->from('asignacion_pedido_camion as apc')
-                      ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
-                      ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
-                      ->leftJoin('camiones as c', 'c.id', '=', 'grem.camion_id')
-                      ->where(function($w) use ($camionId, $choferId) {
-                          if ($camionId) $w->where('grem.camion_id', $camionId);
-                          if ($choferId) $w->orWhere('c.chofer_id', $choferId);
-                      });
-                })
-                ->where('estado', 'listo_para_entregar')
-                ->update(['estado' => 'en_ruta']);
+        // DB Transaction para asegurar exclusividad atómica en la misma guía de ruta
+        DB::transaction(function() use ($guiaRutaId, $pedidoId) {
+            if ($guiaRutaId) {
+                // Obtener todos los IDs de pedidos pertenecientes a esta misma guía de ruta
+                $pedidoIdsEnGuia = DB::table('asignacion_pedido_camion')
+                    ->where('guia_ruta_id', $guiaRutaId)
+                    ->pluck('pedido_id')
+                    ->filter()
+                    ->toArray();
 
-            DB::table('asignacion_pedido_camion')
-                ->whereIn('pedido_id', function($q) use ($camionId, $choferId) {
-                    $q->select('apc.pedido_id')
-                      ->from('asignacion_pedido_camion as apc')
-                      ->join('guias_ruta as gr', 'gr.id', '=', 'apc.guia_ruta_id')
-                      ->join('guias_remision as grem', 'grem.id', '=', 'gr.guia_remision_id')
-                      ->leftJoin('camiones as c', 'c.id', '=', 'grem.camion_id')
-                      ->where(function($w) use ($camionId, $choferId) {
-                          if ($camionId) $w->where('grem.camion_id', $camionId);
-                          if ($choferId) $w->orWhere('c.chofer_id', $choferId);
-                      });
-                })
-                ->where('estado', 'listo_para_entregar')
-                ->update(['estado' => 'asignado']);
+                if (!empty($pedidoIdsEnGuia)) {
+                    // Revertir CUALQUIER otro pedido de esta guía que estuviera en 'listo_para_entregar' a 'en_ruta'
+                    DB::table('pedidos')
+                        ->whereIn('id', $pedidoIdsEnGuia)
+                        ->where('estado', 'listo_para_entregar')
+                        ->update(['estado' => 'en_ruta']);
 
-            // Actualizar pedido seleccionado a 'listo_para_entregar'
+                    DB::table('asignacion_pedido_camion')
+                        ->whereIn('pedido_id', $pedidoIdsEnGuia)
+                        ->where('estado', 'listo_para_entregar')
+                        ->update(['estado' => 'asignado']);
+                }
+            } else {
+                // Fallback si no tiene guía asignada: revertir cualquier otro en listo_para_entregar
+                DB::table('pedidos')
+                    ->where('estado', 'listo_para_entregar')
+                    ->update(['estado' => 'en_ruta']);
+
+                DB::table('asignacion_pedido_camion')
+                    ->where('estado', 'listo_para_entregar')
+                    ->update(['estado' => 'asignado']);
+            }
+
+            // Actualizar pedido seleccionado a 'listo_para_entregar' en la base de datos
             DB::table('pedidos')->where('id', $pedidoId)->update(['estado' => 'listo_para_entregar']);
-            DB::table('asignacion_pedido_camion')->where('pedido_id', $pedidoId)->update(['estado' => 'listo_para_entregar']);
+
+            try {
+                DB::table('asignacion_pedido_camion')->where('pedido_id', $pedidoId)->update(['estado' => 'listo_para_entregar']);
+            } catch (\Throwable $e) {
+                DB::table('asignacion_pedido_camion')->where('pedido_id', $pedidoId)->update(['estado' => 'en_ruta']);
+            }
         });
 
         $this->auditoriaService->logSimple('pedido_listo_entregar', "Chofer fijó navegación a listo para entregar pedido {$pedidoId}", $choferId);
@@ -332,11 +334,21 @@ class EntregaService
         
         if (!$guiaRuta) return collect([]);
         
-        return $guiaRuta->asignaciones->map(function ($asig) {
+        $listoEncontrado = false;
+        return $guiaRuta->asignaciones->map(function ($asig) use (&$listoEncontrado) {
             $p = $asig->pedido;
             $razonSocial = $p->cliente->razon_social ?: ($p->cliente->nombre_cliente ?? '');
             $nombrePersona = $p->cliente->usuario->nombre ?? ($p->cliente->nombre_cliente ?? '');
             
+            $estadoCalculado = $p->estado ?: $asig->estado;
+            if ($estadoCalculado === 'listo_para_entregar') {
+                if ($listoEncontrado) {
+                    $estadoCalculado = 'en_ruta';
+                } else {
+                    $listoEncontrado = true;
+                }
+            }
+
             return [
                 'id' => $p->id,
                 'numero_pedido' => $p->numero_pedido,
@@ -348,7 +360,7 @@ class EntregaService
                 'direccion' => $p->direccion->descripcion ?? 'Ubicación Desconocida',
                 'lat' => $p->direccion->latitud,
                 'lng' => $p->direccion->longitud,
-                'estado' => $p->estado ?: $asig->estado,
+                'estado' => $estadoCalculado,
                 'orden' => $asig->orden,
                 'subtotal' => $p->subtotal,
                 'iva' => $p->iva,

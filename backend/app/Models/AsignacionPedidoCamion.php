@@ -12,6 +12,7 @@ class AsignacionPedidoCamion extends Model
 
     public const ESTADO_ASIGNADO = 'asignado';
     public const ESTADO_EN_RUTA = 'en_ruta';
+    public const ESTADO_LISTO_PARA_ENTREGAR = 'listo_para_entregar';
     public const ESTADO_ENTREGADO = 'entregado';
     public const ESTADO_NO_ENTREGADO = 'no_entregado';
 
