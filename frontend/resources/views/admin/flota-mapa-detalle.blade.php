@@ -7,7 +7,7 @@
     
     <!-- Botón Regresar y Encabezado con Filtros Datadog -->
     <div class="mb-6 bg-white rounded-2xl shadow-xs border border-gray-100 p-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
                 <a href="/admin/flota/ubicaciones" class="inline-flex items-center gap-1.5 text-xs font-extrabold text-gray-500 hover:text-slate-900 transition-colors mb-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -20,6 +20,9 @@
                 <p class="text-xs font-semibold text-gray-500 mt-1" x-text="camion ? `Conductor asignado: ${camion.chofer?.nombre || camion.chofer_nombre || 'Sin asignación'}` : ''"></p>
             </div>
 
+            <!-- Filtro de Fechas (ComboBox, Desde, Hasta y Atajos Rápidos) -->
+            <div class="bg-white p-2 sm:p-2.5 rounded-2xl border border-gray-200/80 shadow-xs flex flex-wrap items-center gap-3 text-xs">
+                
                 <!-- ComboBox de Fechas con Actividad Real (Primer elemento 'Todos') -->
                 <div class="flex items-center gap-2">
                     <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide flex items-center gap-1">
@@ -496,6 +499,9 @@ document.addEventListener('alpine:init', () => {
 
         actualizarCapasMapa() {
             if (!this.map || !this.markersLayerGroup) return;
+
+            // Recalcular tamaño del viewport del mapa para prevenir descalce visual
+            this.map.invalidateSize();
 
             this.markersLayerGroup.clearLayers();
             if (this.polyLineLayer) {
