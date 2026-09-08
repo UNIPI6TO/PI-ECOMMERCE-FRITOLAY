@@ -379,12 +379,27 @@ document.addEventListener('alpine:init', () => {
         },
 
         async seleccionar(id, triggerCheckpoint = true) {
+            // Actualizar backend para establecer este pedido como en_ruta y desmarcar anteriores
+            try {
+                await window.api(`/api/pedidos/${id}/seleccionar`, { method: 'PATCH' });
+            } catch (e) {
+                console.warn("Error actualizando selección en backend:", e);
+            }
+
             this.pedidos.forEach(p => {
-                if (p.ui_estado === 'SELECCIONADO') p.ui_estado = p.estado;
+                if (p.id === id) {
+                    p.estado = 'en_ruta';
+                    p.ui_estado = 'SELECCIONADO';
+                } else if (p.estado === 'en_ruta') {
+                    p.estado = 'listo_para_entregar';
+                    p.ui_estado = 'listo_para_entregar';
+                } else if (p.ui_estado === 'SELECCIONADO') {
+                    p.ui_estado = p.estado;
+                }
             });
+
             const p = this.pedidos.find(x => x.id === id);
             if (p) {
-                p.ui_estado = 'SELECCIONADO';
                 this.renderMarkers();
                 if (p.lat && p.lng && this.map) {
                     this.map.flyTo([p.lat, p.lng], 16);
@@ -416,13 +431,8 @@ document.addEventListener('alpine:init', () => {
         async navegar(p) {
             if (!p) return;
 
-            // Marcar el pedido como el destino activo del chofer en el backend
-            try {
-                await window.api(`/api/pedidos/${p.id}/seleccionar`, { method: 'PATCH' });
-                this.seleccionar(p.id, true);
-            } catch (e) {
-                console.warn('Error registrando selección de pedido en backend:', e);
-            }
+            // Invocar la selección y sincronización de destino
+            await this.seleccionar(p.id, true);
 
             const lat = p.lat;
             const lng = p.lng;
