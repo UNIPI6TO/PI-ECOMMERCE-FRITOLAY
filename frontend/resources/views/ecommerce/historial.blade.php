@@ -526,6 +526,11 @@ document.addEventListener('alpine:init', () => {
                 this.loading = false;
             }
 
+            // Solicitar permiso de notificaciones al sistema operativo si es la primera vez
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+
             // Polling silencioso en segundo plano cada 3 segundos para actualización dinámica sin recargar la página
             setInterval(() => {
                 this.cargarHistorial(true);
@@ -539,6 +544,25 @@ document.addEventListener('alpine:init', () => {
                 if (clienteData && clienteData.id) {
                     const response = await window.api(`/api/clientes/${clienteData.id}/pedidos`);
                     const nuevosPedidos = response.data || response || [];
+
+                    // Emitir Notificación Nativa del Sistema Operativo (PC y Móvil) cuando cambia a 'Por Entregar'
+                    if (this.pedidosOriginales.length > 0) {
+                        nuevosPedidos.forEach(nuevo => {
+                            const previo = this.pedidosOriginales.find(p => p.id === nuevo.id);
+                            if (previo && previo.estado !== 'listo_para_entregar' && nuevo.estado === 'listo_para_entregar') {
+                                if (window.notificarOS) {
+                                    window.notificarOS(`🚚 ¡Pedido #${nuevo.id} Por Entregar!`, {
+                                        body: `El vehículo de Fritolay se dirige a tu ubicación (${nuevo.direccion || 'Dirección registrada'}).`,
+                                        tag: `pedido-por-entregar-${nuevo.id}`,
+                                        url: `/ecommerce/rastreo/${nuevo.id}`
+                                    });
+                                }
+                                if (window.toast) {
+                                    window.toast(`¡Tu pedido #${nuevo.id} está Por Entregar!`, 'info', 'top');
+                                }
+                            }
+                        });
+                    }
                     
                     // Actualización reactiva solo si los datos cambian o primera carga
                     if (JSON.stringify(nuevosPedidos) !== JSON.stringify(this.pedidosOriginales)) {

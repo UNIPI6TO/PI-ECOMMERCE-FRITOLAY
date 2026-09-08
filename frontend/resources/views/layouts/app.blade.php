@@ -161,6 +161,42 @@
             return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
         };
 
+        /**
+         * Emisor de Notificaciones Nativas del Sistema Operativo (PC y Móvil)
+         */
+        window.notificarOS = function(titulo, opciones = {}) {
+            if (!('Notification' in window)) return;
+
+            const disparar = () => {
+                if (Notification.permission === 'granted') {
+                    try {
+                        const notif = new Notification(titulo, {
+                            icon: '/icons/icon-192.png',
+                            badge: '/icons/icon-192.png',
+                            vibrate: [200, 100, 200],
+                            ...opciones
+                        });
+                        notif.onclick = function() {
+                            window.focus();
+                            if (opciones.url) window.location.href = opciones.url;
+                        };
+                    } catch (e) {
+                        console.warn("No se pudo emitir notificación del sistema operativo:", e);
+                    }
+                }
+            };
+
+            if (Notification.permission === 'granted') {
+                disparar();
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        disparar();
+                    }
+                });
+            }
+        };
+
         // Guardian de rutas basado en roles (Role-Based Routing)
         (function() {
             const role = localStorage.getItem('role') || 'guest';
