@@ -7,7 +7,7 @@
     
     <!-- Botón Regresar y Encabezado con Filtros Datadog -->
     <div class="mb-6 bg-white rounded-2xl shadow-xs border border-gray-100 p-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
                 <a href="/admin/flota/ubicaciones" class="inline-flex items-center gap-1.5 text-xs font-extrabold text-gray-500 hover:text-slate-900 transition-colors mb-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -21,56 +21,76 @@
             </div>
 
             <!-- Filtro de Fechas (Desde, Hasta y Atajos Rápidos) -->
-            <div class="bg-white p-2 sm:p-2.5 rounded-2xl border border-gray-200/80 shadow-xs flex flex-wrap items-center gap-3 text-xs">
+            <div class="bg-white p-2 sm:p-2.5 rounded-2xl border border-gray-200/80 shadow-xs flex flex-wrap items-center gap-2.5 text-xs">
                 
                 <!-- Input Fecha DESDE -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5">
                     <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide">DESDE:</span>
                     <input type="date" 
                            x-model="fechaDesdeInput" 
                            @change="aplicarRangoExactoFechas()"
-                           class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none cursor-pointer">
+                           class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none cursor-pointer">
                 </div>
 
                 <!-- Input Fecha HASTA -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5">
                     <span class="font-black text-slate-500 uppercase text-[11px] tracking-wide">HASTA:</span>
                     <input type="date" 
                            x-model="fechaHastaInput" 
                            @change="aplicarRangoExactoFechas()"
-                           class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none cursor-pointer">
+                           class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none cursor-pointer">
                 </div>
 
-                <!-- Atajos de Selección Rápida (Último Mes, Última Semana, Hoy) -->
-                <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+                <!-- Atajos de Selección Rápida (Último Mes, Última Semana, Hoy) In-line -->
+                <div class="flex items-center gap-1 bg-gray-100 p-0.5 rounded-xl ml-auto sm:ml-0">
                     <button @click="seleccionarAtajo('MES')" 
                             :class="filterLabel === 'Último Mes' ? 'bg-white text-slate-900 font-black shadow-2xs' : 'text-gray-600 hover:text-slate-900 font-bold'"
-                            class="px-3 py-1 rounded-lg text-xs transition-all">
+                            class="px-2.5 py-1 rounded-lg text-xs transition-all">
                         Último Mes
                     </button>
                     <button @click="seleccionarAtajo('SEMANA')" 
                             :class="filterLabel === 'Última Semana' ? 'bg-white text-slate-900 font-black shadow-2xs' : 'text-gray-600 hover:text-slate-900 font-bold'"
-                            class="px-3 py-1 rounded-lg text-xs transition-all">
+                            class="px-2.5 py-1 rounded-lg text-xs transition-all">
                         Última Semana
                     </button>
                     <button @click="seleccionarAtajo('HOY')" 
                             :class="filterLabel === 'Hoy' ? 'bg-white text-slate-900 font-black shadow-2xs' : 'text-gray-600 hover:text-slate-900 font-bold'"
-                            class="px-3 py-1 rounded-lg text-xs transition-all">
+                            class="px-2.5 py-1 rounded-lg text-xs transition-all">
                         Hoy
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Rango de Fechas Activo e Información -->
-        <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between text-xs font-semibold text-gray-500 gap-2">
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Filtro activo: <strong class="text-slate-900" x-text="filterLabel"></strong></span>
-                <span class="text-gray-300">•</span>
-                <span>Período: <strong class="text-slate-800" x-text="`${fechaDesdeInput} al ${fechaHastaInput}`"></strong></span>
+        <!-- Rango de Fechas Activo, ComboBox de Fechas con Actividad e Información -->
+        <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between text-xs font-semibold text-gray-500 gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- ComboBox de Fechas con Actividad Real Ubicado Abajo -->
+                <div class="flex items-center gap-1.5">
+                    <span class="font-black text-slate-600 uppercase text-[11px] tracking-wide flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        FECHA ACTIVIDAD:
+                    </span>
+                    <select x-model="fechaSeleccionadaCombo"
+                            @change="onCambioFechaCombo()"
+                            class="px-3 py-1 bg-blue-50/70 border border-blue-200 rounded-xl text-xs font-extrabold text-blue-900 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none cursor-pointer shadow-2xs">
+                        <option value="TODOS">Todos (Historial Completo)</option>
+                        <template x-for="f in fechasDisponibles" :key="f.fecha">
+                            <option :value="f.fecha" x-text="`${f.fecha} (${f.totalPuntos} reg)`"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <span class="text-gray-300 hidden sm:inline">•</span>
+
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Filtro activo: <strong class="text-slate-900" x-text="filterLabel"></strong></span>
+                    <span class="text-gray-300">•</span>
+                    <span>Período: <strong class="text-slate-800" x-text="`${fechaDesdeInput} al ${fechaHastaInput}`"></strong></span>
+                </div>
             </div>
-            <div class="text-blue-600 font-extrabold" x-text="`${puntosFiltrados.length} puntos trazados en mapa`"></div>
+            <div class="text-blue-600 font-extrabold ml-auto" x-text="`${puntosFiltrados.length} puntos trazados en mapa`"></div>
         </div>
     </div>
 
@@ -199,6 +219,8 @@ document.addEventListener('alpine:init', () => {
         filterLabel: 'Hoy',
         fechaInicio: new Date(),
         fechaFin: new Date(),
+        fechaSeleccionadaCombo: 'TODOS',
+        fechasDisponibles: [],
         historialPuntos: [],
         puntosFiltrados: [],
         ultimaUbicacion: null,
@@ -214,10 +236,10 @@ document.addEventListener('alpine:init', () => {
                 const list = Array.isArray(res) ? res : (res.data || []);
                 this.camion = list.find(c => Number(c.id) === Number(this.camionId)) || null;
 
-                // Inicializar fechas a 'Hoy'
-                this.seleccionarAtajo('HOY');
+                // 1. Extraer dinámicamente las fechas con actividad real desde Firestore
+                await this.cargarFechasDisponiblesConActividad();
 
-                // Cargar historial de Firestore vinculando clave idCamion
+                // 2. Cargar historial por defecto (Todos / Rango)
                 await this.cargarHistorialFirestore();
 
             } catch (err) {
@@ -228,7 +250,65 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        seleccionarAtajo(tipo) {
+        /**
+         * Requerimiento 1: Carga Dinámica de Fechas con Actividad Real
+         * Examina la subcolección 'historial' en Firestore y extrae las fechas únicas que sí tienen puntos.
+         */
+        async cargarFechasDisponiblesConActividad() {
+            try {
+                if (window.firestoreDb && window.firestoreCollection && window.firestoreGetDocs) {
+                    const colRef = window.firestoreCollection(window.firestoreDb, 'camiones', String(this.camionId), 'historial');
+                    const snap = await window.firestoreGetDocs(colRef);
+                    const fechasMap = [];
+
+                    snap.forEach(docSnap => {
+                        const data = docSnap.data();
+                        const idFecha = docSnap.id; // YYYY-MM-DD
+                        if (Array.isArray(data.puntos) && data.puntos.length > 0) {
+                            fechasMap.push({
+                                fecha: idFecha,
+                                totalPuntos: data.puntos.length,
+                                timestamp: new Date(idFecha + 'T00:00:00').getTime()
+                            });
+                        }
+                    });
+
+                    // Requerimiento 2: Ordenar de la más reciente a la más antigua
+                    fechasMap.sort((a, b) => b.timestamp - a.timestamp);
+                    this.fechasDisponibles = fechasMap;
+                }
+            } catch (err) {
+                console.warn('[Mapa Detalle] No se pudieron cargar fechas desde subcolección Firestore:', err.message);
+                this.fechasDisponibles = [];
+            }
+        },
+
+        /**
+         * Requerimiento 3: Actualización Reactiva del Mapa según selección del ComboBox
+         */
+        async onCambioFechaCombo() {
+            this.cargando = true;
+
+            if (this.fechaSeleccionadaCombo === 'TODOS') {
+                // Opción 'Todos': Carga todo el historial disponible
+                this.filterLabel = 'Todos (Historial Completo)';
+                await this.cargarHistorialFirestore(true);
+            } else {
+                // Fecha específica seleccionada
+                this.filterLabel = `Fecha: ${this.fechaSeleccionadaCombo}`;
+                this.fechaDesdeInput = this.fechaSeleccionadaCombo;
+                this.fechaHastaInput = this.fechaSeleccionadaCombo;
+                
+                this.fechaInicio = new Date(this.fechaSeleccionadaCombo + 'T00:00:00');
+                this.fechaFin = new Date(this.fechaSeleccionadaCombo + 'T23:59:59');
+
+                await this.cargarHistorialFirestore();
+            }
+
+            this.cargando = false;
+        },
+
+        async seleccionarAtajo(tipo) {
             const hoy = new Date();
             const fin = new Date(hoy);
             fin.setHours(23, 59, 59, 999);
@@ -249,13 +329,23 @@ document.addEventListener('alpine:init', () => {
             this.fechaInicio = inicio;
             this.fechaFin = fin;
 
-            this.fechaDesdeInput = inicio.toISOString().split('T')[0];
-            this.fechaHastaInput = fin.toISOString().split('T')[0];
+            // Formatear en hora local YYYY-MM-DD para evitar desfasajes de UTC
+            const formatLocalIso = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
 
-            this.filtrarPuntosPorFecha();
+            this.fechaDesdeInput = formatLocalIso(inicio);
+            this.fechaHastaInput = formatLocalIso(fin);
+
+            this.cargando = true;
+            await this.cargarHistorialFirestore();
+            this.cargando = false;
         },
 
-        aplicarRangoExactoFechas() {
+        async aplicarRangoExactoFechas() {
             if (!this.fechaDesdeInput || !this.fechaHastaInput) return;
 
             const inicio = new Date(this.fechaDesdeInput + 'T00:00:00');
@@ -270,23 +360,38 @@ document.addEventListener('alpine:init', () => {
             this.fechaFin = fin;
             this.filterLabel = 'Personalizado';
 
-            this.filtrarPuntosPorFecha();
+            this.cargando = true;
+            await this.cargarHistorialFirestore();
+            this.cargando = false;
         },
 
-        async cargarHistorialFirestore() {
+        async cargarHistorialFirestore(cargarTodos = false) {
             try {
                 if (window.firestoreDb && window.firestoreDoc && window.firestoreGetDoc) {
-                    // Generar lista de fechas YYYY-MM-DD entre fechaInicio y fechaFin
-                    const fechas = [];
-                    const dCur = new Date(this.fechaInicio);
-                    dCur.setHours(0, 0, 0, 0);
-                    const dEnd = new Date(this.fechaFin);
-                    dEnd.setHours(23, 59, 59, 999);
+                    // Helper para formatear fecha en hora local YYYY-MM-DD
+                    const toLocalYmd = (d) => {
+                        const yr = d.getFullYear();
+                        const mo = String(d.getMonth() + 1).padStart(2, '0');
+                        const dy = String(d.getDate()).padStart(2, '0');
+                        return `${yr}-${mo}-${dy}`;
+                    };
 
-                    while (dCur <= dEnd) {
-                        const isoFecha = dCur.toISOString().split('T')[0];
-                        fechas.push(isoFecha);
-                        dCur.setDate(dCur.getDate() + 1);
+                    let fechas = [];
+
+                    if (cargarTodos && this.fechasDisponibles.length > 0) {
+                        // Si se solicita 'TODOS', se cargan todas las fechas que tienen actividad registrada
+                        fechas = this.fechasDisponibles.map(f => f.fecha);
+                    } else {
+                        // Generar lista de fechas YYYY-MM-DD entre fechaInicio y fechaFin
+                        const dCur = new Date(this.fechaInicio);
+                        dCur.setHours(0, 0, 0, 0);
+                        const dEnd = new Date(this.fechaFin);
+                        dEnd.setHours(23, 59, 59, 999);
+
+                        while (dCur <= dEnd) {
+                            fechas.push(toLocalYmd(dCur));
+                            dCur.setDate(dCur.getDate() + 1);
+                        }
                     }
 
                     // Consultar cada documento diario de la subcolección camiones/{idCamion}/historial/{YYYY-MM-DD}
@@ -339,13 +444,17 @@ document.addEventListener('alpine:init', () => {
         },
 
         filtrarPuntosPorFecha() {
-            const fStart = new Date(this.fechaInicio).getTime();
-            const fEnd = new Date(this.fechaFin).getTime();
+            if (this.fechaSeleccionadaCombo === 'TODOS') {
+                this.puntosFiltrados = [...this.historialPuntos];
+            } else {
+                const fStart = new Date(this.fechaInicio).getTime();
+                const fEnd = new Date(this.fechaFin).getTime();
 
-            this.puntosFiltrados = this.historialPuntos.filter(p => {
-                const pTime = new Date(p.timestamp).getTime();
-                return pTime >= fStart && pTime <= fEnd;
-            });
+                this.puntosFiltrados = this.historialPuntos.filter(p => {
+                    const pTime = new Date(p.timestamp).getTime();
+                    return pTime >= fStart && pTime <= fEnd;
+                });
+            }
 
             // Calcular distancia total trazada con Haversine
             let distMeters = 0;
@@ -394,6 +503,9 @@ document.addEventListener('alpine:init', () => {
 
         actualizarCapasMapa() {
             if (!this.map || !this.markersLayerGroup) return;
+
+            // Recalcular tamaño del viewport del mapa para prevenir descalce visual
+            this.map.invalidateSize();
 
             this.markersLayerGroup.clearLayers();
             if (this.polyLineLayer) {
