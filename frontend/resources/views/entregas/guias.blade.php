@@ -8,14 +8,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
 <div class="max-w-4xl mx-auto py-4 px-3 sm:px-6 pb-24" x-data="guiasActivas()">
-    <!-- Componente Blade: Tarjeta de Vehículo Asignado (Renderiza siempre que exista vehiculo asignado) -->
-    <template x-if="vehiculo">
-        <x-tarjeta-vehiculo-chofer ::vehiculo="vehiculo" />
-    </template>
-    <template x-if="!vehiculo && guias.length > 0 && guias[0].vehiculo">
-        <x-tarjeta-vehiculo-chofer ::vehiculo="guias[0].vehiculo" />
-    </template>
-
     <!-- Header Fijo con Indicador de Rol y Estado del Chofer -->
     <div class="mb-6 flex items-center justify-between gap-3 flex-wrap">
         <div>
@@ -129,17 +121,10 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('guiasActivas', () => ({
         guias: [],
-        vehiculo: null,
         loadingPdf: null,
         estadoChofer: { fase: 'LIBRE', label: 'Cargando...', mensaje: '' },
         
         async init() {
-            try {
-                this.vehiculo = await window.api('/api/chofer/vehiculo');
-            } catch (e) {
-                console.warn("No se pudo cargar vehículo asignado:", e);
-            }
-
             try {
                 this.guias = await window.api('/api/guias-ruta');
                 if (this.guias && this.guias.length > 0 && typeof window.startTracking === 'function') {

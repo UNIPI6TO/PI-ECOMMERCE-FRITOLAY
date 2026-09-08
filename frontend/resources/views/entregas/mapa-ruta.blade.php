@@ -15,20 +15,8 @@
                     <h1 class="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
                         <span>Ruta #<span x-text="guiaId"></span></span>
                         <span class="text-xs bg-[#F5C518] text-slate-900 px-2 py-0.5 rounded-full font-extrabold" x-text="`${pedidosCompletados}/${pedidos.length}`"></span>
-                        
-                        <template x-if="vehiculo">
-                            <span class="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-[11px] tracking-wider uppercase shadow-2xs font-mono ml-1 flex items-center gap-1">
-                                <span>🚚</span>
-                                <span x-text="vehiculo.placa"></span>
-                            </span>
-                        </template>
                     </h1>
-                    <div class="flex items-center gap-2 text-[11px] text-slate-300 font-semibold">
-                        <span x-text="`Efectivo estimado: $${montoEfectivoTotal.toFixed(2)}`"></span>
-                        <template x-if="vehiculo && vehiculo.descripcion">
-                            <span class="text-slate-500">• <span class="text-slate-300" x-text="vehiculo.descripcion"></span></span>
-                        </template>
-                    </div>
+                    <p class="text-[11px] text-slate-300 font-semibold" x-text="`Efectivo estimado: $${montoEfectivoTotal.toFixed(2)}`"></p>
                 </div>
             </div>
 
@@ -254,7 +242,6 @@ document.addEventListener('alpine:init', () => {
         orden: 'CERCANO',
         tabActiva: 'lista', // 'lista' o 'mapa'
         pedidos: [],
-        vehiculo: null,
         map: null,
         markers: [],
         estadoChofer: { fase: 'LIBRE', label: 'Cargando...', mensaje: '' },
@@ -308,11 +295,6 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             try {
-                const resGuias = await window.api('/api/guias-ruta');
-                if (resGuias && resGuias.length > 0 && resGuias[0].vehiculo) {
-                    this.vehiculo = resGuias[0].vehiculo;
-                }
-
                 this.pedidos = await window.api(`/api/guias-ruta/${this.guiaId}/pedidos`);
                 let selected = this.pedidos.find(p => !['entregado', 'entregado_parcialmente', 'no_entregado', 'cancelado'].includes(p.estado));
                 this.pedidos.forEach(p => p.ui_estado = p.estado);
