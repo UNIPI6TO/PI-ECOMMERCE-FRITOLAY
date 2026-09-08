@@ -228,7 +228,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        seleccionarAtajo(tipo) {
+        async seleccionarAtajo(tipo) {
             const hoy = new Date();
             const fin = new Date(hoy);
             fin.setHours(23, 59, 59, 999);
@@ -249,13 +249,23 @@ document.addEventListener('alpine:init', () => {
             this.fechaInicio = inicio;
             this.fechaFin = fin;
 
-            this.fechaDesdeInput = inicio.toISOString().split('T')[0];
-            this.fechaHastaInput = fin.toISOString().split('T')[0];
+            // Formatear en hora local YYYY-MM-DD para evitar desfasajes de UTC
+            const formatLocalIso = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
 
-            this.filtrarPuntosPorFecha();
+            this.fechaDesdeInput = formatLocalIso(inicio);
+            this.fechaHastaInput = formatLocalIso(fin);
+
+            this.cargando = true;
+            await this.cargarHistorialFirestore();
+            this.cargando = false;
         },
 
-        aplicarRangoExactoFechas() {
+        async aplicarRangoExactoFechas() {
             if (!this.fechaDesdeInput || !this.fechaHastaInput) return;
 
             const inicio = new Date(this.fechaDesdeInput + 'T00:00:00');
@@ -270,12 +280,22 @@ document.addEventListener('alpine:init', () => {
             this.fechaFin = fin;
             this.filterLabel = 'Personalizado';
 
-            this.filtrarPuntosPorFecha();
+            this.cargando = true;
+            await this.cargarHistorialFirestore();
+            this.cargando = false;
         },
 
         async cargarHistorialFirestore() {
             try {
                 if (window.firestoreDb && window.firestoreDoc && window.firestoreGetDoc) {
+                    // Helper para formatear fecha en hora local YYYY-MM-DD
+                    const toLocalYmd = (d) => {
+                        const yr = d.getFullYear();
+                        const mo = String(d.getMonth() + 1).padStart(2, '0');
+                        const dy = String(d.getDate()).padStart(2, '0');
+                        return `${yr}-${mo}-${dy}`;
+                    };
+
                     // Generar lista de fechas YYYY-MM-DD entre fechaInicio y fechaFin
                     const fechas = [];
                     const dCur = new Date(this.fechaInicio);
@@ -284,8 +304,7 @@ document.addEventListener('alpine:init', () => {
                     dEnd.setHours(23, 59, 59, 999);
 
                     while (dCur <= dEnd) {
-                        const isoFecha = dCur.toISOString().split('T')[0];
-                        fechas.push(isoFecha);
+                        fechas.push(toLocalYmd(dCur));
                         dCur.setDate(dCur.getDate() + 1);
                     }
 
